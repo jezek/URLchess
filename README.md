@@ -11,10 +11,9 @@ Get or update URLchess and dependencies with:
 go get -u github.com/jezek/URLchess
 ```
 
-Go to URLchess project directory and use
+Go to URLchess project directory and generate javascript content using:
 ```
 gopherjs build -m
 ```
-to generate URLchess.js
 
 Copy `index.html` and `URLchess.js` to your server accessible from internet and feel free to play
