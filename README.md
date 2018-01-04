@@ -35,7 +35,7 @@ This is an very early relase. Improvements will be done soon. Some of them:
 - move by clicking (or dragging) piece
 - next move arrow
 - copy generated link to clipboard
-...
+- ...
 
 ### Contribution
 Test, fork, make pull requests, file issues or improvement ideas, discuss. Everything within reasons is welcome.
