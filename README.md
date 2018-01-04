@@ -19,4 +19,4 @@ gopherjs build -m
 Copy `index.html` and `URLchess.js` to your server accessible from internet and feel free to play
 
 ### Demo
-Try at [URLchess project pages](http://jezek.github.io/URLchess)
+Try at [URLchess project pages](https://jezek.github.io/URLchess)
