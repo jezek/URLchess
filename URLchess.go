@@ -129,30 +129,31 @@ func main() {
 
 	g := game.New()
 
-	wasError := false
-	for i, move := range moves {
-		if g.Status() != game.InProgress {
-			document.Call("write", "Too many moves in url string! "+strconv.Itoa(i+1)+" moves are enough")
-			wasError = true
-			break
+	{
+		var err error
+		for i, move := range moves {
+			if g.Status() != game.InProgress {
+				err = errors.New("Too many moves in url string! " + strconv.Itoa(i+1) + " moves are enough")
+				break
+			}
+
+			_, merr := g.MakeMove(move)
+			if merr != nil {
+				err = errors.New("Errorneous move number " + strconv.Itoa(i+1) + ": " + merr.Error())
+				break
+			}
 		}
 
-		_, err := g.MakeMove(move)
+		document.Call("write", "<div style=\"margin-bottom:1em;\">black: prnbqk<pre>"+g.String()+"</pre>white: PRNBQK</div>")
+
 		if err != nil {
-			document.Call("write", "Errorneous move number "+strconv.Itoa(i+1)+": "+err.Error())
-			wasError = true
-			break
+			document.Call("write", "<div>"+err.Error()+"</div>")
+			return
 		}
-	}
-
-	document.Call("write", "<div>black:prnbqk<pre>"+g.String()+"</pre>white: PRNBQK</div>")
-
-	if wasError == true {
-		return
 	}
 
 	if g.Status() != game.InProgress {
-		document.Call("write", "Game has ended. Result white-black: "+g.Result())
+		document.Call("write", "<div>Game has ended. Result white-black: "+g.Result()+"</div>")
 		return
 	}
 
