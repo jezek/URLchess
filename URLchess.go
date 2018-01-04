@@ -111,6 +111,12 @@ func main() {
 	document := js.Global.Get("document")
 	document.Call("write", "<h1>URLchess</h1>")
 
+	defer func() {
+		js.Global.Get("document").Call("write", `<div style="margin-top: 2em;border-top: 1px solid black; padding-top:1em; font-size:0.8em;">
+URLchess by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
+</div>`)
+	}()
+
 	location := js.Global.Get("location")
 	movesString := ""
 	{
