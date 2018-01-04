@@ -109,12 +109,15 @@ func decodeMoves(moves string) ([]move.Move, error) {
 
 func main() {
 	document := js.Global.Get("document")
-	document.Call("write", "URLchess<br/>")
+	document.Call("write", "<h1>URLchess</h1>")
 
-	href := js.Global.Get("location").Get("href").String()
+	location := js.Global.Get("location")
 	movesString := ""
-	if i := strings.Index(href, "?"); i != -1 {
-		movesString = strings.TrimSpace(href[i+1:])
+	{
+		href := location.Get("href").String()
+		if i := strings.Index(href, "?"); i != -1 {
+			movesString = strings.TrimSpace(href[i+1:])
+		}
 	}
 	//document.Call("write", "moves raw string: "+movesString+"<br/>")
 
@@ -127,78 +130,90 @@ func main() {
 	g := game.New()
 
 	wasError := false
-	for _, move := range moves {
+	for i, move := range moves {
 		if g.Status() != game.InProgress {
-			document.Call("write", "Too many moves!<br/>")
+			document.Call("write", "Too many moves in url string! "+strconv.Itoa(i+1)+" moves are enough")
 			wasError = true
 			break
 		}
 
 		_, err := g.MakeMove(move)
 		if err != nil {
-			document.Call("write", "Errorneous move: "+err.Error())
+			document.Call("write", "Errorneous move number "+strconv.Itoa(i+1)+": "+err.Error())
 			wasError = true
 			break
 		}
 	}
 
-	document.Call("write", "<pre>"+g.String()+"</pre>")
+	document.Call("write", "<div>black:prnbqk<pre>"+g.String()+"</pre>white: PRNBQK</div>")
 
-	if wasError == false && g.Status() == game.InProgress {
-		document.Call("write", "<div>Your next move: <input id=\"move-input\"/> eg. e2e4 (or e7e8q for promotion to queen)<br/><a id=\"next-move\" href=\"\"></a></div>")
-
-		moveInput := js.Global.Get("document").Call("getElementById", "move-input")
-		if moveInput == nil {
-			document.Call("write", "Next move input element not found")
-		} else {
-			moveInput.Call(
-				"addEventListener",
-				"keyup",
-				func(event *js.Object) {
-					if keycode := event.Get("keyCode").Int(); keycode == 13 {
-						nextMoveString := moveInput.Get("value").String()
-
-						nextMoveLink := js.Global.Get("document").Call("getElementById", "next-move")
-
-						if nextMoveLink == nil {
-							document.Call("write", "Next move output element not found")
-						} else {
-							if nextMoveString == "" {
-								nextMoveLink.Set("innerHTML", "")
-								nextMoveLink.Set("href", "")
-								return
-							}
-							nextMove := move.Parse(nextMoveString)
-							if nextMove == move.Null {
-								nextMoveLink.Set("innerHTML", "Next move is not in PCN format")
-							} else {
-								if _, ok := g.LegalMoves()[nextMove]; ok == false {
-									nextMoveLink.Set("innerHTML", "Next move is not a legal move")
-									nextMoveLink.Set("href", href)
-								} else {
-									nextMoveUrlSuffix, err := encodeMove(nextMove)
-									if err != nil {
-										nextMoveLink.Set("innerHTML", "Next move encoding error: "+err.Error())
-										nextMoveLink.Set("href", href)
-									} else {
-										if strings.Index(href, "?") == -1 {
-											nextMoveUrlSuffix = "?" + nextMoveUrlSuffix
-										}
-										nextMoveLink.Set("innerHTML", href+nextMoveUrlSuffix)
-										nextMoveLink.Set("href", href+nextMoveUrlSuffix)
-									}
-								}
-							}
-						}
-					}
-				},
-				false,
-			)
-
-			moveInput.Call("focus")
-		}
-
+	if wasError == true {
+		return
 	}
 
-	//document.Call("write", "bye")
+	if g.Status() != game.InProgress {
+		document.Call("write", "Game has ended. Result white-black: "+g.Result())
+		return
+	}
+
+	document.Call("write", `<div>
+<p>Your next move: <input id="move-input"/> eg. e2e4 (or e7e8q for promotion to queen) and press [ENTER]</p>
+<a id="next-move-link" href=""></a><span id="next-move-error"></span>
+</div>`)
+
+	moveInput := js.Global.Get("document").Call("getElementById", "move-input")
+	if moveInput == nil {
+		document.Call("write", "Next move input element not found")
+	} else {
+		moveInput.Call(
+			"addEventListener",
+			"keyup",
+			func(event *js.Object) {
+				if keycode := event.Get("keyCode").Int(); keycode == 13 {
+					nextMoveError := js.Global.Get("document").Call("getElementById", "next-move-error")
+					if nextMoveError == nil {
+						document.Call("write", "Next move error element not found")
+						return
+					}
+					nextMoveLink := js.Global.Get("document").Call("getElementById", "next-move-link")
+					if nextMoveLink == nil {
+						nextMoveError.Set("innerHTML", "Next move link element not found")
+						return
+					}
+
+					nextMoveError.Set("innerHTML", "")
+					nextMoveLink.Set("innerHTML", "")
+					nextMoveLink.Set("href", "")
+
+					nextMovePCM := strings.TrimSpace(moveInput.Get("value").String())
+					if nextMovePCM == "" {
+						return
+					}
+
+					nextMove := move.Parse(nextMovePCM)
+					if nextMove == move.Null {
+						nextMoveError.Set("innerHTML", "Next move is not in PCN format")
+						return
+					}
+
+					if _, ok := g.LegalMoves()[nextMove]; ok == false {
+						nextMoveError.Set("innerHTML", "Next move is not a legal move")
+						return
+					}
+
+					nextMoveString, err := encodeMove(nextMove)
+					if err != nil {
+						nextMoveError.Set("innerHTML", "Next move encoding error: "+err.Error())
+						return
+					}
+
+					url := location.Get("origin").String() + location.Get("pathname").String() + "?" + movesString + nextMoveString
+					nextMoveLink.Set("innerHTML", url)
+					nextMoveLink.Set("href", url)
+				}
+			},
+			false,
+		)
+		moveInput.Call("focus")
+	}
 }
