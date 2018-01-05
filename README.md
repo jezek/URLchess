@@ -29,10 +29,8 @@ Go to URLchess page, make your move and send generated link to your oponent.
 
 ### Roadmap
 This is an very early relase. Improvements will be done soon. Some of them:
-- graphical chessboard with colors
 - previous moves explorer
-- chess board orientation depending on moving player
-- last move highlight
+- chess board orientation depending on moving player (really is it good?)
 - move by clicking (or dragging) piece
 - next move arrow
 - copy generated link to clipboard
