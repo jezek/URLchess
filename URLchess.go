@@ -24,6 +24,25 @@ var encodePromotionCharToPiece map[byte]piece.Type = map[byte]piece.Type{
 	'+': piece.King,
 }
 
+var piecesString map[piece.Color]map[piece.Type]string = map[piece.Color]map[piece.Type]string{
+	piece.White: map[piece.Type]string{
+		piece.King:   "♔",
+		piece.Queen:  "♕",
+		piece.Bishop: "♗",
+		piece.Knight: "♘",
+		piece.Rook:   "♖",
+		piece.Pawn:   "♙",
+	},
+	piece.Black: map[piece.Type]string{
+		piece.King:   "♚",
+		piece.Queen:  "♛",
+		piece.Bishop: "♝",
+		piece.Knight: "♞",
+		piece.Rook:   "♜",
+		piece.Pawn:   "♟",
+	},
+}
+
 var encodePieceToPromotionChar map[piece.Type]byte = func() map[piece.Type]byte {
 	res := map[piece.Type]byte{}
 	for b, p := range encodePromotionCharToPiece {
@@ -113,7 +132,7 @@ func main() {
 
 	defer func() {
 		js.Global.Get("document").Call("write", `<div style="margin-top: 2em;border-top: 1px solid black; padding-top:1em; font-size:0.8em;">
-URLchess by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
+	URLchess by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
 </div>`)
 	}()
 
@@ -150,7 +169,78 @@ URLchess by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github<
 			}
 		}
 
-		document.Call("write", "<div style=\"margin-bottom:1em;\">black: prnbqk<pre>"+g.String()+"</pre>white: PRNBQK</div>")
+		flipBoard := false // g.ActiveColor() == piece.Black
+
+		document.Call("write", "<div id=\"board\">")
+
+		document.Call("write", "<div id=\"edging-top\">")
+		for i := 0; i < 8; i++ {
+			n := i
+			if flipBoard {
+				n = 7 - i
+			}
+			document.Call("write", "<div>"+string(rune('a'+n))+"</div>")
+
+		}
+		document.Call("write", "</div>") //edging-top
+
+		document.Call("write", "<div id=\"edging-left\">")
+		for i := 8; i > 0; i-- {
+			n := i
+			if flipBoard {
+				n = 9 - i
+			}
+			document.Call("write", "<div>"+strconv.Itoa(n)+"</div>")
+
+		}
+		document.Call("write", "</div>") //edging-left
+
+		{
+			document.Call("write", "<div id=\"grid\">")
+			squareTones := []string{"light-square", "dark-square"}
+			beg, end, inc := int(63), int(-1), int(-1)
+			if flipBoard {
+				beg, end, inc = int(0), int(64), int(1)
+			}
+			for i := beg; i != end; i += inc {
+				sq := square.Square(i)
+				class := []string{squareTones[(i%8+i/8)%2]}
+				lm := g.Position().LastMove
+				if lm != move.Null {
+					if lm.Source == sq || lm.Destination == sq {
+						class = append(class, "last-move")
+					}
+				}
+				pc := g.Position().OnSquare(sq)
+				document.Call("write", "<div id=\""+sq.String()+"\" class=\""+strings.Join(class, " ")+"\">"+piecesString[pc.Color][pc.Type]+"</div>")
+			}
+			document.Call("write", "</div>") //grid
+		}
+
+		document.Call("write", "<div id=\"edging-right\">")
+		for i := 8; i > 0; i-- {
+			n := i
+			if flipBoard {
+				n = 9 - i
+			}
+			document.Call("write", "<div>"+strconv.Itoa(n)+"</div>")
+
+		}
+		document.Call("write", "</div>") //edging-right
+
+		document.Call("write", "<div id=\"edging-bottom\">")
+		for i := 0; i < 8; i++ {
+			n := i
+			if flipBoard {
+				n = 7 - i
+			}
+			document.Call("write", "<div>"+string(rune('a'+n))+"</div>")
+
+		}
+		document.Call("write", "</div>") //edging-bottom
+
+		document.Call("write", "</div>") //board
+		//document.Call("write", "<div style=\"margin-bottom:1em;\">black: prnbqk<pre>"+g.String()+"</pre>white: PRNBQK</div>")
 
 		if err != nil {
 			document.Call("write", "<div>"+err.Error()+"</div>")
@@ -159,11 +249,14 @@ URLchess by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github<
 	}
 
 	if g.Status() != game.InProgress {
-		document.Call("write", "<div>Game has ended. Result white-black: "+g.Result()+"</div>")
+		document.Call("write", "<div style=\"margin-top: 1em\">Game has ended. "+g.Status().String()+"</div>")
 		return
 	}
+	document.Call("write", "<div id=\"game-status\">")
+	document.Call("write", "<p>Player on the move: <span style=\"font-size: 1cm;\">"+piecesString[g.ActiveColor()][piece.King]+"</span></p>")
+	document.Call("write", "</div>") //game-status
 
-	document.Call("write", `<div>
+	document.Call("write", `<div id="next-move">
 <p>Your next move: <input id="move-input"/> eg. e2e4 (or e7e8q for promotion to queen) and press [ENTER]</p>
 <a id="next-move-link" href=""></a><span id="next-move-error"></span>
 </div>`)
@@ -217,6 +310,7 @@ URLchess by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github<
 					url := location.Get("origin").String() + location.Get("pathname").String() + "?" + movesString + nextMoveString
 					nextMoveLink.Set("innerHTML", url)
 					nextMoveLink.Set("href", url)
+					nextMoveError.Set("innerHTML", " <- copy this link and send to your oponent")
 				}
 			},
 			false,

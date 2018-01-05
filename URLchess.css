@@ -1,0 +1,77 @@
+h1 {
+	margin-bottom: 0;
+}
+#board {
+	position:relative;
+	width: calc((1cm * 2 / 3) * 2 + 8cm);
+	height: calc((1cm * 2 / 3) * 2 + 8cm);
+	background-color: #80461B;
+	text-align: center;
+	vertical-align: middle;
+}
+#edging-top, #edging-left, #edging-right, #edging-bottom  {
+	position:absolute;
+	font-size: calc(1cm / 3);
+}
+#edging-top, #edging-bottom {
+	width: 8cm;
+	height: calc(1cm * 2 / 3);
+	left: calc(1cm * 2 / 3);
+}
+#edging-top {
+	top: 0;
+	line-height: calc(1cm * 2 / 3);
+}
+#edging-bottom {
+	bottom: 0;
+	line-height: calc(1cm * 2 / 3);
+}
+#edging-top div, #edging-bottom div {
+	float: left;
+	width: 12.5%;
+	height: 100%;
+}
+#edging-left, #edging-right {
+	width: calc(1cm * 2 / 3);
+	height: 8cm;
+	top: calc(1cm * 2 / 3);
+	line-height: 1cm;
+}
+#edging-left {
+	left: 0;
+}
+#edging-right {
+	right: 0;
+}
+#edging-left div, #edging-right div {
+	width: 100%;
+	height: 12.5%;
+}
+#edging-top div, #edging-right div {
+	transform: rotate(180deg);
+}
+#grid {
+	position:absolute;
+	top: calc(1cm * 2 / 3);
+	left: calc(1cm * 2 / 3);
+	width: 8cm;
+	height: 8cm;
+	font-size: 1cm;
+}
+#grid div {
+	float: left;
+	width: 12.5%;
+	height: 12.5%;
+}
+#grid div.light-square {
+	background-color: #f0d9b5;
+}
+#grid div.dark-square {
+	background-color: #b58863;
+}
+#grid div.last-move.light-square {
+	background-color: #d0e9a5;
+}
+#grid div.last-move.dark-square {
+	background-color: #a59853;
+}
