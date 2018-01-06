@@ -16,7 +16,7 @@ Go to URLchess project directory and generate javascript content using:
 gopherjs build -m
 ```
 
-Copy `index.html` and `URLchess.js` to your server accessible from internet and feel free to play
+Copy `index.html`, `URLchess.js` and `URLchess.css` to your server accessible from internet and feel free to play
 
 ### Demo
 Try at [URLchess project pages](https://jezek.github.io/URLchess).
@@ -32,7 +32,7 @@ This is an very early relase. Improvements will be done soon. Some of them:
 - previous moves explorer
 - chess board orientation depending on moving player (really is it good?)
 - move by clicking (or dragging) piece
-- next move arrow
+- next move show o board + highlight
 - copy generated link to clipboard
 - ...
 
