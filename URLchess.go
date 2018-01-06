@@ -167,40 +167,71 @@ func main() {
 			}
 		}
 
-		flipBoard := false // g.ActiveColor() == piece.Black
-
-		document.Call("write", "<div id=\"board\">")
-
-		document.Call("write", "<div id=\"edging-top\">")
-		for i := 0; i < 8; i++ {
-			n := i
-			if flipBoard {
-				n = 7 - i
+		// is rotation supported?
+		rotationSupported := false
+		if div := js.Global.Get("document").Call("createElement", "div"); div != nil {
+			if div.Get("style").Get("transform") != js.Undefined {
+				rotationSupported = true
 			}
-			document.Call("write", "<div>"+string(rune('a'+n))+"</div>")
-
+			div.Call("remove")
 		}
-		document.Call("write", "</div>") //edging-top
 
-		document.Call("write", "<div id=\"edging-left\">")
-		for i := 8; i > 0; i-- {
-			n := i
-			if flipBoard {
-				n = 9 - i
+		rotateBoard180deg := rotationSupported && g.ActiveColor() == piece.Black
+
+		{
+			//board
+			class := ""
+			if rotateBoard180deg {
+				class = " class=\"rotated180deg\""
 			}
-			document.Call("write", "<div>"+strconv.Itoa(n)+"</div>")
-
+			document.Call("write", "<div id=\"board\""+class+">")
 		}
-		document.Call("write", "</div>") //edging-left
+
+		{
+			//edging-top
+			document.Call("write", "<div id=\"edging-top\">")
+			for i := 0; i < 8; i++ {
+				document.Call("write", "<div>"+string(rune('a'+i))+"</div>")
+			}
+			document.Call("write", "</div>")
+		}
+
+		if rotationSupported {
+			//edging-top-right
+			document.Call("write", "<div id=\"edging-top-right\">")
+			document.Call("write", "↻")
+			document.Call("write", "</div>")
+
+			if etr := js.Global.Get("document").Call("getElementById", "edging-top-right"); etr != nil {
+				etr.Call(
+					"addEventListener",
+					"click",
+					func(event *js.Object) {
+						if board := js.Global.Get("document").Call("getElementById", "board"); board != nil {
+							if board.Get("classList").Call("contains", "rotated180deg").Bool() {
+								board.Get("classList").Call("remove", "rotated180deg")
+							} else {
+								board.Get("classList").Call("add", "rotated180deg")
+							}
+						}
+					},
+				)
+			}
+		}
+
+		{
+			//edging-left
+			document.Call("write", "<div id=\"edging-left\">")
+			for i := 8; i > 0; i-- {
+				document.Call("write", "<div>"+strconv.Itoa(i)+"</div>")
+			}
+			document.Call("write", "</div>")
+		}
 
 		{
 			document.Call("write", "<div id=\"grid\">")
 			squareTones := []string{"light-square", "dark-square"}
-			beg, end, inc := int(63), int(-1), int(-1)
-			if flipBoard {
-				beg, end, inc = int(0), int(64), int(1)
-			}
-			for i := beg; i != end; i += inc {
+			for i := int(63); i >= 0; i-- {
 				sq := square.Square(i)
 				class := []string{squareTones[(i%8+i/8)%2]}
 				lm := g.Position().LastMove
@@ -210,34 +241,63 @@ func main() {
 					}
 				}
 				pc := g.Position().OnSquare(sq)
+				if pc.Type != piece.None {
+					class = append(class, "piece")
+					if c := strings.ToLower(pc.Color.String()); c != "" {
+						class = append(class, "piece-"+c) //piece-white, piece-black
+					}
+				}
 				document.Call("write", "<div id=\""+sq.String()+"\" class=\""+strings.Join(class, " ")+"\">"+piecesString[pc.Color][pc.Type]+"</div>")
 			}
 			document.Call("write", "</div>") //grid
 		}
 
-		document.Call("write", "<div id=\"edging-right\">")
-		for i := 8; i > 0; i-- {
-			n := i
-			if flipBoard {
-				n = 9 - i
+		{
+			//edging-right
+			document.Call("write", "<div id=\"edging-right\">")
+			for i := 8; i > 0; i-- {
+				document.Call("write", "<div>"+strconv.Itoa(i)+"</div>")
 			}
-			document.Call("write", "<div>"+strconv.Itoa(n)+"</div>")
+			document.Call("write", "</div>")
+		}
+
+		if rotationSupported {
+			//edging-bottom-left
+			document.Call("write", "<div id=\"edging-bottom-left\">")
+			document.Call("write", "↻") //↶↷↺↻
+			document.Call("write", "</div>")
+
+			if etr := js.Global.Get("document").Call("getElementById", "edging-bottom-left"); etr != nil {
+				etr.Call(
+					"addEventListener",
+					"click",
+					func(event *js.Object) {
+						if board := js.Global.Get("document").Call("getElementById", "board"); board != nil {
+							if board.Get("classList").Call("contains", "rotated180deg").Bool() {
+								board.Get("classList").Call("remove", "rotated180deg")
+							} else {
+								board.Get("classList").Call("add", "rotated180deg")
+							}
+						}
+					},
+				)
+			}
 
 		}
-		document.Call("write", "</div>") //edging-right
 
-		document.Call("write", "<div id=\"edging-bottom\">")
-		for i := 0; i < 8; i++ {
-			n := i
-			if flipBoard {
-				n = 7 - i
+		{
+			//edging-bottom
+			document.Call("write", "<div id=\"edging-bottom\">")
+			for i := 0; i < 8; i++ {
+				document.Call("write", "<div>"+string(rune('a'+i))+"</div>")
 			}
-			document.Call("write", "<div>"+string(rune('a'+n))+"</div>")
-
+			document.Call("write", "</div>")
 		}
-		document.Call("write", "</div>") //edging-bottom
 
-		document.Call("write", "</div>") //board
+		{
+			//board
+			document.Call("write", "</div>")
+		}
 		//document.Call("write", "<div style=\"margin-bottom:1em;\">black: prnbqk<pre>"+g.String()+"</pre>white: PRNBQK</div>")
 
 		if err != nil {

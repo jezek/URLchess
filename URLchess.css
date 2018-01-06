@@ -1,6 +1,7 @@
 h1 {
 	margin-bottom: 0;
 }
+
 #board {
 	position:relative;
 	width: calc((1cm * 2 / 3) * 2 + 8cm);
@@ -9,6 +10,7 @@ h1 {
 	text-align: center;
 	vertical-align: middle;
 }
+
 #edging-top, #edging-left, #edging-right, #edging-bottom  {
 	position:absolute;
 	font-size: calc(1cm / 3);
@@ -31,6 +33,7 @@ h1 {
 	width: 12.5%;
 	height: 100%;
 }
+
 #edging-left, #edging-right {
 	width: calc(1cm * 2 / 3);
 	height: 8cm;
@@ -50,6 +53,24 @@ h1 {
 #edging-top div, #edging-right div {
 	transform: rotate(180deg);
 }
+
+#edging-top-right, #edging-bottom-left {
+	position:absolute;
+	width: calc(1cm * 2 / 3);
+	height: calc(1cm * 2 / 3);
+	cursor: pointer;
+}
+#edging-top-right {
+	top: 0;
+	right: 0;
+	transform: rotate(180deg);
+}
+#edging-bottom-left {
+	bottom: 0;
+	left: 0;
+	color: white;
+}
+
 #grid {
 	position:absolute;
 	top: calc(1cm * 2 / 3);
@@ -62,6 +83,7 @@ h1 {
 	float: left;
 	width: 12.5%;
 	height: 12.5%;
+	overflow: hidden;
 }
 #grid div.light-square {
 	background-color: #f0d9b5;
@@ -74,4 +96,16 @@ h1 {
 }
 #grid div.last-move.dark-square {
 	background-color: #a59853;
+}
+
+/* board rotation */
+#board, #board #grid div {
+	transition-duration: 0.8s;
+	transition-property: transform;
+}
+#board.rotated180deg {
+	transform: rotate(180deg);
+}
+#board.rotated180deg #grid div {
+	transform: rotate(180deg);
 }
