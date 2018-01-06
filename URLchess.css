@@ -56,7 +56,7 @@ h1 {
 	left: calc(1cm * 2 / 3);
 	width: 8cm;
 	height: 8cm;
-	font-size: 1cm;
+	font-size: calc(1cm * 6 / 7);
 }
 #grid div {
 	float: left;
