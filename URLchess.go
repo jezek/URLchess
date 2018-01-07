@@ -169,7 +169,7 @@ func main() {
 
 		// is rotation supported?
 		rotationSupported := false
-		if div := js.Global.Get("document").Call("createElement", "div"); div != nil {
+		if div := js.Global.Get("document").Call("createElement", "div"); div != js.Undefined {
 			if div.Get("style").Get("transform") != js.Undefined {
 				rotationSupported = true
 			}
@@ -202,12 +202,12 @@ func main() {
 			document.Call("write", "↻")
 			document.Call("write", "</div>")
 
-			if etr := js.Global.Get("document").Call("getElementById", "edging-top-right"); etr != nil {
+			if etr := js.Global.Get("document").Call("getElementById", "edging-top-right"); etr != js.Undefined {
 				etr.Call(
 					"addEventListener",
 					"click",
 					func(event *js.Object) {
-						if board := js.Global.Get("document").Call("getElementById", "board"); board != nil {
+						if board := js.Global.Get("document").Call("getElementById", "board"); board != js.Undefined {
 							if board.Get("classList").Call("contains", "rotated180deg").Bool() {
 								board.Get("classList").Call("remove", "rotated180deg")
 							} else {
@@ -229,21 +229,13 @@ func main() {
 		}
 
 		{
+			//grid
 			document.Call("write", "<div id=\"grid\">")
 			squareTones := []string{"light-square", "dark-square"}
 			for i := int(63); i >= 0; i-- {
-				sq := square.Square(i)
-				class := []string{squareTones[(i%8+i/8)%2]}
-				lm := g.Position().LastMove
-				if lm != move.Null {
-					if lm.Source == sq || lm.Destination == sq {
-						class = append(class, "last-move")
-					}
-				}
-				pc := g.Position().OnSquare(sq)
-				document.Call("write", "<div id=\""+sq.String()+"\" class=\""+strings.Join(class, " ")+"\">"+piecesString[pc.Color][pc.Type]+"</div>")
+				document.Call("write", "<div id=\""+square.Square(i).String()+"\" class=\""+squareTones[(i%8+i/8)%2]+"\"></div>")
 			}
-			document.Call("write", "</div>") //grid
+			document.Call("write", "</div>")
 		}
 
 		{
@@ -261,12 +253,12 @@ func main() {
 			document.Call("write", "↻") //↶↷↺↻
 			document.Call("write", "</div>")
 
-			if etr := js.Global.Get("document").Call("getElementById", "edging-bottom-left"); etr != nil {
+			if etr := js.Global.Get("document").Call("getElementById", "edging-bottom-left"); etr != js.Undefined {
 				etr.Call(
 					"addEventListener",
 					"click",
 					func(event *js.Object) {
-						if board := js.Global.Get("document").Call("getElementById", "board"); board != nil {
+						if board := js.Global.Get("document").Call("getElementById", "board"); board != js.Undefined {
 							if board.Get("classList").Call("contains", "rotated180deg").Bool() {
 								board.Get("classList").Call("remove", "rotated180deg")
 							} else {
@@ -292,7 +284,38 @@ func main() {
 			//board
 			document.Call("write", "</div>")
 		}
-		//document.Call("write", "<div style=\"margin-bottom:1em;\">black: prnbqk<pre>"+g.String()+"</pre>white: PRNBQK</div>")
+
+		{
+			//fill board grid with markers and pieces
+			position := g.Position()
+			for i := int(63); i >= 0; i-- {
+				sq := square.Square(i)
+				sqElm := document.Call("getElementById", sq.String())
+				if sqElm == js.Undefined {
+					err = errors.New("Can't find square element: " + sq.String())
+					break
+				}
+				insert := ""
+				lm := position.LastMove
+				if lm != move.Null && (lm.Source == sq || lm.Destination == sq) {
+					//last-move from or to marker is on square
+					dir := "from"
+					if lm.Destination == sq {
+						dir = "to"
+					}
+					insert += "<span class=\"marker last-move " + dir + "\"></span>"
+				}
+				pc := position.OnSquare(sq)
+				if pieceString, ok := piecesString[pc.Color][pc.Type]; ok {
+					insert += pieceString
+				}
+
+				if insert == "" {
+					continue
+				}
+				sqElm.Set("innerHTML", insert)
+			}
+		}
 
 		if err != nil {
 			document.Call("write", "<div>"+err.Error()+"</div>")
@@ -314,7 +337,7 @@ func main() {
 </div>`)
 
 	moveInput := js.Global.Get("document").Call("getElementById", "move-input")
-	if moveInput == nil {
+	if moveInput == js.Undefined {
 		document.Call("write", "Next move input element not found")
 	} else {
 		moveInput.Call(
@@ -323,12 +346,12 @@ func main() {
 			func(event *js.Object) {
 				if keycode := event.Get("keyCode").Int(); keycode == 13 {
 					nextMoveError := js.Global.Get("document").Call("getElementById", "next-move-error")
-					if nextMoveError == nil {
+					if nextMoveError == js.Undefined {
 						document.Call("write", "Next move error element not found")
 						return
 					}
 					nextMoveLink := js.Global.Get("document").Call("getElementById", "next-move-link")
-					if nextMoveLink == nil {
+					if nextMoveLink == js.Undefined {
 						nextMoveError.Set("innerHTML", "Next move link element not found")
 						return
 					}

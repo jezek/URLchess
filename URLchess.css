@@ -98,7 +98,7 @@ h1 {
 	background-color: #a59853;
 }
 
-#grid span.piece {
+#grid span.piece, #grid span.marker {
 	display: block;
 	position: absolute;
 	top: 0;
@@ -106,6 +106,10 @@ h1 {
 	width: 100%;
 	height: 100%;
 	background-color: transparent;
+}
+#grid span.marker.last-move {
+	background-color: green;
+	opacity: 0.4;
 }
 
 /* board rotation */
@@ -116,7 +120,7 @@ h1 {
 #board.rotated180deg {
 	transform: rotate(180deg);
 }
-#board.rotated180deg #grid span.piece {
+#board.rotated180deg #grid span.piece, #board.rotated180deg #grid span.marker {
 	transform: rotate(-180deg);
 }
 
