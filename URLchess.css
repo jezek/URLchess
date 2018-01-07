@@ -71,7 +71,7 @@ h1 {
 	color: white;
 }
 
-#grid {
+#board .grid {
 	position:absolute;
 	top: calc(1cm * 2 / 3);
 	left: calc(1cm * 2 / 3);
@@ -79,26 +79,26 @@ h1 {
 	height: 8cm;
 	font-size: calc(1cm * 6 / 7);
 }
-#grid div {
+#board .grid div {
 	position: relative;
 	float: left;
 	width: 12.5%;
 	height: 12.5%;
 }
-#grid div.light-square {
+#board .grid div.light-square {
 	background-color: #f0d9b5;
 }
-#grid div.dark-square {
+#board .grid div.dark-square {
 	background-color: #b58863;
 }
-#grid div.last-move.light-square {
+#board .grid div.last-move.light-square {
 	background-color: #d0e9a5;
 }
-#grid div.last-move.dark-square {
+#board .grid div.last-move.dark-square {
 	background-color: #a59853;
 }
 
-#grid span.piece, #grid span.marker {
+#board .grid span.piece, #board .grid span.marker {
 	display: block;
 	position: absolute;
 	top: 0;
@@ -107,20 +107,20 @@ h1 {
 	height: 100%;
 	background-color: transparent;
 }
-#grid span.marker.last-move {
+#board .grid span.marker.last-move {
 	background-color: green;
 	opacity: 0.4;
 }
 
 /* board rotation */
-#board, #board #grid span.piece {
+#board, #board .grid span.piece {
 	transition-duration: 0.8s;
 	transition-property: transform;
 }
 #board.rotated180deg {
 	transform: rotate(180deg);
 }
-#board.rotated180deg #grid span.piece, #board.rotated180deg #grid span.marker {
+#board.rotated180deg .grid span.piece, #board.rotated180deg .grid span.marker {
 	transform: rotate(-180deg);
 }
 
