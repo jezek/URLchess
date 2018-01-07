@@ -14,6 +14,7 @@ h1 {
 #edging-top, #edging-left, #edging-right, #edging-bottom  {
 	position:absolute;
 	font-size: calc(1cm / 3);
+	color: #ffd700;
 }
 #edging-top, #edging-bottom {
 	width: 8cm;
