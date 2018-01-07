@@ -80,10 +80,10 @@ h1 {
 	font-size: calc(1cm * 6 / 7);
 }
 #grid div {
+	position: relative;
 	float: left;
 	width: 12.5%;
 	height: 12.5%;
-	overflow: hidden;
 }
 #grid div.light-square {
 	background-color: #f0d9b5;
@@ -98,14 +98,28 @@ h1 {
 	background-color: #a59853;
 }
 
+#grid span.piece {
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: transparent;
+}
+
 /* board rotation */
-#board, #board #grid div {
+#board, #board #grid span.piece {
 	transition-duration: 0.8s;
 	transition-property: transform;
 }
 #board.rotated180deg {
 	transform: rotate(180deg);
 }
-#board.rotated180deg #grid div {
-	transform: rotate(180deg);
+#board.rotated180deg #grid span.piece {
+	transform: rotate(-180deg);
+}
+
+#game-status span.piece {
+	font-size: calc(1cm * 6 / 7);
 }

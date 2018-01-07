@@ -24,20 +24,20 @@ var encodePromotionCharToPiece map[byte]piece.Type = map[byte]piece.Type{
 
 var piecesString map[piece.Color]map[piece.Type]string = map[piece.Color]map[piece.Type]string{
 	piece.White: map[piece.Type]string{
-		piece.King:   "♔",
-		piece.Queen:  "♕",
-		piece.Bishop: "♗",
-		piece.Knight: "♘",
-		piece.Rook:   "♖",
-		piece.Pawn:   "♙",
+		piece.King:   "<span class=\"piece white king\">♔</span>",
+		piece.Queen:  "<span class=\"piece white queen\">♕</span>",
+		piece.Bishop: "<span class=\"piece white bishop\">♗</span>",
+		piece.Knight: "<span class=\"piece white knight\">♘</span>",
+		piece.Rook:   "<span class=\"piece white rook\">♖</span>",
+		piece.Pawn:   "<span class=\"piece white pawn\">♙</span>",
 	},
 	piece.Black: map[piece.Type]string{
-		piece.King:   "♚",
-		piece.Queen:  "♛",
-		piece.Bishop: "♝",
-		piece.Knight: "♞",
-		piece.Rook:   "♜",
-		piece.Pawn:   "♟",
+		piece.King:   "<span class=\"piece black king\">♚</span>",
+		piece.Queen:  "<span class=\"piece black queen\">♛</span>",
+		piece.Bishop: "<span class=\"piece black bishop\">♝</span>",
+		piece.Knight: "<span class=\"piece black knight\">♞</span>",
+		piece.Rook:   "<span class=\"piece black rook\">♜</span>",
+		piece.Pawn:   "<span class=\"piece black pawn\">♟</span>",
 	},
 }
 
@@ -241,12 +241,6 @@ func main() {
 					}
 				}
 				pc := g.Position().OnSquare(sq)
-				if pc.Type != piece.None {
-					class = append(class, "piece")
-					if c := strings.ToLower(pc.Color.String()); c != "" {
-						class = append(class, "piece-"+c) //piece-white, piece-black
-					}
-				}
 				document.Call("write", "<div id=\""+sq.String()+"\" class=\""+strings.Join(class, " ")+"\">"+piecesString[pc.Color][pc.Type]+"</div>")
 			}
 			document.Call("write", "</div>") //grid
@@ -311,7 +305,7 @@ func main() {
 		return
 	}
 	document.Call("write", "<div id=\"game-status\">")
-	document.Call("write", "<p>Player on the move: <span style=\"font-size: 1cm;\">"+piecesString[g.ActiveColor()][piece.King]+"</span></p>")
+	document.Call("write", "<p>Player on the move: "+piecesString[g.ActiveColor()][piece.King]+"</p>")
 	document.Call("write", "</div>") //game-status
 
 	document.Call("write", `<div id="next-move">
