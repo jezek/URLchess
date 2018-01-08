@@ -85,6 +85,7 @@ h1 {
 	float: left;
 	width: 12.5%;
 	height: 12.5%;
+	cursor: pointer;
 }
 #board .grid div.light-square {
 	background-color: #f0d9b5;
@@ -108,9 +109,17 @@ h1 {
 	height: 100%;
 	background-color: transparent;
 }
+#board .grid span.marker {
+	opacity: 0.4;
+}
 #board .grid span.marker.last-move {
 	background-color: green;
-	opacity: 0.4;
+}
+#board .grid span.marker.next-move {
+	background-color: violet;
+}
+#board .grid span.marker.next-move.next-move-possible-to {
+	opacity: 0.3;
 }
 
 /* board rotation */
@@ -125,6 +134,12 @@ h1 {
 	transform: rotate(-180deg);
 }
 
+#game-status {
+	margin-top:1em;
+}
+#game-status p {
+	margin:0;
+}
 #game-status span.piece {
 	font-size: calc(1cm * 6 / 7);
 }

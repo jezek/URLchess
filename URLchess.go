@@ -8,7 +8,6 @@ import (
 
 	"github.com/andrewbackes/chess/game"
 	"github.com/andrewbackes/chess/piece"
-	"github.com/andrewbackes/chess/position"
 	"github.com/andrewbackes/chess/position/move"
 	"github.com/andrewbackes/chess/position/square"
 	"github.com/gopherjs/gopherjs/js"
@@ -56,7 +55,7 @@ func main() {
 		}
 	}
 
-	moves, err := decodeMoves(movesString) //encoding.go
+	moves, err := decodeMoves(movesString) // encoding.go
 	if err != nil {
 		document.Call("write", "Error decoding moves: "+err.Error())
 		return
@@ -65,19 +64,23 @@ func main() {
 	g := game.New()
 
 	{
-		var err error
+		// apply game moves
 		for i, move := range moves {
 			if g.Status() != game.InProgress {
-				err = errors.New("Too many moves in url string! " + strconv.Itoa(i+1) + " moves are enough")
-				break
+				document.Call("write", "Too many moves in url string! "+strconv.Itoa(i+1)+" moves are enough")
+				return
 			}
 
 			_, merr := g.MakeMove(move)
 			if merr != nil {
-				err = errors.New("Errorneous move number " + strconv.Itoa(i+1) + ": " + merr.Error())
-				break
+				document.Call("write", "Errorneous move number "+strconv.Itoa(i+1)+": "+merr.Error())
+				return
 			}
 		}
+	}
+
+	{
+		// draw chess board
 
 		// is rotation supported?
 		rotationSupported := false
@@ -91,7 +94,7 @@ func main() {
 		rotateBoard180deg := rotationSupported && g.ActiveColor() == piece.Black
 
 		{
-			//board
+			// board
 			class := ""
 			if rotateBoard180deg {
 				class = " class=\"rotated180deg\""
@@ -100,7 +103,7 @@ func main() {
 		}
 
 		{
-			//edging-top
+			// edging-top
 			document.Call("write", "<div id=\"edging-top\">")
 			for i := 0; i < 8; i++ {
 				document.Call("write", "<div>"+string(rune('a'+i))+"</div>")
@@ -109,7 +112,7 @@ func main() {
 		}
 
 		if rotationSupported {
-			//edging-top-right
+			// edging-top-right
 			document.Call("write", "<div id=\"edging-top-right\">")
 			document.Call("write", "↻")
 			document.Call("write", "</div>")
@@ -132,7 +135,7 @@ func main() {
 		}
 
 		{
-			//edging-left
+			// edging-left
 			document.Call("write", "<div id=\"edging-left\">")
 			for i := 8; i > 0; i-- {
 				document.Call("write", "<div>"+strconv.Itoa(i)+"</div>")
@@ -141,7 +144,7 @@ func main() {
 		}
 
 		{
-			//grid
+			// grid
 			document.Call("write", "<div class=\"grid\">")
 			squareTones := []string{"light-square", "dark-square"}
 			for i := int(63); i >= 0; i-- {
@@ -151,7 +154,7 @@ func main() {
 		}
 
 		{
-			//edging-right
+			// edging-right
 			document.Call("write", "<div id=\"edging-right\">")
 			for i := 8; i > 0; i-- {
 				document.Call("write", "<div>"+strconv.Itoa(i)+"</div>")
@@ -160,9 +163,9 @@ func main() {
 		}
 
 		if rotationSupported {
-			//edging-bottom-left
+			// edging-bottom-left
 			document.Call("write", "<div id=\"edging-bottom-left\">")
-			document.Call("write", "↻") //↶↷↺↻
+			document.Call("write", "↻") // ↶↷↺↻
 			document.Call("write", "</div>")
 
 			if etr := js.Global.Get("document").Call("getElementById", "edging-bottom-left"); etr != nil {
@@ -184,7 +187,7 @@ func main() {
 		}
 
 		{
-			//edging-bottom
+			// edging-bottom
 			document.Call("write", "<div id=\"edging-bottom\">")
 			for i := 0; i < 8; i++ {
 				document.Call("write", "<div>"+string(rune('a'+i))+"</div>")
@@ -193,27 +196,19 @@ func main() {
 		}
 
 		{
-			//board
+			// board
 			document.Call("write", "</div>")
 		}
+		document.Call("write", `<div id="game-status">
+		<p>Moving player: <span id="moving-player"></span></p>
+		<p>Game status: <span id="game-progress"><span></p>
+</div>`)
 
-		if e := fillChessBoardGrid(g.Position()); e != nil {
-			err = e
-		}
-
-		if err != nil {
-			document.Call("write", "<div>"+err.Error()+"</div>")
+		if err := fillChessBoard(g, move.Null); err != nil {
+			document.Call("getElementById", "game-status").Set("innerHTML", err.Error())
 			return
 		}
 	}
-
-	if g.Status() != game.InProgress {
-		document.Call("write", "<div style=\"margin-top: 1em\">Game has ended. "+g.Status().String()+"</div>")
-		return
-	}
-	document.Call("write", "<div id=\"game-status\">")
-	document.Call("write", "<p>Player on the move: "+piecesString[g.ActiveColor()][piece.King]+"</p>")
-	document.Call("write", "</div>") //game-status
 
 	document.Call("write", `<div id="next-move">
 <p>Your next move: <input id="move-input"/> eg. e2e4 (or e7e8q for promotion to queen) and press [ENTER]</p>
@@ -229,18 +224,18 @@ func main() {
 			"keyup",
 			func(event *js.Object) {
 				if keycode := event.Get("keyCode").Int(); keycode == 13 {
-					nextMoveError := js.Global.Get("document").Call("getElementById", "next-move-error")
-					if nextMoveError == nil {
+					nextMoveErrorElement := js.Global.Get("document").Call("getElementById", "next-move-error")
+					if nextMoveErrorElement == nil {
 						document.Call("write", "Next move error element not found")
 						return
 					}
 					nextMoveLink := js.Global.Get("document").Call("getElementById", "next-move-link")
 					if nextMoveLink == nil {
-						nextMoveError.Set("innerHTML", "Next move link element not found")
+						nextMoveErrorElement.Set("innerHTML", "Next move link element not found")
 						return
 					}
 
-					nextMoveError.Set("innerHTML", "")
+					nextMoveErrorElement.Set("innerHTML", "")
 					nextMoveLink.Set("innerHTML", "")
 					nextMoveLink.Set("href", "")
 
@@ -251,25 +246,25 @@ func main() {
 
 					nextMove := move.Parse(nextMovePCM)
 					if nextMove == move.Null {
-						nextMoveError.Set("innerHTML", "Next move is not in PCN format")
+						nextMoveErrorElement.Set("innerHTML", "Next move is not in PCN format")
 						return
 					}
 
 					if _, ok := g.LegalMoves()[nextMove]; ok == false {
-						nextMoveError.Set("innerHTML", "Next move is not a legal move")
+						nextMoveErrorElement.Set("innerHTML", "Next move is not a legal move")
 						return
 					}
 
-					nextMoveString, err := encodeMove(nextMove) //encoding.go
+					nextMoveString, err := encodeMove(nextMove) // encoding.go
 					if err != nil {
-						nextMoveError.Set("innerHTML", "Next move encoding error: "+err.Error())
+						nextMoveErrorElement.Set("innerHTML", "Next move encoding error: "+err.Error())
 						return
 					}
 
 					url := location.Get("origin").String() + location.Get("pathname").String() + "?" + movesString + nextMoveString
 					nextMoveLink.Set("innerHTML", url)
 					nextMoveLink.Set("href", url)
-					nextMoveError.Set("innerHTML", " <- copy this link and send to your oponent")
+					nextMoveErrorElement.Set("innerHTML", " <- copy this link and send to your oponent")
 				}
 			},
 			false,
@@ -278,30 +273,152 @@ func main() {
 	}
 }
 
-func fillChessBoardGrid(position *position.Position) error {
-	//fill board grid with markers and pieces
+func fillChessBoard(g *game.Game, nextMove move.Move) error {
+	// fill board grid with markers and pieces
+
+	drawPosition := g.Position()
+	// precalculate next move markers and stuff
+	var nextMoveError error
+	nextMoveMarkerClasses := map[square.Square][]string{}
+	if nextMove == move.Null {
+		// no next move
+	} else {
+		// some move, legal or illegal or incomplete
+		if _, ok := g.Position().LegalMoves()[nextMove]; ok {
+			// legal move
+
+			// fill marker classes to squares
+			nextMoveMarkerClasses[nextMove.Source] = []string{"next-move", "next-move-from"}
+			nextMoveMarkerClasses[nextMove.Destination] = []string{"next-move", "next-move-to"}
+
+			//set drawing position to next move
+			drawPosition = g.Position().MakeMove(nextMove)
+
+			//TODO generate next move link + stuff
+
+		} else {
+			// illegal move. but why?
+			if nextMove.Source == square.NoSquare {
+				// from not filled
+			} else {
+				// from filled. is it legal?
+				legalFromMoves := map[move.Move]struct{}{}
+				for move, _ := range g.Position().LegalMoves() {
+					if move.Source == nextMove.Source {
+						legalFromMoves[move] = struct{}{}
+					}
+				}
+				if len(legalFromMoves) > 0 {
+					// from is legal
+
+					// mark from square
+					nextMoveMarkerClasses[nextMove.Source] = []string{"next-move", "next-move-from"}
+
+					// from is legal, what about others?
+					if nextMove.Destination == square.NoSquare {
+						// to not filled
+
+						// mark possible to squares
+						for move, _ := range legalFromMoves {
+							if nextMoveMarkerClasses[move.Destination] == nil {
+								nextMoveMarkerClasses[move.Destination] = []string{"next-move", "next-move-possible-to"}
+							}
+						}
+					} else {
+						// to filled. is it legal?
+						legalFromToMoves := map[move.Move]struct{}{}
+						for move, _ := range legalFromMoves {
+							if move.Destination == nextMove.Destination {
+								legalFromToMoves[move] = struct{}{}
+							}
+						}
+						if len(legalFromToMoves) > 0 {
+							// to is also legal
+
+							// mark from square
+							nextMoveMarkerClasses[nextMove.Destination] = []string{"next-move", "next-move-to"}
+
+							// to is also legal. but the whole move is illegal. there have to be a promotion behind it
+							if nextMove.Promote == piece.None {
+								// jop, promote not filled, do something about it
+								//TODO promotion
+							} else {
+								// promote is filled, but is illegal
+								nextMoveError = errors.New("next move promotion is illegal! from: " + nextMove.Source.String() + ", to: " + nextMove.Destination.String() + ", promote: " + nextMove.Promote.String())
+							}
+						} else {
+							// to is illegal
+							nextMoveError = errors.New("next move to square is illegal! from: " + nextMove.Source.String() + ", to: " + nextMove.Destination.String())
+						}
+					}
+				} else {
+					// from is illegal
+					nextMoveError = errors.New("next move from square is illegal! from: " + nextMove.Source.String())
+				}
+			}
+		}
+	}
+
 	for i := int(63); i >= 0; i-- {
 		sq := square.Square(i)
 		sqElm := js.Global.Get("document").Call("getElementById", sq.String())
 		if sqElm == nil {
 			return errors.New("Can't find square element: " + sq.String())
 		}
-		innerSquare := ""
-		lm := position.LastMove
-		if lm != move.Null && (lm.Source == sq || lm.Destination == sq) {
-			//last-move from or to marker is on square
-			dir := "from"
-			if lm.Destination == sq {
-				dir = "to"
+
+		marker := ""
+		{
+			// marker
+			markerClasses := []string{"marker"}
+
+			{
+				// last move
+				lm := g.Position().LastMove
+				if lm != move.Null && (lm.Source == sq || lm.Destination == sq) {
+					// last-move from or to marker is on square
+					dir := "from"
+					if lm.Destination == sq {
+						dir = "to"
+					}
+					markerClasses = append(markerClasses, "last-move", "last-move-"+dir)
+				}
 			}
-			innerSquare += "<span class=\"marker last-move " + dir + "\"></span>"
-		}
-		pc := position.OnSquare(sq)
-		if pieceString, ok := piecesString[pc.Color][pc.Type]; ok {
-			innerSquare += pieceString
+
+			{
+				// next move
+				// use precomputed classes
+				if m, ok := nextMoveMarkerClasses[sq]; ok {
+					markerClasses = append(markerClasses, m...)
+				}
+			}
+
+			if len(markerClasses) > 1 {
+				marker = "<span class=\"" + strings.Join(markerClasses, " ") + "\"></span>"
+			}
 		}
 
-		sqElm.Set("innerHTML", innerSquare)
+		pc := drawPosition.OnSquare(sq)
+		sqElm.Set("innerHTML", marker+piecesString[pc.Color][pc.Type])
 	}
+
+	if nextMoveError != nil {
+		return nextMoveError
+	}
+
+	// fill game status
+	if gameProgressElement := js.Global.Get("document").Call("getElementById", "game-progress"); gameProgressElement != nil {
+		gameProgressElement.Set("innerHTML", g.Status().String())
+	}
+
+	if gameMovingPlayerElement := js.Global.Get("document").Call("getElementById", "moving-player"); gameMovingPlayerElement != nil {
+		if g.Status() != game.InProgress {
+			// game has ended
+			gameMovingPlayerElement.Set("innerHTML", "")
+		} else {
+			// game is in progress
+			gameMovingPlayerElement.Set("innerHTML", piecesString[g.ActiveColor()][piece.King])
+		}
+	}
+
 	return nil
 }
