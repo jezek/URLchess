@@ -15,20 +15,20 @@ import (
 
 var piecesString map[piece.Color]map[piece.Type]string = map[piece.Color]map[piece.Type]string{
 	piece.White: map[piece.Type]string{
-		piece.King:   "<span class=\"piece white king\">♔</span>",
-		piece.Queen:  "<span class=\"piece white queen\">♕</span>",
-		piece.Bishop: "<span class=\"piece white bishop\">♗</span>",
-		piece.Knight: "<span class=\"piece white knight\">♘</span>",
-		piece.Rook:   "<span class=\"piece white rook\">♖</span>",
-		piece.Pawn:   "<span class=\"piece white pawn\">♙</span>",
+		piece.Pawn:   "<span class=\"piece white pawn\">" + piece.New(piece.White, piece.Pawn).Figurine() + "</span>",
+		piece.Rook:   "<span class=\"piece white rook\">" + piece.New(piece.White, piece.Rook).Figurine() + "</span>",
+		piece.Knight: "<span class=\"piece white knight\">" + piece.New(piece.White, piece.Knight).Figurine() + "</span>",
+		piece.Bishop: "<span class=\"piece white bishop\">" + piece.New(piece.White, piece.Bishop).Figurine() + "</span>",
+		piece.Queen:  "<span class=\"piece white queen\">" + piece.New(piece.White, piece.Queen).Figurine() + "</span>",
+		piece.King:   "<span class=\"piece white king\">" + piece.New(piece.White, piece.King).Figurine() + "</span>",
 	},
 	piece.Black: map[piece.Type]string{
-		piece.King:   "<span class=\"piece black king\">♚</span>",
-		piece.Queen:  "<span class=\"piece black queen\">♛</span>",
-		piece.Bishop: "<span class=\"piece black bishop\">♝</span>",
-		piece.Knight: "<span class=\"piece black knight\">♞</span>",
-		piece.Rook:   "<span class=\"piece black rook\">♜</span>",
-		piece.Pawn:   "<span class=\"piece black pawn\">♟</span>",
+		piece.Pawn:   "<span class=\"piece black pawn\">" + piece.New(piece.Black, piece.Pawn).Figurine() + "</span>",
+		piece.Rook:   "<span class=\"piece black rook\">" + piece.New(piece.Black, piece.Rook).Figurine() + "</span>",
+		piece.Knight: "<span class=\"piece black knight\">" + piece.New(piece.Black, piece.Knight).Figurine() + "</span>",
+		piece.Bishop: "<span class=\"piece black bishop\">" + piece.New(piece.Black, piece.Bishop).Figurine() + "</span>",
+		piece.Queen:  "<span class=\"piece black queen\">" + piece.New(piece.Black, piece.Queen).Figurine() + "</span>",
+		piece.King:   "<span class=\"piece black king\">" + piece.New(piece.Black, piece.King).Figurine() + "</span>",
 	},
 }
 
@@ -41,7 +41,7 @@ func main() {
 	document.Call("write", "<h1>URLchess</h1>")
 
 	defer func() {
-		js.Global.Get("document").Call("write", `<div style="margin-top: 2em;border-top: 1px solid black; padding-top:1em; font-size:0.8em;">
+		js.Global.Get("document").Call("write", `<div id="footer">
 	URLchess by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
 </div>`)
 	}()
@@ -63,8 +63,7 @@ func main() {
 
 	g := game.New()
 
-	{
-		// apply game moves
+	{ // apply game moves
 		for i, move := range moves {
 			if g.Status() != game.InProgress {
 				document.Call("write", "Too many moves in url string! "+strconv.Itoa(i+1)+" moves are enough")
@@ -95,8 +94,9 @@ type app struct {
 	squaresHandler map[square.Square]func(sq square.Square, event *js.Object)
 }
 
-// Draws chess board, game-status & next-move elements to document
-func (app app) drawBoard() {
+// Draws chess board, game-status and next-move elements to document.
+// Also sets event listeners for grid and undo next move
+func (app *app) drawBoard() {
 	document := js.Global.Get("document")
 
 	// is rotation supported?
@@ -110,8 +110,7 @@ func (app app) drawBoard() {
 
 	rotateBoard180deg := rotationSupported && app.game.ActiveColor() == piece.Black
 
-	{
-		// board
+	{ // board
 		class := ""
 		if rotateBoard180deg {
 			class = " class=\"rotated180deg\""
@@ -119,8 +118,7 @@ func (app app) drawBoard() {
 		document.Call("write", "<div id=\"board\""+class+">")
 	}
 
-	{
-		// edging-top
+	{ // edging-top
 		document.Call("write", "<div id=\"edging-top\">")
 		for i := 0; i < 8; i++ {
 			document.Call("write", "<div>"+string(rune('a'+i))+"</div>")
@@ -151,8 +149,7 @@ func (app app) drawBoard() {
 		}
 	}
 
-	{
-		// edging-left
+	{ // edging-left
 		document.Call("write", "<div id=\"edging-left\">")
 		for i := 8; i > 0; i-- {
 			document.Call("write", "<div>"+strconv.Itoa(i)+"</div>")
@@ -160,8 +157,7 @@ func (app app) drawBoard() {
 		document.Call("write", "</div>")
 	}
 
-	{
-		// grid
+	{ // grid
 		document.Call("write", "<div class=\"grid\">")
 		squareTones := []string{"light-square", "dark-square"}
 		for i := int(63); i >= 0; i-- {
@@ -170,8 +166,7 @@ func (app app) drawBoard() {
 		document.Call("write", "</div>")
 	}
 
-	{
-		// edging-right
+	{ // edging-right
 		document.Call("write", "<div id=\"edging-right\">")
 		for i := 8; i > 0; i-- {
 			document.Call("write", "<div>"+strconv.Itoa(i)+"</div>")
@@ -203,8 +198,7 @@ func (app app) drawBoard() {
 
 	}
 
-	{
-		// edging-bottom
+	{ // edging-bottom
 		document.Call("write", "<div id=\"edging-bottom\">")
 		for i := 0; i < 8; i++ {
 			document.Call("write", "<div>"+string(rune('a'+i))+"</div>")
@@ -212,19 +206,25 @@ func (app app) drawBoard() {
 		document.Call("write", "</div>")
 	}
 
-	{
+	{ // promotion overlay
 		document.Call("write", "<div id=\"promotion-overlay\">")
 		document.Call("write", "</div>")
-		// promotion overlay
 	}
 
-	{
-		// board
+	{ // board
 		document.Call("write", "</div>")
 	}
 
-	document.Call("write", `<div id="next-move">
-<a id="next-move-link" href=""></a> <- copy this link and send to your oponent
+	document.Call("write", `<div id="next-move" class="hidden">
+	<p class="link">
+		Next move URL link:
+		<input id="next-move-input" value=""/>
+		<span class="hint">copy and send this to your oponent</span>
+	</p>
+  <p class="actions">
+		<a id="next-move-link" href="">open URL</a>
+		<a id="next-move-back" href="">undo your move</a>
+	</p>
 </div>`)
 
 	document.Call("write", `<div id="game-status">
@@ -232,14 +232,51 @@ func (app app) drawBoard() {
 		<p>Game status: <span id="game-progress"><span></p>
 </div>`)
 
-	// map click events to grid squares
-	for i := int(63); i >= 0; i-- {
-		sq := square.Square(i)
-		if sqElm := document.Call("getElementById", sq.String()); sqElm != nil {
-			sqElm.Call(
+	{ // event listeners
+
+		// next move back
+		if back := document.Call("getElementById", "next-move-back"); back != nil {
+			back.Call(
 				"addEventListener",
 				"click",
-				app.squareHandler,
+				func(event *js.Object) {
+					event.Call("preventDefault")
+					app.nextMove = move.Null
+					if err := app.updateBoard(); err != nil {
+						document.Call("getElementById", "game-status").Set("innerHTML", err.Error())
+						return
+					}
+				},
+				false,
+			)
+		}
+
+		// map click events to grid squares
+		for i := int(63); i >= 0; i-- {
+			sq := square.Square(i)
+			if sqElm := document.Call("getElementById", sq.String()); sqElm != nil {
+				sqElm.Call(
+					"addEventListener",
+					"click",
+					app.squareHandler,
+					false,
+				)
+			}
+		}
+
+		// promotion overlay
+		if promotionOverlay := document.Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
+			promotionOverlay.Call(
+				"addEventListener",
+				"click",
+				func(event *js.Object) {
+					event.Call("preventDefault")
+					app.nextMove = move.Null
+					if err := app.updateBoard(); err != nil {
+						document.Call("getElementById", "game-status").Set("innerHTML", err.Error())
+						return
+					}
+				},
 				false,
 			)
 		}
@@ -249,23 +286,25 @@ func (app app) drawBoard() {
 // Fills board grid with markers and pieces, updates status and next-move elements,
 // assign handler functions to grid squares
 func (app *app) updateBoard() error {
-	{
-		// clear playground
+	{ // clear playground
 
 		//TODO clear board, status
 
 		// hide promotion overlay
 		if promotionOverlay := js.Global.Get("document").Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
 			promotionOverlay.Get("classList").Call("remove", "show")
+			promotionOverlay.Set("innerHTML", "")
 		}
 
 		// clear next-move
 		if nextMoveLink := js.Global.Get("document").Call("getElementById", "next-move-link"); nextMoveLink != nil {
-			nextMoveLink.Set("innerHTML", "")
 			nextMoveLink.Set("href", "")
 		}
+		if nextMoveInput := js.Global.Get("document").Call("getElementById", "next-move-input"); nextMoveInput != nil {
+			nextMoveInput.Set("value", "")
+		}
 		if nextMove := js.Global.Get("document").Call("getElementById", "next-move"); nextMove != nil {
-			nextMove.Get("classList").Call("remove", "show")
+			nextMove.Get("classList").Call("add", "hidden")
 		}
 
 		// clear grid squares handler, ...
@@ -315,13 +354,17 @@ func (app *app) updateBoard() error {
 				url := location.Get("origin").String() + location.Get("pathname").String() + "?" + app.movesString + nextMoveString
 
 				if nextMoveLink := js.Global.Get("document").Call("getElementById", "next-move-link"); nextMoveLink != nil {
-					nextMoveLink.Set("innerHTML", url)
 					nextMoveLink.Set("href", url)
+				}
+				if nextMoveInput := js.Global.Get("document").Call("getElementById", "next-move-input"); nextMoveInput != nil {
+					nextMoveInput.Set("value", url)
 				}
 
 				if nextMove := js.Global.Get("document").Call("getElementById", "next-move"); nextMove != nil {
-					nextMove.Get("classList").Call("add", "show")
+					nextMove.Get("classList").Call("remove", "hidden")
 				}
+
+				//TODO focus input, select text & copy to clipboard
 			}
 		} else {
 			// illegal move
@@ -373,6 +416,12 @@ func (app *app) updateBoard() error {
 						for move, _ := range legalFromMoves {
 							if nextMoveMarkerClasses[move.Destination] == nil {
 								nextMoveMarkerClasses[move.Destination] = []string{"next-move", "next-move-possible-to"}
+
+								// add mark if on square is an opponent piece
+								opponentColor := piece.Colors[(int(app.game.Position().ActiveColor)+1)%2]
+								if app.game.Position().OnSquare(move.Destination).Color == opponentColor {
+									nextMoveMarkerClasses[move.Destination] = []string{"next-move", "next-move-possible-to kill"}
+								}
 							}
 						}
 
@@ -400,24 +449,51 @@ func (app *app) updateBoard() error {
 							// mark from square
 							nextMoveMarkerClasses[app.nextMove.Destination] = []string{"next-move", "next-move-to"}
 
+							js.Global.Call("alert", "tuu "+app.nextMove.String())
 							// to is also legal. but the whole move is illegal. there have to be a promotion behind it
 							if app.nextMove.Promote == piece.None {
-								// jop, promote not filled, do something about it
-								//TODO promotion
+								// promote not filled, do something about it
 								if promotionOverlay := js.Global.Get("document").Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
+
 									innerHTML := ""
 									for i := 0; i <= int(piece.King); i++ {
+										pc := piece.New(app.game.Position().ActiveColor, piece.Type(i))
 										if _, ok := legalFromToMoves[move.Move{
 											Source:      app.nextMove.Source,
 											Destination: app.nextMove.Destination,
-											Promote:     piece.Type(i),
+											Promote:     pc.Type,
 										}]; ok {
-											innerHTML += piecesString[app.game.Position().ActiveColor][piece.Type(i)]
+											pieceType := strings.ToLower(pc.Type.String())
+											innerHTML += "<span id=\"promote-to-" + pieceType + "\" class=\"piece\" piece=\"" + strconv.Itoa(int(pc.Type)) + "\">" + pc.Figurine() + "</span>"
 										}
 									}
 									promotionOverlay.Set("innerHTML", innerHTML)
 
 									//TODO add handlers for promotion pieces
+									for i := 0; i <= int(piece.King); i++ {
+										pieceType := strings.ToLower(piece.Type(i).String())
+										if promotionPiece := js.Global.Get("document").Call("getElementById", "promote-to-"+pieceType); promotionPiece != nil {
+											promotionPiece.Call(
+												"addEventListener",
+												"click",
+												func(event *js.Object) {
+													if elm := event.Get("currentTarget"); elm != nil {
+														ptNumStr := elm.Call("getAttribute", "piece").String()
+														if pt, err := strconv.Atoi(ptNumStr); err == nil {
+															//js.Global.Call("alert", "tuu "+strconv.Itoa(pt))
+															app.nextMove.Promote = piece.Type(pt)
+															if err := app.updateBoard(); err != nil {
+																js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
+																return
+															}
+														}
+													}
+												},
+												false,
+											)
+										}
+									}
+
 									promotionOverlay.Get("classList").Call("add", "show")
 								}
 							} else {
@@ -431,7 +507,14 @@ func (app *app) updateBoard() error {
 					}
 				} else {
 					// from is illegal
-					nextMoveError = errors.New("next move from square is illegal! from: " + app.nextMove.Source.String())
+
+					// but if from is active piece and to and promotion are empty,
+					// dont throw error, cause this is just piece with no legal moves selection
+					if !(app.game.Position().OnSquare(app.nextMove.Source).Color == app.game.Position().ActiveColor &&
+						app.nextMove.Destination == square.NoSquare &&
+						app.nextMove.Promote == piece.None) {
+						nextMoveError = errors.New("next move from square is illegal! from: " + app.nextMove.Source.String())
+					}
 				}
 			}
 		}
@@ -444,13 +527,10 @@ func (app *app) updateBoard() error {
 			return errors.New("Can't find square element: " + sq.String())
 		}
 
-		marker := ""
-		{
-			// marker
-			markerClasses := []string{"marker"}
+		markerClasses := []string{"marker"}
+		{ // marker classes fill
 
-			{
-				// last move
+			{ // last move
 				lm := app.game.Position().LastMove
 				if lm != move.Null && (lm.Source == sq || lm.Destination == sq) {
 					// last-move from or to marker is on square
@@ -462,21 +542,18 @@ func (app *app) updateBoard() error {
 				}
 			}
 
-			{
-				// next move
+			{ // next move
 				// use precomputed classes
 				if m, ok := nextMoveMarkerClasses[sq]; ok {
 					markerClasses = append(markerClasses, m...)
 				}
 			}
-
-			if len(markerClasses) > 1 {
-				marker = "<span class=\"" + strings.Join(markerClasses, " ") + "\"></span>"
-			}
 		}
 
 		pc := drawPosition.OnSquare(sq)
-		sqElm.Set("innerHTML", marker+piecesString[pc.Color][pc.Type])
+		innerHTML := "<span class=\"marker " + strings.Join(markerClasses, " ") + "\">" + piecesString[pc.Color][pc.Type] + "</span>"
+
+		sqElm.Set("innerHTML", innerHTML)
 	}
 
 	if nextMoveError != nil {

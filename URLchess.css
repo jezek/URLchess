@@ -111,16 +111,33 @@ h1 {
 	background-color: transparent;
 }
 #board .grid span.marker {
-	opacity: 0.4;
 }
 #board .grid span.marker.last-move {
-	background-color: green;
+	background-color: rgba(0, 255, 0, 0.2);
 }
 #board .grid span.marker.next-move {
-	background-color: violet;
+	background-color: rgba(255, 0, 255, 0.2);
 }
 #board .grid span.marker.next-move.next-move-possible-to {
-	opacity: 0.3;
+	background-color: transparent;
+}
+#board .grid span.marker.next-move.next-move-possible-to::before {
+	content: "•";
+	color: violet;
+}
+#board .grid span.marker.next-move.next-move-possible-to.kill {
+	background-color: rgba(255, 0, 255, 0.2);
+}
+#board .grid span.marker.next-move.next-move-possible-to.kill::before {
+	content: "";
+	color: initial;
+}
+#board .grid span.marker.next-move.next-move-possible-to:hover {
+	background-color: rgba(255, 0, 255, 0.5);
+}
+#board .grid span.marker.next-move.next-move-possible-to:hover::before {
+	content: "";
+	color: initial;
 }
 
 #promotion-overlay {
@@ -144,6 +161,10 @@ h1 {
 	font-size: calc(1cm * 6 / 7);
 	width: 1cm;
 	height: 1cm;
+	cursor: pointer;
+}
+#promotion-overlay span.piece:hover {
+	background-color: rgba(255, 0, 255, 0.5);
 }
 
 /* board rotation */
@@ -154,9 +175,39 @@ h1 {
 #board.rotated180deg {
 	transform: rotate(180deg);
 }
-#board.rotated180deg .grid span.piece, #board.rotated180deg .grid span.marker {
+#board.rotated180deg .grid span.marker span.piece,
+#board.rotated180deg #promotion-overlay {
 	transform: rotate(-180deg);
 }
+
+#next-move {
+	width: calc((1cm * 2 / 3) * 2 + 8cm);
+}
+#next-move.hidden {
+	display: none;
+}
+#next-move p {
+}
+#next-move p.link input, #next-move p.link span.hint {
+	display: block;
+}
+#next-move p.link input {
+	width: 100%;
+}
+#next-move p.link span.hint {
+	font-size: 80%;
+}
+#next-move p.actions {
+  width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+#next-move p.actions a {
+	display: block;
+	margin: 0 1em;
+}
+
 
 #game-status {
 	margin-top:1em;
@@ -168,9 +219,9 @@ h1 {
 	font-size: calc(1cm * 6 / 7);
 }
 
-#next-move {
-	display: none;
-}
-#next-move.show {
-	display: initial;
+#footer {
+  margin-top: 2em;
+  border-top: 1px solid black;
+  padding-top:1em;
+  font-size:0.8em;
 }
