@@ -13,7 +13,9 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
-var pieceTypesToName map[piece.Type]string = map[piece.Type]string{
+var promotablePiecesType = []piece.Type{piece.Rook, piece.Knight, piece.Bishop, piece.Queen}
+
+var pieceTypesToName = map[piece.Type]string{
 	piece.Pawn:   "pawn",
 	piece.Rook:   "rook",
 	piece.Knight: "knight",
@@ -21,6 +23,7 @@ var pieceTypesToName map[piece.Type]string = map[piece.Type]string{
 	piece.Queen:  "queen",
 	piece.King:   "king",
 }
+
 var pieceNamesToType map[string]piece.Type = func() map[string]piece.Type {
 	res := make(map[string]piece.Type, len(pieceTypesToName))
 	for k, v := range pieceTypesToName {
@@ -219,6 +222,9 @@ func (app *app) drawBoard() {
 
 	{ // promotion overlay
 		document.Call("write", "<div id=\"promotion-overlay\">")
+		for _, pieceType := range promotablePiecesType {
+			document.Call("write", "<span id=\"promote-to-"+pieceTypesToName[pieceType]+"\" class=\"piece\" piece=\""+pieceTypesToName[pieceType]+"\"></span>")
+		}
 		document.Call("write", "</div>")
 	}
 
@@ -290,6 +296,28 @@ func (app *app) drawBoard() {
 				},
 				false,
 			)
+			//TODO add handlers for promotion pieces
+			for _, pt := range promotablePiecesType {
+				if promotionPiece := js.Global.Get("document").Call("getElementById", "promote-to-"+pieceTypesToName[pt]); promotionPiece != nil {
+					promotionPiece.Call(
+						"addEventListener",
+						"click",
+						func(event *js.Object) {
+							if elm := event.Get("currentTarget"); elm != nil {
+								pieceName := elm.Call("getAttribute", "piece").String()
+								if pt, ok := pieceNamesToType[pieceName]; ok {
+									app.nextMove.Promote = piece.Type(pt)
+									if err := app.updateBoard(); err != nil {
+										js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
+										return
+									}
+								}
+							}
+						},
+						false,
+					)
+				}
+			}
 		}
 	}
 }
@@ -304,7 +332,8 @@ func (app *app) updateBoard() error {
 		// hide promotion overlay
 		if promotionOverlay := js.Global.Get("document").Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
 			promotionOverlay.Get("classList").Call("remove", "show")
-			promotionOverlay.Set("innerHTML", "")
+
+			//TODO clear promotion pieces elements
 		}
 
 		// clear next-move
@@ -466,45 +495,22 @@ func (app *app) updateBoard() error {
 								// promote not filled, do something about it
 								if promotionOverlay := js.Global.Get("document").Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
 
-									innerHTML := ""
-									for i := 0; i <= int(piece.King); i++ {
-										pc := piece.New(app.game.Position().ActiveColor, piece.Type(i))
+									//TODO? hide unpromotable pieces
+
+									// fill piece figure to promotable pieces elements
+									for _, pt := range promotablePiecesType {
 										if _, ok := legalFromToMoves[move.Move{
 											Source:      app.nextMove.Source,
 											Destination: app.nextMove.Destination,
-											Promote:     pc.Type,
+											Promote:     pt,
 										}]; ok {
-											pieceType := strings.ToLower(pc.Type.String())
-											innerHTML += "<span id=\"promote-to-" + pieceType + "\" class=\"piece\" piece=\"" + strconv.Itoa(int(pc.Type)) + "\">" + pc.Figurine() + "</span>"
+											if promotionPiece := js.Global.Get("document").Call("getElementById", "promote-to-"+pieceTypesToName[pt]); promotionPiece != nil {
+												promotionPiece.Set("innerHTML", piece.New(app.game.Position().ActiveColor, pt).Figurine())
+											} else {
+												//TODO return error
+											}
 										}
 									}
-									promotionOverlay.Set("innerHTML", innerHTML)
-
-									//TODO add handlers for promotion pieces
-									for i := 0; i <= int(piece.King); i++ {
-										pieceType := strings.ToLower(piece.Type(i).String())
-										if promotionPiece := js.Global.Get("document").Call("getElementById", "promote-to-"+pieceType); promotionPiece != nil {
-											promotionPiece.Call(
-												"addEventListener",
-												"click",
-												func(event *js.Object) {
-													if elm := event.Get("currentTarget"); elm != nil {
-														ptNumStr := elm.Call("getAttribute", "piece").String()
-														if pt, err := strconv.Atoi(ptNumStr); err == nil {
-															//js.Global.Call("alert", "tuu "+strconv.Itoa(pt))
-															app.nextMove.Promote = piece.Type(pt)
-															if err := app.updateBoard(); err != nil {
-																js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
-																return
-															}
-														}
-													}
-												},
-												false,
-											)
-										}
-									}
-
 									promotionOverlay.Get("classList").Call("add", "show")
 								}
 							} else {
@@ -514,6 +520,7 @@ func (app *app) updateBoard() error {
 						} else {
 							// to is illegal
 							nextMoveError = errors.New("next move to square is illegal! from: " + app.nextMove.Source.String() + ", to: " + app.nextMove.Destination.String())
+							//TODO repair & update & test
 						}
 					}
 				} else {
