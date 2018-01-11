@@ -13,24 +13,35 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
-var piecesString map[piece.Color]map[piece.Type]string = map[piece.Color]map[piece.Type]string{
-	piece.White: map[piece.Type]string{
-		piece.Pawn:   "<span class=\"piece white pawn\">" + piece.New(piece.White, piece.Pawn).Figurine() + "</span>",
-		piece.Rook:   "<span class=\"piece white rook\">" + piece.New(piece.White, piece.Rook).Figurine() + "</span>",
-		piece.Knight: "<span class=\"piece white knight\">" + piece.New(piece.White, piece.Knight).Figurine() + "</span>",
-		piece.Bishop: "<span class=\"piece white bishop\">" + piece.New(piece.White, piece.Bishop).Figurine() + "</span>",
-		piece.Queen:  "<span class=\"piece white queen\">" + piece.New(piece.White, piece.Queen).Figurine() + "</span>",
-		piece.King:   "<span class=\"piece white king\">" + piece.New(piece.White, piece.King).Figurine() + "</span>",
-	},
-	piece.Black: map[piece.Type]string{
-		piece.Pawn:   "<span class=\"piece black pawn\">" + piece.New(piece.Black, piece.Pawn).Figurine() + "</span>",
-		piece.Rook:   "<span class=\"piece black rook\">" + piece.New(piece.Black, piece.Rook).Figurine() + "</span>",
-		piece.Knight: "<span class=\"piece black knight\">" + piece.New(piece.Black, piece.Knight).Figurine() + "</span>",
-		piece.Bishop: "<span class=\"piece black bishop\">" + piece.New(piece.Black, piece.Bishop).Figurine() + "</span>",
-		piece.Queen:  "<span class=\"piece black queen\">" + piece.New(piece.Black, piece.Queen).Figurine() + "</span>",
-		piece.King:   "<span class=\"piece black king\">" + piece.New(piece.Black, piece.King).Figurine() + "</span>",
-	},
+var pieceTypesToName map[piece.Type]string = map[piece.Type]string{
+	piece.Pawn:   "pawn",
+	piece.Rook:   "rook",
+	piece.Knight: "knight",
+	piece.Bishop: "bishop",
+	piece.Queen:  "queen",
+	piece.King:   "king",
 }
+var pieceNamesToType map[string]piece.Type = func() map[string]piece.Type {
+	res := make(map[string]piece.Type, len(pieceTypesToName))
+	for k, v := range pieceTypesToName {
+		if _, ok := res[v]; ok {
+			panic("error creating pieceNamesToType map: duplicate name: " + v)
+		}
+		res[v] = k
+	}
+	return res
+}()
+
+var piecesToString map[piece.Piece]string = func() map[piece.Piece]string {
+	res := make(map[piece.Piece]string, len(piece.Colors)*len(pieceTypesToName))
+	for _, pieceColor := range piece.Colors {
+		for pieceType, pieceName := range pieceTypesToName {
+			p := piece.New(pieceColor, pieceType)
+			res[p] = "<span class=\"piece " + strings.ToLower(pieceColor.String()) + " " + pieceName + "\">" + p.Figurine() + "</span>"
+		}
+	}
+	return res
+}()
 
 func main() {
 	document := js.Global.Get("document")
@@ -551,7 +562,7 @@ func (app *app) updateBoard() error {
 		}
 
 		pc := drawPosition.OnSquare(sq)
-		innerHTML := "<span class=\"marker " + strings.Join(markerClasses, " ") + "\">" + piecesString[pc.Color][pc.Type] + "</span>"
+		innerHTML := "<span class=\"marker " + strings.Join(markerClasses, " ") + "\">" + piecesToString[pc] + "</span>"
 
 		sqElm.Set("innerHTML", innerHTML)
 	}
@@ -571,7 +582,7 @@ func (app *app) updateBoard() error {
 			gameMovingPlayerElement.Set("innerHTML", "")
 		} else {
 			// game is in progress
-			gameMovingPlayerElement.Set("innerHTML", piecesString[app.game.ActiveColor()][piece.King])
+			gameMovingPlayerElement.Set("innerHTML", piecesToString[piece.New(app.game.ActiveColor(), piece.King)])
 		}
 	}
 
