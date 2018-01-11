@@ -29,10 +29,11 @@ Go to URLchess page, make your move and send generated link to your oponent.
 
 ### Roadmap
 This is an early relase. Improvements will be done soon. Some of them:
-- move by clicking (or dragging) piece
 - previous moves explorer
-- next move show on board + highlight
-- copy generated link to clipboard
+- responsive design
+- design enhance (buttons, background, ...)
+- more touch friendly ui (dragable pices?)
+- multilanguage?
 - ...
 
 ### Contribution
