@@ -95,6 +95,7 @@ func main() {
 	app := app{movesString, g, move.Null, map[square.Square]func(square.Square, *js.Object){}}
 	app.drawBoard()
 
+	//js.Global.Call("alert", "calling update board from main")
 	if err := app.updateBoard(); err != nil {
 		document.Call("getElementById", "game-status").Set("innerHTML", err.Error())
 		return
@@ -232,11 +233,17 @@ func (app *app) drawBoard() {
 		document.Call("write", "</div>")
 	}
 
+	hintString := "copy and send this to your oponent"
+
+	if exec := js.Global.Get("document").Get("execCommand"); exec != nil {
+		hintString = "link has been copied to clipboard, send it to your oponent"
+	}
+
 	document.Call("write", `<div id="next-move" class="hidden">
 	<p class="link">
 		Next move URL link:
 		<input id="next-move-input" value=""/>
-		<span class="hint">copy and send this to your oponent</span>
+		<span class="hint">`+hintString+`</span>
 	</p>
   <p class="actions">
 		<a id="next-move-link" href="">open URL</a>
@@ -259,6 +266,7 @@ func (app *app) drawBoard() {
 				func(event *js.Object) {
 					event.Call("preventDefault")
 					app.nextMove = move.Null
+					//js.Global.Call("alert", "calling update board from next-move-back listener")
 					if err := app.updateBoard(); err != nil {
 						document.Call("getElementById", "game-status").Set("innerHTML", err.Error())
 						return
@@ -266,6 +274,44 @@ func (app *app) drawBoard() {
 				},
 				false,
 			)
+		}
+		// next move link ckick
+		if ebl := document.Call("getElementById", "edging-bottom-left"); ebl != nil {
+			if link := document.Call("getElementById", "next-move-link"); link != nil {
+				link.Call(
+					"addEventListener",
+					"click",
+					func(event *js.Object) {
+						if board := document.Call("getElementById", "board"); board != nil {
+
+							// rotate only if needed
+							shouldBeRotatedInNextMove := app.game.Position().ActiveColor != piece.Black
+							isRotated := board.Get("classList").Call("contains", "rotated180deg").Bool()
+
+							if shouldBeRotatedInNextMove != isRotated {
+								//rotate, wait, cange location
+								event.Call("preventDefault")
+								if isRotated {
+									board.Get("classList").Call("remove", "rotated180deg")
+								} else {
+									board.Get("classList").Call("add", "rotated180deg")
+								}
+
+								url := link.Call("getAttribute", "href")
+								js.Global.Call(
+									"setTimeout",
+									func() {
+										js.Global.Get("location").Set("href", url)
+									},
+									800,
+								)
+							}
+
+						}
+					},
+					false,
+				)
+			}
 		}
 
 		// map click events to grid squares
@@ -289,6 +335,7 @@ func (app *app) drawBoard() {
 				func(event *js.Object) {
 					event.Call("preventDefault")
 					app.nextMove = move.Null
+					//js.Global.Call("alert", "calling update board from promotion-overlay listener")
 					if err := app.updateBoard(); err != nil {
 						document.Call("getElementById", "game-status").Set("innerHTML", err.Error())
 						return
@@ -296,17 +343,20 @@ func (app *app) drawBoard() {
 				},
 				false,
 			)
-			//TODO add handlers for promotion pieces
+			// add handlers for promotion pieces
 			for _, pt := range promotablePiecesType {
 				if promotionPiece := js.Global.Get("document").Call("getElementById", "promote-to-"+pieceTypesToName[pt]); promotionPiece != nil {
 					promotionPiece.Call(
 						"addEventListener",
 						"click",
 						func(event *js.Object) {
+							event.Call("stopPropagation")
 							if elm := event.Get("currentTarget"); elm != nil {
 								pieceName := elm.Call("getAttribute", "piece").String()
 								if pt, ok := pieceNamesToType[pieceName]; ok {
 									app.nextMove.Promote = piece.Type(pt)
+									//js.Global.Call("alert", "promote to: "+app.nextMove.Promote.String())
+									//js.Global.Call("alert", "calling update board from promotion-piece "+pieceName+" listener")
 									if err := app.updateBoard(); err != nil {
 										js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
 										return
@@ -325,6 +375,7 @@ func (app *app) drawBoard() {
 // Fills board grid with markers and pieces, updates status and next-move elements,
 // assign handler functions to grid squares
 func (app *app) updateBoard() error {
+	//js.Global.Call("alert", "update: nextMove: "+app.nextMove.String())
 	{ // clear playground
 
 		//TODO clear board, status
@@ -359,6 +410,7 @@ func (app *app) updateBoard() error {
 	nextMoveMarkerClasses := map[square.Square][]string{}
 	if app.nextMove == move.Null {
 		// no next move
+		//js.Global.Call("alert", "no next move")
 
 		// set handlers for moving player pieces
 		for i := int(63); i >= 0; i-- {
@@ -367,6 +419,7 @@ func (app *app) updateBoard() error {
 			if pc.Color == app.game.Position().ActiveColor {
 				app.squaresHandler[sq] = func(sq square.Square, _ *js.Object) {
 					app.nextMove.Source = sq
+					//js.Global.Call("alert", "calling update board from square handler moving piece")
 					if err := app.updateBoard(); err != nil {
 						js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
 						return
@@ -376,12 +429,16 @@ func (app *app) updateBoard() error {
 		}
 	} else {
 		// some move, legal or illegal or incomplete
+		//js.Global.Call("alert", "some move, legal or illegal or incomplete")
+
+		color := strings.ToLower(app.game.Position().ActiveColor.String())
 		if _, ok := app.game.Position().LegalMoves()[app.nextMove]; ok {
 			// legal move
+			//js.Global.Call("alert", "legal move")
 
 			// fill marker classes to squares
-			nextMoveMarkerClasses[app.nextMove.Source] = []string{"next-move", "next-move-from"}
-			nextMoveMarkerClasses[app.nextMove.Destination] = []string{"next-move", "next-move-to"}
+			nextMoveMarkerClasses[app.nextMove.Source] = []string{"next-move", "next-move-" + color, "next-move-from"}
+			nextMoveMarkerClasses[app.nextMove.Destination] = []string{"next-move", "next-move-" + color, "next-move-to"}
 
 			//set drawing position to next move
 			drawPosition = app.game.Position().MakeMove(app.nextMove)
@@ -404,10 +461,15 @@ func (app *app) updateBoard() error {
 					nextMove.Get("classList").Call("remove", "hidden")
 				}
 
-				//TODO focus input, select text & copy to clipboard
+				// select input text & copy to clipboard
+				if nextMoveInput := js.Global.Get("document").Call("getElementById", "next-move-input"); nextMoveInput != nil {
+					nextMoveInput.Call("select")
+					js.Global.Get("document").Call("execCommand", "Copy")
+				}
 			}
 		} else {
 			// illegal move
+			//js.Global.Call("alert", "illegal move")
 
 			// set handlers for moving player pieces
 			for i := int(63); i >= 0; i-- {
@@ -416,6 +478,7 @@ func (app *app) updateBoard() error {
 				if pc.Color == app.game.Position().ActiveColor {
 					app.squaresHandler[sq] = func(sq square.Square, _ *js.Object) {
 						app.nextMove.Source = sq
+						//js.Global.Call("alert", "calling update board from square handler moving piece illegal move")
 						if err := app.updateBoard(); err != nil {
 							js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
 							return
@@ -431,9 +494,10 @@ func (app *app) updateBoard() error {
 				nextMoveError = errors.New("next move is not null, but has no from square filled")
 			} else {
 				// from filled
+				//js.Global.Call("alert", "from filled")
 
 				// mark from square
-				nextMoveMarkerClasses[app.nextMove.Source] = []string{"next-move", "next-move-from"}
+				nextMoveMarkerClasses[app.nextMove.Source] = []string{"next-move", "next-move-" + color, "next-move-from"}
 
 				// remove from handlers, to unhiglight if clicking on the same piece again
 				delete(app.squaresHandler, app.nextMove.Source)
@@ -447,20 +511,22 @@ func (app *app) updateBoard() error {
 				}
 				if len(legalFromMoves) > 0 {
 					// from is legal
+					//js.Global.Call("alert", "from is legal")
 
 					// from is legal, what about others?
 					if app.nextMove.Destination == square.NoSquare {
 						// to not filled
+						//js.Global.Call("alert", "to not filled")
 
 						// mark possible to squares
 						for move, _ := range legalFromMoves {
 							if nextMoveMarkerClasses[move.Destination] == nil {
-								nextMoveMarkerClasses[move.Destination] = []string{"next-move", "next-move-possible-to"}
-
-								// add mark if on square is an opponent piece
-								opponentColor := piece.Colors[(int(app.game.Position().ActiveColor)+1)%2]
-								if app.game.Position().OnSquare(move.Destination).Color == opponentColor {
-									nextMoveMarkerClasses[move.Destination] = []string{"next-move", "next-move-possible-to kill"}
+								// add next-move mark
+								oponentColor := piece.Colors[(int(app.game.Position().ActiveColor)+1)%2]
+								if app.game.Position().OnSquare(move.Destination).Color == oponentColor {
+									nextMoveMarkerClasses[move.Destination] = []string{"next-move", "next-move-" + color, "next-move-possible-to", "kill"}
+								} else {
+									nextMoveMarkerClasses[move.Destination] = []string{"next-move", "next-move-" + color, "next-move-possible-to", "nokill"}
 								}
 							}
 						}
@@ -469,6 +535,7 @@ func (app *app) updateBoard() error {
 						for move, _ := range legalFromMoves {
 							app.squaresHandler[move.Destination] = func(sq square.Square, _ *js.Object) {
 								app.nextMove.Destination = sq
+								//js.Global.Call("alert", "calling update board from square handler possible next move")
 								if err := app.updateBoard(); err != nil {
 									js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
 									return
@@ -485,14 +552,15 @@ func (app *app) updateBoard() error {
 						}
 						if len(legalFromToMoves) > 0 {
 							// to is also legal
+							//js.Global.Call("alert", "to is also legal")
 
 							// mark from square
-							nextMoveMarkerClasses[app.nextMove.Destination] = []string{"next-move", "next-move-to"}
+							nextMoveMarkerClasses[app.nextMove.Destination] = []string{"next-move", "next-move-" + color, "next-move-to"}
 
-							js.Global.Call("alert", "tuu "+app.nextMove.String())
 							// to is also legal. but the whole move is illegal. there have to be a promotion behind it
 							if app.nextMove.Promote == piece.None {
 								// promote not filled, do something about it
+								//js.Global.Call("alert", "promote not filled, do something about it")
 								if promotionOverlay := js.Global.Get("document").Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
 
 									//TODO? hide unpromotable pieces
@@ -538,6 +606,7 @@ func (app *app) updateBoard() error {
 		}
 	}
 
+	//js.Global.Call("alert", "drawing grid")
 	for i := int(63); i >= 0; i-- {
 		sq := square.Square(i)
 		sqElm := js.Global.Get("document").Call("getElementById", sq.String())
@@ -556,7 +625,8 @@ func (app *app) updateBoard() error {
 					if lm.Destination == sq {
 						dir = "to"
 					}
-					markerClasses = append(markerClasses, "last-move", "last-move-"+dir)
+					oponentColor := strings.ToLower(piece.Colors[(int(app.game.Position().ActiveColor)+1)%2].String())
+					markerClasses = append(markerClasses, "last-move", "last-move-"+oponentColor, "last-move-"+dir)
 				}
 			}
 
@@ -569,7 +639,7 @@ func (app *app) updateBoard() error {
 		}
 
 		pc := drawPosition.OnSquare(sq)
-		innerHTML := "<span class=\"marker " + strings.Join(markerClasses, " ") + "\">" + piecesToString[pc] + "</span>"
+		innerHTML := "<span class=\"" + strings.Join(markerClasses, " ") + "\">" + piecesToString[pc] + "</span>"
 
 		sqElm.Set("innerHTML", innerHTML)
 	}
@@ -592,6 +662,7 @@ func (app *app) updateBoard() error {
 			gameMovingPlayerElement.Set("innerHTML", piecesToString[piece.New(app.game.ActiveColor(), piece.King)])
 		}
 	}
+	//js.Global.Call("alert", "end")
 
 	return nil
 }
@@ -599,12 +670,12 @@ func (app *app) updateBoard() error {
 func (app *app) squareHandler(event *js.Object) {
 	elm := event.Get("currentTarget")
 	if elm == nil || elm == js.Undefined {
-		js.Global.Call("alert", "no current target element")
+		//js.Global.Call("alert", "no current target element")
 		return
 	}
 	elmId := elm.Call("getAttribute", "id").String()
 	if strings.TrimSpace(elmId) == "" {
-		js.Global.Call("alert", "no id attribute in target")
+		//js.Global.Call("alert", "no id attribute in target")
 		return
 	}
 
@@ -613,6 +684,7 @@ func (app *app) squareHandler(event *js.Object) {
 	if !ok {
 		//js.Global.Call("alert", "no "+elmId+" square handler")
 		app.nextMove = move.Null
+		//js.Global.Call("alert", "calling update board from square handler no handler")
 		if err := app.updateBoard(); err != nil {
 			js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
 			return

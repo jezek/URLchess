@@ -112,32 +112,52 @@ h1 {
 }
 #board .grid span.marker {
 }
-#board .grid span.marker.last-move {
+#board .grid span.marker.last-move-white {
 	background-color: rgba(0, 255, 0, 0.2);
 }
-#board .grid span.marker.next-move {
-	background-color: rgba(255, 0, 255, 0.2);
+#board .grid span.marker.last-move-black {
+	background-color: rgba(255, 0, 0, 0.2);
 }
-#board .grid span.marker.next-move.next-move-possible-to {
+#board .grid span.marker.next-move-white {
+	background-color: rgba(0, 255, 0, 0.2);
+}
+#board .grid span.marker.next-move-black {
+	background-color: rgba(255, 0, 0, 0.2);
+}
+#board .grid span.marker.last-move.next-move-to {
+	background-color: rgba(255, 255, 0, 0.2);
+}
+#board .grid span.marker.next-move-possible-to {
 	background-color: transparent;
 }
-#board .grid span.marker.next-move.next-move-possible-to::before {
+#board .grid span.marker.last-move-white.next-move-possible-to {
+	background-color: rgba(0, 255, 0, 0.2);
+}
+#board .grid span.marker.last-move-black.next-move-possible-to {
+	background-color: rgba(255, 0, 0, 0.2);
+}
+#board .grid span.marker.next-move-possible-to::after {
 	content: "•";
-	color: violet;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
 }
-#board .grid span.marker.next-move.next-move-possible-to.kill {
-	background-color: rgba(255, 0, 255, 0.2);
+#board .grid span.marker.next-move-possible-to.next-move-white::after {
+	color: rgba(0, 255, 0, 0.5);
 }
-#board .grid span.marker.next-move.next-move-possible-to.kill::before {
+#board .grid span.marker.next-move-possible-to.next-move-black::after {
+	color: rgba(255, 0, 0, 0.5);
+}
+#board .grid span.marker.next-move-possible-to.next-move-white:hover {
+	background-color: rgba(0, 255, 0, 0.2);
+}
+#board .grid span.marker.next-move-possible-to.next-move-black:hover {
+	background-color: rgba(255, 0, 0, 0.2);
+}
+#board .grid span.marker.next-move-possible-to:hover::after {
 	content: "";
-	color: initial;
-}
-#board .grid span.marker.next-move.next-move-possible-to:hover {
-	background-color: rgba(255, 0, 255, 0.5);
-}
-#board .grid span.marker.next-move.next-move-possible-to:hover::before {
-	content: "";
-	color: initial;
 }
 
 #promotion-overlay {
@@ -164,7 +184,7 @@ h1 {
 	cursor: pointer;
 }
 #promotion-overlay span.piece:hover {
-	background-color: rgba(255, 0, 255, 0.5);
+	background-color: rgba(255, 255, 0, 0.6);
 }
 
 /* board rotation */
