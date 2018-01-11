@@ -203,7 +203,7 @@ h1 {
 #next-move {
 	width: calc((1cm * 2 / 3) * 2 + 8cm);
 }
-#next-move.hidden {
+#next-move.hidden, .hidden {
 	display: none;
 }
 #next-move p {

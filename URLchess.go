@@ -233,10 +233,10 @@ func (app *app) drawBoard() {
 		document.Call("write", "</div>")
 	}
 
-	hintString := "copy and send this to your oponent"
+	hintString := "copy this link and send it to your oponent"
 
-	if exec := js.Global.Get("document").Get("execCommand"); exec != nil {
-		hintString = "link has been copied to clipboard, send it to your oponent"
+	if exec := js.Global.Get("document").Get("execCommand"); exec != nil && exec != js.Undefined {
+		hintString = "this link has been copied to clipboard, send it to your oponent"
 	}
 
 	document.Call("write", `<div id="next-move" class="hidden">
@@ -657,9 +657,11 @@ func (app *app) updateBoard() error {
 		if app.game.Status() != game.InProgress {
 			// game has ended
 			gameMovingPlayerElement.Set("innerHTML", "")
+			gameMovingPlayerElement.Get("parentNode").Get("classList").Call("add", "hidden")
 		} else {
 			// game is in progress
 			gameMovingPlayerElement.Set("innerHTML", piecesToString[piece.New(app.game.ActiveColor(), piece.King)])
+			gameMovingPlayerElement.Get("parentNode").Get("classList").Call("remove", "hidden")
 		}
 	}
 	//js.Global.Call("alert", "end")
