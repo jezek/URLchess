@@ -1,84 +1,100 @@
+body {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	background-color: #101030;
+	color: #efefff;
+	display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+}
+a {
+	color: #efefff;
+}
+input {
+	background-color: #101030;
+	color: #efefff;
+}
+
+h1, #board, #next-move, #game-status {
+  margin: auto;
+	width: 100vmin;
+	max-width: calc((1cm * 2 / 3) * 2 + 8cm);
+}
+
 h1 {
-	margin-bottom: 0;
+	text-align: center;
 }
 
 #board {
+	margin: auto;
 	position:relative;
-	width: calc((1cm * 2 / 3) * 2 + 8cm);
-	height: calc((1cm * 2 / 3) * 2 + 8cm);
+	width: 100vmin;
+	height: 100vmin;
+	max-width: calc((1cm * 2 / 3) * 2 + 8cm);
+	max-height: calc((1cm * 2 / 3) * 2 + 8cm);
 	background-color: #80461B;
 	text-align: center;
 	vertical-align: middle;
 	user-select: none;
 }
+.piece {
+	color: black;
+}
 
-#edging-top, #edging-left, #edging-right, #edging-bottom  {
-	position:absolute;
+#board div.edging, #board div.grid {
+	box-sizing: border-box;
+	float: left;
+}
+#board div.edging.horizontal, #board div.edging.vertical {
 	font-size: calc(1cm / 3);
 	color: #ffd700;
 }
-#edging-top, #edging-bottom {
-	width: 8cm;
-	height: calc(1cm * 2 / 3);
-	left: calc(1cm * 2 / 3);
-}
-#edging-top {
-	top: 0;
+#board div.edging.horizontal {
+	width: calc(100vmin * 24 / 28);
+	height: calc(100vmin * 2 / 28);
+	max-width: 8cm;
+	max-height: calc(1cm * 2 / 3);
 	line-height: calc(1cm * 2 / 3);
 }
-#edging-bottom {
-	bottom: 0;
-	line-height: calc(1cm * 2 / 3);
-}
-#edging-top div, #edging-bottom div {
+#board div.edging.horizontal div {
 	float: left;
 	width: 12.5%;
 	height: 100%;
 }
-
-#edging-left, #edging-right {
-	width: calc(1cm * 2 / 3);
-	height: 8cm;
-	top: calc(1cm * 2 / 3);
+#board div.edging.vertical {
+	width: calc(100vmin * 2 / 28);
+	height: calc(100vmin * 24 / 28);
+	max-width: calc(1cm * 2 / 3);
+	max-height: 8cm;
 	line-height: 1cm;
 }
-#edging-left {
-	left: 0;
-}
-#edging-right {
-	right: 0;
-}
-#edging-left div, #edging-right div {
+#board div.edging.vertical div {
 	width: 100%;
 	height: 12.5%;
 }
-#edging-top div, #edging-right div {
+#edging-top div, #edging-right div, #edging-top-right {
 	transform: rotate(180deg);
 }
 
-#edging-top-right, #edging-bottom-left {
-	position:absolute;
-	width: calc(1cm * 2 / 3);
-	height: calc(1cm * 2 / 3);
+#board div.edging.corner {
+	width: calc(100vmin * 2 / 28);
+	height: calc(100vmin * 2 / 28);
+	max-width: calc(1cm * 2 / 3);
+	max-height: calc(1cm * 2 / 3);
+}
+#edging-bottom-left, #edging-top-right {
 	cursor: pointer;
 }
-#edging-top-right {
-	top: 0;
-	right: 0;
-	transform: rotate(180deg);
-}
 #edging-bottom-left {
-	bottom: 0;
-	left: 0;
 	color: white;
 }
 
 #board .grid {
-	position:absolute;
-	top: calc(1cm * 2 / 3);
-	left: calc(1cm * 2 / 3);
-	width: 8cm;
-	height: 8cm;
+	width: calc(100vmin * 24 / 28);
+	height: calc(100vmin * 24 / 28);
+	max-width: 8cm;
+	max-height: 8cm;
 	font-size: calc(1cm * 6 / 7);
 }
 #board .grid div {
@@ -186,7 +202,6 @@ h1 {
 #promotion-overlay span.piece:hover {
 	background-color: rgba(255, 255, 0, 0.6);
 }
-
 /* board rotation */
 #board, #board .grid span.piece {
 	transition-duration: 0.8s;
@@ -195,18 +210,23 @@ h1 {
 #board.rotated180deg {
 	transform: rotate(180deg);
 }
-#board.rotated180deg .grid span.marker span.piece,
-#board.rotated180deg #promotion-overlay {
+#board.rotated180deg .grid span.marker span.piece, #board.rotated180deg #promotion-overlay {
 	transform: rotate(-180deg);
 }
 
 #next-move {
-	width: calc((1cm * 2 / 3) * 2 + 8cm);
+	box-sizing: border-box;
 }
 #next-move.hidden, .hidden {
 	display: none;
 }
 #next-move p {
+	box-sizing: border-box;
+	margin:0;
+	padding: 0.5em;
+}
+#next-move p.link {
+	text-align: center;
 }
 #next-move p.link input, #next-move p.link span.hint {
 	display: block;
@@ -230,18 +250,53 @@ h1 {
 
 
 #game-status {
-	margin-top:1em;
+	margin-top: 0.5em;
 }
 #game-status p {
-	margin:0;
+	margin: 0;
+	text-align: center;
 }
 #game-status span.piece {
+	margin-top: 0.25em;
+	display: inline-block;
+	background-color: rgba(255, 255, 255, 0.6);
+	width: 1cm;
+	height: 1cm;
 	font-size: calc(1cm * 6 / 7);
 }
 
 #footer {
-  margin-top: 2em;
-  border-top: 1px solid black;
-  padding-top:1em;
+  padding: 0 0.5em;
   font-size:0.8em;
+  text-align: center
+  align-self: flex-end;
 }
+#footer::before {
+	content: "";
+	display: block;
+  height: 2em;
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid #efefff;
+  margin-bottom: 0.5em;
+	clear: both;
+}
+
+@media (max-height: 10cm) {
+	h1 {
+		display: none;
+	}
+}
+
+/*
+@media (min-width: 19cm) {
+
+	h1, #board, #next-move, #game-status {
+		margin: 0;
+	}
+	#board, #next-move, #game-status {
+		float: left;
+	}
+
+}
+*/
