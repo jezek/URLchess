@@ -250,12 +250,12 @@ func (app *app) drawBoard() {
 	document.Call("write", `<div id="next-move" class="hidden">
 	<p class="link">
 		Next move URL link:
-		<input id="next-move-input" value=""/>
+		<input id="next-move-input" readonly="readonly" value=""/>
 		<span class="hint">`+hintString+`</span>
 	</p>
   <p class="actions">
-		<a id="next-move-link" href="">open URL</a>
-		<a id="next-move-back" href="">undo your move</a>
+		<a id="next-move-link" href="">make move</a>
+		<a id="next-move-back" href="">undo move</a>
 	</p>
 </div>`)
 
@@ -480,6 +480,7 @@ func (app *app) updateBoard() error {
 				if nextMoveInput := js.Global.Get("document").Call("getElementById", "next-move-input"); nextMoveInput != nil {
 					nextMoveInput.Call("select")
 					js.Global.Get("document").Call("execCommand", "Copy")
+					nextMoveInput.Call("blur")
 				}
 			}
 		} else {

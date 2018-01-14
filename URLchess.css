@@ -4,9 +4,6 @@ body {
 	margin: 0;
 	background-color: #101030;
 	color: #efefff;
-	display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
 }
 a {
 	color: #efefff;
@@ -17,9 +14,8 @@ input {
 }
 
 h1, #board, #next-move, #game-status {
-  margin: auto;
-	width: 100vmin;
-	max-width: calc((1cm * 2 / 3) * 2 + 8cm);
+	margin: auto;
+	width: 70vmin;
 }
 
 h1 {
@@ -29,10 +25,8 @@ h1 {
 #board {
 	margin: auto;
 	position:relative;
-	width: 100vmin;
-	height: 100vmin;
-	max-width: calc((1cm * 2 / 3) * 2 + 8cm);
-	max-height: calc((1cm * 2 / 3) * 2 + 8cm);
+	width: 70vmin;
+	height: 70vmin;
 	background-color: #80461B;
 	text-align: center;
 	vertical-align: middle;
@@ -46,16 +40,16 @@ h1 {
 	box-sizing: border-box;
 	float: left;
 }
+#board div.edging {
+	font-size: calc((70vmin * 3 / 28) / 3);
+}
 #board div.edging.horizontal, #board div.edging.vertical {
-	font-size: calc(1cm / 3);
 	color: #ffd700;
 }
 #board div.edging.horizontal {
-	width: calc(100vmin * 24 / 28);
-	height: calc(100vmin * 2 / 28);
-	max-width: 8cm;
-	max-height: calc(1cm * 2 / 3);
-	line-height: calc(1cm * 2 / 3);
+	width: calc(70vmin * 24 / 28);
+	height: calc(70vmin * 2 / 28);
+	line-height: calc((70vmin * 3 / 28) * 2 / 3);
 }
 #board div.edging.horizontal div {
 	float: left;
@@ -63,11 +57,9 @@ h1 {
 	height: 100%;
 }
 #board div.edging.vertical {
-	width: calc(100vmin * 2 / 28);
-	height: calc(100vmin * 24 / 28);
-	max-width: calc(1cm * 2 / 3);
-	max-height: 8cm;
-	line-height: 1cm;
+	width: calc(70vmin * 2 / 28);
+	height: calc(70vmin * 24 / 28);
+	line-height: calc(70vmin * 3 / 28);
 }
 #board div.edging.vertical div {
 	width: 100%;
@@ -78,24 +70,24 @@ h1 {
 }
 
 #board div.edging.corner {
-	width: calc(100vmin * 2 / 28);
-	height: calc(100vmin * 2 / 28);
-	max-width: calc(1cm * 2 / 3);
-	max-height: calc(1cm * 2 / 3);
+	width: calc(70vmin * 2 / 28);
+	height: calc(70vmin * 2 / 28);
+	line-height: calc(70vmin * 2 / 28);
 }
 #edging-bottom-left, #edging-top-right {
 	cursor: pointer;
+}
+#edging-top-right {
+	color: black;
 }
 #edging-bottom-left {
 	color: white;
 }
 
 #board .grid {
-	width: calc(100vmin * 24 / 28);
-	height: calc(100vmin * 24 / 28);
-	max-width: 8cm;
-	max-height: 8cm;
-	font-size: calc(1cm * 6 / 7);
+	width: calc(70vmin * 24 / 28);
+	height: calc(70vmin * 24 / 28);
+	font-size: calc((70vmin * 3 / 28) * 6 / 7);
 }
 #board .grid div {
 	position: relative;
@@ -192,11 +184,11 @@ h1 {
 }
 #promotion-overlay span.piece {
 	display: block;
-	margin: 0 0.25cm;
+	margin: 0 calc((70vmin * 3 / 28) / 4);
 	background-color: rgba(255, 255, 255, 0.6);
-	font-size: calc(1cm * 6 / 7);
-	width: 1cm;
-	height: 1cm;
+	font-size: calc((70vmin * 3 / 28) * 6 / 7);
+	width: calc(70vmin * 3 / 28);
+	height: calc(70vmin * 3 / 28);
 	cursor: pointer;
 }
 #promotion-overlay span.piece:hover {
@@ -238,7 +230,7 @@ h1 {
 	font-size: 80%;
 }
 #next-move p.actions {
-  width: 100%;
+	width: 100%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -260,43 +252,136 @@ h1 {
 	margin-top: 0.25em;
 	display: inline-block;
 	background-color: rgba(255, 255, 255, 0.6);
-	width: 1cm;
-	height: 1cm;
-	font-size: calc(1cm * 6 / 7);
+	width: calc(70vmin * 3 / 28);
+	height: calc(70vmin * 3 / 28);
+	font-size: calc((70vmin * 3 / 28) * 6 / 7);
 }
 
 #footer {
-  padding: 0 0.5em;
-  font-size:0.8em;
-  text-align: center
-  align-self: flex-end;
+	padding: 0 0.5em;
+	font-size:0.8em;
+	text-align: center
+	align-self: flex-end;
 }
 #footer::before {
 	content: "";
 	display: block;
-  height: 2em;
-  padding: 0;
-  margin: 0;
-  border-bottom: 1px solid #efefff;
-  margin-bottom: 0.5em;
+	height: 2em;
+	padding: 0;
+	margin: 0;
+	border-bottom: 1px solid #efefff;
+	margin-bottom: 0.5em;
 	clear: both;
 }
 
-@media (max-height: 10cm) {
-	h1 {
-		display: none;
+@media (max-width: 12cm), (max-height: 12cm) {
+	h1, #board, #next-move, #game-status {
+		width: 8.4cm;
+	}
+	#board {
+		width: 8.4cm;
+		height: 8.4cm;
+	}
+	#board div.edging {
+		font-size: calc((8.4cm * 3 / 28) / 3);
+	}
+	#board div.edging.horizontal {
+		width: calc(8.4cm * 24 / 28);
+		height: calc(8.4cm * 2 / 28);
+		line-height: calc((8.4cm * 3 / 28) * 2 / 3);
+	}
+	#board div.edging.vertical {
+		width: calc(8.4cm * 2 / 28);
+		height: calc(8.4cm * 24 / 28);
+		line-height: calc(8.4cm * 3 / 28);
+	}
+	#board div.edging.corner {
+		width: calc(8.4cm * 2 / 28);
+		height: calc(8.4cm * 2 / 28);
+		line-height: calc(8.4cm * 2 / 28);
+	}
+	#board .grid {
+		width: calc(8.4cm * 24 / 28);
+		height: calc(8.4cm * 24 / 28);
+		font-size: calc((8.4cm * 3 / 28) * 6 / 7);
+	}
+	#promotion-overlay span.piece {
+		margin: 0 calc((8.4cm * 3 / 28) / 4);
+		font-size: calc((8.4cm * 3 / 28) * 6 / 7);
+		width: calc(8.4cm * 3 / 28);
+		height: calc(8.4cm * 3 / 28);
+	}
+	#game-status span.piece {
+		width: calc(8.4cm * 3 / 28);
+		height: calc(8.4cm * 3 / 28);
+		font-size: calc((8.4cm * 3 / 28) * 6 / 7);
 	}
 }
 
-/*
-@media (min-width: 19cm) {
-
+@media (max-width: 8.4cm), (max-height: 8.4cm) {
 	h1, #board, #next-move, #game-status {
-		margin: 0;
+		width: 100vmin;
 	}
-	#board, #next-move, #game-status {
+	#board {
+		width: 100vmin;
+		height: 100vmin;
+	}
+	#board div.edging {
+		font-size: calc((100vmin * 3 / 28) / 3);
+	}
+	#board div.edging.horizontal {
+		width: calc(100vmin * 24 / 28);
+		height: calc(100vmin * 2 / 28);
+		line-height: calc((100vmin * 3 / 28) * 2 / 3);
+	}
+	#board div.edging.vertical {
+		width: calc(100vmin * 2 / 28);
+		height: calc(100vmin * 24 / 28);
+		line-height: calc(100vmin * 3 / 28);
+	}
+	#board div.edging.corner {
+		width: calc(100vmin * 2 / 28);
+		height: calc(100vmin * 2 / 28);
+		line-height: calc(100vmin * 2 / 28);
+	}
+	#board .grid {
+		width: calc(100vmin * 24 / 28);
+		height: calc(100vmin * 24 / 28);
+		font-size: calc((100vmin * 3 / 28) * 6 / 7);
+	}
+	#promotion-overlay span.piece {
+		margin: 0 calc((100vmin * 3 / 28) / 4);
+		font-size: calc((100vmin * 3 / 28) * 6 / 7);
+		width: calc(100vmin * 3 / 28);
+		height: calc(100vmin * 3 / 28);
+	}
+	#game-status span.piece {
+		width: calc(100vmin * 3 / 28);
+		height: calc(100vmin * 3 / 28);
+		font-size: calc((100vmin * 3 / 28) * 6 / 7);
+	}
+}
+
+@media (orientation: landscape) {
+	h1, #board, #next-move, #game-status, #footer {
 		float: left;
 	}
-
+	h1, #board, #next-move, #game-status {
+		margin-top: 15vmin;
+	}
+	h1 {
+		width: 2em;
+		height: 70vmin;
+		writing-mode: vertical-lr;
+		text-orientation: upright;
+		text-align: left;
+	}
+	#game-status, #next-move {
+		margin-left: 1em;
+		width: initial;
+	}
+	#footer {
+		clear: both;
+		width: 100%;
+	}
 }
-*/
