@@ -30,6 +30,7 @@ Go to URLchess page, make your move and send generated link to your oponent.
 ### Roadmap
 This is an early relase. Improvements will be done soon. Some of them:
 - previous moves explorer
+- king check highlighting
 - show thrown out (killed) pieces
 - design tweaks (buttons, ...)
 - minimize js file size (don't use some packages like fmt, ...)
