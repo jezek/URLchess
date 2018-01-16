@@ -56,7 +56,7 @@ func main() {
 
 	defer func() {
 		js.Global.Get("document").Call("write", `<div id="footer">
-		<a href="/">URLchess</a> by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
+		<a href="https://jezek.github.io/URLchess">URLchess</a> by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
 </div>`)
 	}()
 
