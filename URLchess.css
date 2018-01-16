@@ -23,7 +23,6 @@ h1 {
 #game-status {
 	margin: 0;
 	width: 100vmin;
-	height: 100vmin;
 }
 
 #board {
@@ -281,7 +280,7 @@ h1 {
 	position: absolute;
 	top: 100vh;
 	right: 0;
-	font-size:0.5em;
+	font-size:0.3em;
 }
 
 @media (orientation: portrait) and (min-width: 8.4cm) {
@@ -295,9 +294,6 @@ h1 {
 	h1, #game-status {
 		margin-left: calc((100vw - 8.4cm) / 2);
 		width: 8.4cm;
-	}
-	#game-status {
-		height: 8.4cm;
 	}
 	#next-move {
 		top: calc((100vw - 8.4cm) / 2);
@@ -354,9 +350,6 @@ h1 {
 	h1, #game-status {
 		margin-left: calc((100vw - 70vmin) / 2);
 		width: 70vmin;
-	}
-	#game-status {
-		height: 70vmin;
 	}
 	#next-move {
 		top: calc((100vw - 70vmin) / 2);
@@ -415,6 +408,11 @@ h1 {
 		left: 100vmin;
 		min-width: calc(100vw - 100vmin);
 		height: 100vmin;
+	}
+	#footer {
+		opacity: 0.6;
+		bottom: 0;
+		top: initial;
 	}
 }
 

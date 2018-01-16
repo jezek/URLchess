@@ -32,6 +32,7 @@ This is an early relase. Improvements will be done soon. Some of them:
 - previous moves explorer
 - show thrown out (killed) pieces
 - design tweaks (buttons, ...)
+- minimize js file size (don't use some packages like fmt, ...)
 - more touch friendly ui (dragable pices?)
 - multilanguage?
 - ...
