@@ -56,7 +56,7 @@ func main() {
 
 	defer func() {
 		js.Global.Get("document").Call("write", `<div id="footer">
-	URLchess by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
+		<a href="/">URLchess</a> by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
 </div>`)
 	}()
 
@@ -313,6 +313,9 @@ func (app *app) drawBoard() {
 									},
 									800,
 								)
+							}
+							if nm := document.Call("getElementById", "next-move"); nm != nil {
+								nm.Get("classList").Call("add", "hidden")
 							}
 
 						}

@@ -1,30 +1,29 @@
 body {
-	width: 100%;
-	height: 100%;
 	margin: 0;
-	background-color: #101030;
-	color: #efefff;
+	background-color: #101020;
+	color: #dfdfef;
 	/* font-size: width (or height) of 1 #board .grid square; */
-	font-size:calc(100vmin * 3 / 28);
+	font-size: calc(100vmin * 3 / 28);
 }
 a {
-	color: #efefff;
+	color: #dfdfef;
 }
 input {
-	background-color: #101030;
-	color: #efefff;
+	background-color: #101020;
+	color: #dfdfef;
 }
 h1 {
+	margin: 0;
 	display: none;
 	position: absolute;
 	top: 0;
 	left: 0;
-	font-size:1em;
 }
 
-h1, #board, #next-move, #game-status {
+#game-status {
 	margin: 0;
 	width: 100vmin;
+	height: 100vmin;
 }
 
 #board {
@@ -214,10 +213,20 @@ h1, #board, #next-move, #game-status {
 
 
 #next-move {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100vmin;
+	height: 100vmin;
 	font-size: 0.5em;
 	box-sizing: border-box;
+	background-color: rgba(0, 0, 0, 1);
+	opacity: 0.6;
+	display: flex;
+	justify-content: center;
+	flex-flow: column;
 }
-#next-move.hidden, .hidden {
+#next-move.hidden {
 	display: none;
 }
 #next-move p {
@@ -232,7 +241,9 @@ h1, #board, #next-move, #game-status {
 	display: block;
 }
 #next-move p.link input {
-	width: 100%;
+	margin: 0 auto;
+	width: 90%;
+	background-color: transparent;
 }
 #next-move p.link span.hint {
 	font-size: 0.7em;
@@ -253,9 +264,6 @@ h1, #board, #next-move, #game-status {
 	margin-top: 0.5em;
 }
 
-#game-status-text {
-	font-size: 0.5em;
-}
 #game-status p {
 	margin: 0;
 	text-align: center;
@@ -270,20 +278,10 @@ h1, #board, #next-move, #game-status {
 }
 
 #footer {
-	padding: 0 0.25em;
-	font-size:0.25em;
-	text-align: center
-	align-self: flex-end;
-}
-#footer::before {
-	content: "";
-	display: block;
-	height: 2em;
-	padding: 0;
-	margin: 0;
-	border-bottom: 1px solid #efefff;
-	margin-bottom: 0.5em;
-	clear: both;
+	position: absolute;
+	top: 100vh;
+	right: 0;
+	font-size:0.5em;
 }
 
 @media (orientation: portrait) and (min-width: 8.4cm) {
@@ -292,11 +290,20 @@ h1, #board, #next-move, #game-status {
 	}
 	h1 {
 		display: initial;
-		font-size: calc((100vw - 8.4cm) / 2);
+		font-size: calc((100vw - 8.4cm) / 3);
 	}
-	h1, #next-move, #game-status {
+	h1, #game-status {
 		margin-left: calc((100vw - 8.4cm) / 2);
 		width: 8.4cm;
+	}
+	#game-status {
+		height: 8.4cm;
+	}
+	#next-move {
+		top: calc((100vw - 8.4cm) / 2);
+		left: calc((100vw - 8.4cm) / 2);
+		width: 8.4cm;
+		height: 8.4cm;
 	}
 	#board {
 		margin-top: calc((100vw - 8.4cm) / 2);
@@ -327,25 +334,35 @@ h1, #board, #next-move, #game-status {
 		margin: 0 calc((8.4cm * 3 / 28) / 4);
 		width: calc(8.4cm * 3 / 28);
 		height: calc(8.4cm * 3 / 28);
+		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
 	}
 	#game-status span.piece {
 		width: calc(8.4cm * 3 / 28);
 		height: calc(8.4cm * 3 / 28);
+		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
 	}
 
 }
-
 @media (orientation: portrait) and (min-width: 12cm) {
 	body {
 		font-size: calc(8.4cm * 3 / 28);
 	}
 	h1 {
 		display: initial;
-		font-size: calc((100vw - 70vmin) / 2);
+		font-size: calc((12cm - 8.4cm) / 3);
 	}
-	h1, #next-move, #game-status {
+	h1, #game-status {
 		margin-left: calc((100vw - 70vmin) / 2);
 		width: 70vmin;
+	}
+	#game-status {
+		height: 70vmin;
+	}
+	#next-move {
+		top: calc((100vw - 70vmin) / 2);
+		left: calc((100vw - 70vmin) / 2);
+		width: 70vmin;
+		height: 70vmin;
 	}
 	#board {
 		margin-top: calc((100vw - 70vmin) / 2);
@@ -377,14 +394,28 @@ h1, #board, #next-move, #game-status {
 		margin: 0 calc((70vmin * 3 / 28) / 4);
 		width: calc(70vmin * 3 / 28);
 		height: calc(70vmin * 3 / 28);
-		font-size: calc(70vmin * 3 / 28);
+		font-size: calc((70vmin * 3 / 28) * 5 / 6);
 	}
 	#game-status span.piece {
 		width: calc(70vmin * 3 / 28);
 		height: calc(70vmin * 3 / 28);
-		font-size: calc(70vmin * 3 / 28);
+		font-size: calc((70vmin * 3 / 28) * 5 / 6);
 	}
 
+}
+
+@media (orientation: landscape) {
+	#game-status {
+		width: initial;
+	}
+	#game-status {
+		margin: 0;
+		position: absolute;
+		top: 0;
+		left: 100vmin;
+		min-width: calc(100vw - 100vmin);
+		height: 100vmin;
+	}
 }
 
 @media (orientation: landscape) and (min-height: 8.4cm) {
@@ -393,23 +424,24 @@ h1, #board, #next-move, #game-status {
 	}
 	h1 {
 		display: initial;
-		font-size: calc((100vh - 8.4cm) / 2);
+		font-size: calc((100vh - 8.4cm) / 3);
 		width: calc((100vh - 8.4cm) / 2);
+		margin-top: calc((100vh - 8.4cm) / 2);
 		writing-mode: vertical-lr;
 		text-orientation: upright;
 		text-align: left;
-		margin-top: calc((100vh - 8.4cm) / 2);
 	}
 	#game-status {
-		margin: 0;
-		position: absolute;
 		top: calc((100vh - 8.4cm) / 2);
-		right: calc((100vh - 8.4cm) / 2);
-		width: calc(100vw - 100vh - ((100vh - 8.4cm) / 2));
+		left: calc(((100vh - 8.4cm) / 2) + 8.4cm);
+		width: calc(100vw - (((100vh - 8.4cm) / 2) + 8.4cm));
+		height: 8.4cm;
 	}
 	#next-move {
-		margin-left: calc((100vh - 8.4cm) / 2);
+		top: calc((100vh - 8.4cm) / 2);
+		left: calc((100vh - 8.4cm) / 2);
 		width: 8.4cm;
+		height: 8.4cm;
 	}
 	#board {
 		margin-top: calc((100vh - 8.4cm) / 2);
@@ -440,29 +472,39 @@ h1, #board, #next-move, #game-status {
 		margin: 0 calc((8.4cm * 3 / 28) / 4);
 		width: calc(8.4cm * 3 / 28);
 		height: calc(8.4cm * 3 / 28);
+		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
 	}
 	#game-status span.piece {
 		width: calc(8.4cm * 3 / 28);
 		height: calc(8.4cm * 3 / 28);
+		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
 	}
 
 }
-
 @media (orientation: landscape) and (min-height: 12cm) {
 	body {
 		font-size: calc(8.4cm * 3 / 28);
 	}
 	h1 {
-		display: initial;
-		font-size: calc((100vw - 70vmin) / 2);
+		font-size: calc((12cm - 8.4cm) / 3);
+		width: calc((100vh - 70vmin) / 2);
+		margin-top: calc((100vh - 70vmin) / 2);
 	}
-	h1, #next-move, #game-status {
-		margin-left: calc((100vw - 70vmin) / 2);
+	#game-status {
+		top: calc((100vh - 70vmin) / 2);
+		left: calc(((100vh - 70vmin) / 2) + 70vmin);
+		width: calc(100vw - (((100vh - 70vmin) / 2) + 70vmin));
+		height: 70vmin;
+	}
+	#next-move {
+		top: calc((100vh - 70vmin) / 2);
+		left: calc((100vh - 70vmin) / 2);
 		width: 70vmin;
+		height: 70vmin;
 	}
 	#board {
-		margin-top: calc((100vw - 70vmin) / 2);
-		margin-left: calc((100vw - 70vmin) / 2);
+		margin-top: calc((100vh - 70vmin) / 2);
+		margin-left: calc((100vh - 70vmin) / 2);
 		width: 70vmin;
 		height: 70vmin;
 		font-size: calc(70vmin * 3 / 28);
@@ -490,85 +532,12 @@ h1, #board, #next-move, #game-status {
 		margin: 0 calc((70vmin * 3 / 28) / 4);
 		width: calc(70vmin * 3 / 28);
 		height: calc(70vmin * 3 / 28);
-		font-size: calc(70vmin * 3 / 28);
+		font-size: calc((70vmin * 3 / 28) * 5 / 6);
 	}
 	#game-status span.piece {
 		width: calc(70vmin * 3 / 28);
 		height: calc(70vmin * 3 / 28);
-		font-size: calc(70vmin * 3 / 28);
+		font-size: calc((70vmin * 3 / 28) * 5 / 6);
 	}
 
 }
-/*
-@media (orientation: portrait) and (max-width: 12cm) {
-	h1 {
-		display: none;
-	}
-	#board, #next-move, #game-status {
-		width: 100vmin;
-	}
-	#board {
-		width: 100vmin;
-		height: 100vmin;
-	}
-	#board div.edging {
-		font-size: calc((100vmin * 3 / 28) / 3);
-	}
-	#board div.edging.horizontal {
-		width: calc(100vmin * 24 / 28);
-		height: calc(100vmin * 2 / 28);
-		line-height: calc((100vmin * 3 / 28) * 2 / 3);
-	}
-	#board div.edging.vertical {
-		width: calc(100vmin * 2 / 28);
-		height: calc(100vmin * 24 / 28);
-		line-height: calc(100vmin * 3 / 28);
-	}
-	#board div.edging.corner {
-		width: calc(100vmin * 2 / 28);
-		height: calc(100vmin * 2 / 28);
-		line-height: calc(100vmin * 2 / 28);
-	}
-	#board .grid {
-		width: calc(100vmin * 24 / 28);
-		height: calc(100vmin * 24 / 28);
-		font-size: calc((100vmin * 3 / 28) * 6 / 7);
-	}
-	#promotion-overlay span.piece {
-		margin: 0 calc((100vmin * 3 / 28) / 4);
-		font-size: calc((100vmin * 3 / 28) * 6 / 7);
-		width: calc(100vmin * 3 / 28);
-		height: calc(100vmin * 3 / 28);
-	}
-	#game-status span.piece {
-		width: calc(100vmin * 3 / 28);
-		height: calc(100vmin * 3 / 28);
-		font-size: calc((100vmin * 3 / 28) * 6 / 7);
-	}
-}
-*/
-/*
-@media (orientation: landscape) {
-	h1, #board, #next-move, #game-status, #footer {
-		float: left;
-	}
-	h1, #board, #next-move, #game-status {
-		margin-top: 15vmin;
-	}
-	h1 {
-		width: 2em;
-		height: 70vmin;
-		writing-mode: vertical-lr;
-		text-orientation: upright;
-		text-align: left;
-	}
-	#game-status, #next-move {
-		margin-left: 1em;
-		width: initial;
-	}
-	#footer {
-		clear: both;
-		width: 100%;
-	}
-}
-*/

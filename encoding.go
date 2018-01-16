@@ -13,9 +13,9 @@ import (
 const encodePosAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
 var encodePromotionCharToPiece map[byte]piece.Type = map[byte]piece.Type{
+	'@': piece.Rook,
 	'$': piece.Knight,
 	'^': piece.Bishop,
-	'@': piece.Rook,
 	'*': piece.Queen,
 }
 
