@@ -56,7 +56,7 @@ func main() {
 
 	defer func() {
 		js.Global.Get("document").Call("write", `<div id="footer">
-	URLchess by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
+		<a href="/">URLchess</a> by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
 </div>`)
 	}()
 
@@ -133,22 +133,26 @@ func (app *app) drawBoard() {
 		document.Call("write", "<div id=\"board\""+class+">")
 	}
 
+	{ // edging-top-left
+		document.Call("write", "<div id=\"edging-top-left\" class=\"edging corner\">")
+		document.Call("write", "</div>")
+	}
+
 	{ // edging-top
-		document.Call("write", "<div id=\"edging-top\">")
+		document.Call("write", "<div id=\"edging-top\" class=\"edging horizontal\">")
 		for i := 0; i < 8; i++ {
 			document.Call("write", "<div>"+string(rune('a'+i))+"</div>")
 		}
 		document.Call("write", "</div>")
 	}
 
-	if rotationSupported {
-		// edging-top-right
-		document.Call("write", "<div id=\"edging-top-right\">")
-		document.Call("write", "↻")
+	{ // edging-top-right
+		document.Call("write", "<div id=\"edging-top-right\" class=\"edging corner\">")
 		document.Call("write", "</div>")
 
-		if etr := document.Call("getElementById", "edging-top-right"); etr != nil {
-			etr.Call(
+		if edging := document.Call("getElementById", "edging-top-right"); edging != nil && rotationSupported {
+			edging.Set("innerHTML", "↻")
+			edging.Call(
 				"addEventListener",
 				"click",
 				func(event *js.Object) {
@@ -165,7 +169,7 @@ func (app *app) drawBoard() {
 	}
 
 	{ // edging-left
-		document.Call("write", "<div id=\"edging-left\">")
+		document.Call("write", "<div id=\"edging-left\" class=\"edging vertical\">")
 		for i := 8; i > 0; i-- {
 			document.Call("write", "<div>"+strconv.Itoa(i)+"</div>")
 		}
@@ -182,21 +186,20 @@ func (app *app) drawBoard() {
 	}
 
 	{ // edging-right
-		document.Call("write", "<div id=\"edging-right\">")
+		document.Call("write", "<div id=\"edging-right\" class=\"edging vertical\">")
 		for i := 8; i > 0; i-- {
 			document.Call("write", "<div>"+strconv.Itoa(i)+"</div>")
 		}
 		document.Call("write", "</div>")
 	}
 
-	if rotationSupported {
-		// edging-bottom-left
-		document.Call("write", "<div id=\"edging-bottom-left\">")
-		document.Call("write", "↻") // ↶↷↺↻
+	{ // edging-bottom-left
+		document.Call("write", "<div id=\"edging-bottom-left\" class=\"edging corner\">")
 		document.Call("write", "</div>")
 
-		if etr := document.Call("getElementById", "edging-bottom-left"); etr != nil {
-			etr.Call(
+		if edging := document.Call("getElementById", "edging-bottom-left"); edging != nil && rotationSupported {
+			edging.Set("innerHTML", "↻")
+			edging.Call(
 				"addEventListener",
 				"click",
 				func(event *js.Object) {
@@ -214,10 +217,15 @@ func (app *app) drawBoard() {
 	}
 
 	{ // edging-bottom
-		document.Call("write", "<div id=\"edging-bottom\">")
+		document.Call("write", "<div id=\"edging-bottom\" class=\"edging horizontal\">")
 		for i := 0; i < 8; i++ {
 			document.Call("write", "<div>"+string(rune('a'+i))+"</div>")
 		}
+		document.Call("write", "</div>")
+	}
+
+	{ // edging-bottom-right
+		document.Call("write", "<div id=\"edging-bottom-right\" class=\"edging corner\">")
 		document.Call("write", "</div>")
 	}
 
@@ -242,18 +250,18 @@ func (app *app) drawBoard() {
 	document.Call("write", `<div id="next-move" class="hidden">
 	<p class="link">
 		Next move URL link:
-		<input id="next-move-input" value=""/>
+		<input id="next-move-input" readonly="readonly" value=""/>
 		<span class="hint">`+hintString+`</span>
 	</p>
   <p class="actions">
-		<a id="next-move-link" href="">open URL</a>
-		<a id="next-move-back" href="">undo your move</a>
+		<a id="next-move-link" href="">make move</a>
+		<a id="next-move-back" href="">undo move</a>
 	</p>
 </div>`)
 
 	document.Call("write", `<div id="game-status">
-		<p>Moving player: <span id="moving-player"></span></p>
-		<p>Game status: <span id="game-progress"><span></p>
+	<p id="game-status-text">... loading ...</p>
+	<p id="game-status-player">`+piecesToString[piece.New(piece.White, piece.King)]+piecesToString[piece.New(piece.Black, piece.King)]+`</p>
 </div>`)
 
 	{ // event listeners
@@ -305,6 +313,9 @@ func (app *app) drawBoard() {
 									},
 									800,
 								)
+							}
+							if nm := document.Call("getElementById", "next-move"); nm != nil {
+								nm.Get("classList").Call("add", "hidden")
 							}
 
 						}
@@ -378,7 +389,14 @@ func (app *app) updateBoard() error {
 	//js.Global.Call("alert", "update: nextMove: "+app.nextMove.String())
 	{ // clear playground
 
-		//TODO clear board, status
+		//TODO clear board
+		// clear status
+		if gameStatusText := js.Global.Get("document").Call("getElementById", "game-status-text"); gameStatusText != nil {
+			gameStatusText.Set("innerHTML", "")
+		}
+		if gameStatusPlayer := js.Global.Get("document").Call("getElementById", "game-status-player"); gameStatusPlayer != nil {
+			gameStatusPlayer.Set("innerHTML", "")
+		}
 
 		// hide promotion overlay
 		if promotionOverlay := js.Global.Get("document").Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
@@ -465,6 +483,7 @@ func (app *app) updateBoard() error {
 				if nextMoveInput := js.Global.Get("document").Call("getElementById", "next-move-input"); nextMoveInput != nil {
 					nextMoveInput.Call("select")
 					js.Global.Get("document").Call("execCommand", "Copy")
+					nextMoveInput.Call("blur")
 				}
 			}
 		} else {
@@ -649,21 +668,28 @@ func (app *app) updateBoard() error {
 	}
 
 	// fill game status
-	if gameProgressElement := js.Global.Get("document").Call("getElementById", "game-progress"); gameProgressElement != nil {
-		gameProgressElement.Set("innerHTML", app.game.Status().String())
+	text := "Moving player"
+	player := ""
+	if st := app.game.Status(); st != game.InProgress {
+		text = st.String()
+		if st&game.Draw != 0 {
+			player = piecesToString[piece.New(piece.White, piece.King)] + piecesToString[piece.New(piece.Black, piece.King)]
+		} else if st&game.WhiteWon != 0 {
+			player = piecesToString[piece.New(piece.White, piece.King)]
+		} else if st&game.BlackWon != 0 {
+			player = piecesToString[piece.New(piece.Black, piece.King)]
+		}
+	} else {
+		player = piecesToString[piece.New(app.game.ActiveColor(), piece.King)]
 	}
 
-	if gameMovingPlayerElement := js.Global.Get("document").Call("getElementById", "moving-player"); gameMovingPlayerElement != nil {
-		if app.game.Status() != game.InProgress {
-			// game has ended
-			gameMovingPlayerElement.Set("innerHTML", "")
-			gameMovingPlayerElement.Get("parentNode").Get("classList").Call("add", "hidden")
-		} else {
-			// game is in progress
-			gameMovingPlayerElement.Set("innerHTML", piecesToString[piece.New(app.game.ActiveColor(), piece.King)])
-			gameMovingPlayerElement.Get("parentNode").Get("classList").Call("remove", "hidden")
-		}
+	if gameStatusText := js.Global.Get("document").Call("getElementById", "game-status-text"); gameStatusText != nil {
+		gameStatusText.Set("innerHTML", text)
 	}
+	if gameStatusPlayer := js.Global.Get("document").Call("getElementById", "game-status-player"); gameStatusPlayer != nil {
+		gameStatusPlayer.Set("innerHTML", player)
+	}
+
 	//js.Global.Call("alert", "end")
 
 	return nil

@@ -1,85 +1,98 @@
+body {
+	margin: 0;
+	background-color: #101020;
+	color: #dfdfef;
+	/* font-size: width (or height) of 1 #board .grid square; */
+	font-size: calc(100vmin * 3 / 28);
+}
+a {
+	color: #dfdfef;
+}
+input {
+	background-color: #101020;
+	color: #dfdfef;
+}
 h1 {
-	margin-bottom: 0;
+	margin: 0;
+	display: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+#game-status {
+	margin: 0;
+	width: 100vmin;
+	height: 100vmin;
 }
 
 #board {
 	position:relative;
-	width: calc((1cm * 2 / 3) * 2 + 8cm);
-	height: calc((1cm * 2 / 3) * 2 + 8cm);
+	width: 100vmin;
+	height: 100vmin;
 	background-color: #80461B;
 	text-align: center;
 	vertical-align: middle;
 	user-select: none;
 }
+.piece {
+	color: black;
+}
 
-#edging-top, #edging-left, #edging-right, #edging-bottom  {
-	position:absolute;
-	font-size: calc(1cm / 3);
+#board div.edging, #board div.grid {
+	box-sizing: border-box;
+	float: left;
+}
+#board div.edging {
+	font-size: calc(1em / 3);
+}
+#board div.edging.horizontal, #board div.edging.vertical {
 	color: #ffd700;
 }
-#edging-top, #edging-bottom {
-	width: 8cm;
-	height: calc(1cm * 2 / 3);
-	left: calc(1cm * 2 / 3);
+#board div.edging.horizontal {
+	width: calc(100vmin * 24 / 28);
+	height: calc(100vmin * 2 / 28);
+	line-height: calc(100vmin * 2 / 28);
 }
-#edging-top {
-	top: 0;
-	line-height: calc(1cm * 2 / 3);
-}
-#edging-bottom {
-	bottom: 0;
-	line-height: calc(1cm * 2 / 3);
-}
-#edging-top div, #edging-bottom div {
+#board div.edging.horizontal div {
 	float: left;
 	width: 12.5%;
 	height: 100%;
 }
-
-#edging-left, #edging-right {
-	width: calc(1cm * 2 / 3);
-	height: 8cm;
-	top: calc(1cm * 2 / 3);
-	line-height: 1cm;
+#board div.edging.vertical {
+	width: calc(100vmin * 2 / 28);
+	height: calc(100vmin * 24 / 28);
+	line-height: calc(100vmin * 3 / 28);
 }
-#edging-left {
-	left: 0;
-}
-#edging-right {
-	right: 0;
-}
-#edging-left div, #edging-right div {
+#board div.edging.vertical div {
 	width: 100%;
 	height: 12.5%;
 }
-#edging-top div, #edging-right div {
+#edging-top div, #edging-right div, #edging-top-right {
 	transform: rotate(180deg);
 }
 
-#edging-top-right, #edging-bottom-left {
-	position:absolute;
-	width: calc(1cm * 2 / 3);
-	height: calc(1cm * 2 / 3);
+#board div.edging.corner {
+	width: calc(100vmin * 2 / 28);
+	height: calc(100vmin * 2 / 28);
+	line-height: calc(100vmin * 2 / 28);
+}
+#edging-bottom-left, #edging-top-right {
 	cursor: pointer;
 }
 #edging-top-right {
-	top: 0;
-	right: 0;
-	transform: rotate(180deg);
+	color: black;
 }
 #edging-bottom-left {
-	bottom: 0;
-	left: 0;
 	color: white;
 }
 
 #board .grid {
-	position:absolute;
-	top: calc(1cm * 2 / 3);
-	left: calc(1cm * 2 / 3);
-	width: 8cm;
-	height: 8cm;
-	font-size: calc(1cm * 6 / 7);
+	/* this is the width of 1 #board .grid square */
+	/* 0 edging +2/28 grid +24/28 edging +2/28 */
+	width: calc(100vmin * 24 / 28);
+	height: calc(100vmin * 24 / 28);
+	font-size: calc(1em * 5 / 6);
 }
 #board .grid div {
 	position: relative;
@@ -176,17 +189,16 @@ h1 {
 }
 #promotion-overlay span.piece {
 	display: block;
-	margin: 0 0.25cm;
+	margin: 0 calc((100vmin * 3 / 28) / 4);
 	background-color: rgba(255, 255, 255, 0.6);
-	font-size: calc(1cm * 6 / 7);
-	width: 1cm;
-	height: 1cm;
+	font-size: calc(1em * 5 / 6);
+	width: calc(100vmin * 3 / 28);
+	height: calc(100vmin * 3 / 28);
 	cursor: pointer;
 }
 #promotion-overlay span.piece:hover {
 	background-color: rgba(255, 255, 0, 0.6);
 }
-
 /* board rotation */
 #board, #board .grid span.piece {
 	transition-duration: 0.8s;
@@ -195,30 +207,49 @@ h1 {
 #board.rotated180deg {
 	transform: rotate(180deg);
 }
-#board.rotated180deg .grid span.marker span.piece,
-#board.rotated180deg #promotion-overlay {
+#board.rotated180deg .grid span.marker span.piece, #board.rotated180deg #promotion-overlay {
 	transform: rotate(-180deg);
 }
 
+
 #next-move {
-	width: calc((1cm * 2 / 3) * 2 + 8cm);
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100vmin;
+	height: 100vmin;
+	font-size: 0.5em;
+	box-sizing: border-box;
+	background-color: rgba(0, 0, 0, 1);
+	opacity: 0.6;
+	display: flex;
+	justify-content: center;
+	flex-flow: column;
 }
-#next-move.hidden, .hidden {
+#next-move.hidden {
 	display: none;
 }
 #next-move p {
+	box-sizing: border-box;
+	margin:0;
+	padding: 0.5em;
+}
+#next-move p.link {
+	text-align: center;
 }
 #next-move p.link input, #next-move p.link span.hint {
 	display: block;
 }
 #next-move p.link input {
-	width: 100%;
+	margin: 0 auto;
+	width: 90%;
+	background-color: transparent;
 }
 #next-move p.link span.hint {
-	font-size: 80%;
+	font-size: 0.7em;
 }
 #next-move p.actions {
-  width: 100%;
+	width: 100%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -230,18 +261,283 @@ h1 {
 
 
 #game-status {
-	margin-top:1em;
+	margin-top: 0.5em;
 }
+
 #game-status p {
-	margin:0;
+	margin: 0;
+	text-align: center;
 }
 #game-status span.piece {
-	font-size: calc(1cm * 6 / 7);
+	margin-top: 0.25em;
+	display: inline-block;
+	background-color: rgba(255, 255, 255, 0.6);
+	width: calc(100vmin * 3 / 28);
+	height: calc(100vmin * 3 / 28);
+	font-size: calc(1em * 5 / 6);
 }
 
 #footer {
-  margin-top: 2em;
-  border-top: 1px solid black;
-  padding-top:1em;
-  font-size:0.8em;
+	position: absolute;
+	top: 100vh;
+	right: 0;
+	font-size:0.5em;
+}
+
+@media (orientation: portrait) and (min-width: 8.4cm) {
+	body {
+		font-size: calc(8.4cm * 3 / 28);
+	}
+	h1 {
+		display: initial;
+		font-size: calc((100vw - 8.4cm) / 3);
+	}
+	h1, #game-status {
+		margin-left: calc((100vw - 8.4cm) / 2);
+		width: 8.4cm;
+	}
+	#game-status {
+		height: 8.4cm;
+	}
+	#next-move {
+		top: calc((100vw - 8.4cm) / 2);
+		left: calc((100vw - 8.4cm) / 2);
+		width: 8.4cm;
+		height: 8.4cm;
+	}
+	#board {
+		margin-top: calc((100vw - 8.4cm) / 2);
+		margin-left: calc((100vw - 8.4cm) / 2);
+		width: 8.4cm;
+		height: 8.4cm;
+	}
+	#board div.edging.horizontal {
+		width: calc(8.4cm * 24 / 28);
+		height: calc(8.4cm * 2 / 28);
+		line-height: calc(8.4cm * 2 / 28);
+	}
+	#board div.edging.vertical {
+		width: calc(8.4cm * 2 / 28);
+		height: calc(8.4cm * 24 / 28);
+		line-height: calc(8.4cm * 3 / 28);
+	}
+	#board div.edging.corner {
+		width: calc(8.4cm * 2 / 28);
+		height: calc(8.4cm * 2 / 28);
+		line-height: calc(8.4cm * 2 / 28);
+	}
+	#board .grid {
+		width: calc(8.4cm * 24 / 28);
+		height: calc(8.4cm * 24 / 28);
+	}
+	#promotion-overlay span.piece {
+		margin: 0 calc((8.4cm * 3 / 28) / 4);
+		width: calc(8.4cm * 3 / 28);
+		height: calc(8.4cm * 3 / 28);
+		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
+	}
+	#game-status span.piece {
+		width: calc(8.4cm * 3 / 28);
+		height: calc(8.4cm * 3 / 28);
+		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
+	}
+
+}
+@media (orientation: portrait) and (min-width: 12cm) {
+	body {
+		font-size: calc(8.4cm * 3 / 28);
+	}
+	h1 {
+		display: initial;
+		font-size: calc((12cm - 8.4cm) / 3);
+	}
+	h1, #game-status {
+		margin-left: calc((100vw - 70vmin) / 2);
+		width: 70vmin;
+	}
+	#game-status {
+		height: 70vmin;
+	}
+	#next-move {
+		top: calc((100vw - 70vmin) / 2);
+		left: calc((100vw - 70vmin) / 2);
+		width: 70vmin;
+		height: 70vmin;
+	}
+	#board {
+		margin-top: calc((100vw - 70vmin) / 2);
+		margin-left: calc((100vw - 70vmin) / 2);
+		width: 70vmin;
+		height: 70vmin;
+		font-size: calc(70vmin * 3 / 28);
+	}
+	#board div.edging.horizontal {
+		width: calc(70vmin * 24 / 28);
+		height: calc(70vmin * 2 / 28);
+		line-height: calc(70vmin * 2 / 28);
+	}
+	#board div.edging.vertical {
+		width: calc(70vmin * 2 / 28);
+		height: calc(70vmin * 24 / 28);
+		line-height: calc(70vmin * 3 / 28);
+	}
+	#board div.edging.corner {
+		width: calc(70vmin * 2 / 28);
+		height: calc(70vmin * 2 / 28);
+		line-height: calc(70vmin * 2 / 28);
+	}
+	#board .grid {
+		width: calc(70vmin * 24 / 28);
+		height: calc(70vmin * 24 / 28);
+	}
+	#promotion-overlay span.piece {
+		margin: 0 calc((70vmin * 3 / 28) / 4);
+		width: calc(70vmin * 3 / 28);
+		height: calc(70vmin * 3 / 28);
+		font-size: calc((70vmin * 3 / 28) * 5 / 6);
+	}
+	#game-status span.piece {
+		width: calc(70vmin * 3 / 28);
+		height: calc(70vmin * 3 / 28);
+		font-size: calc((70vmin * 3 / 28) * 5 / 6);
+	}
+
+}
+
+@media (orientation: landscape) {
+	#game-status {
+		width: initial;
+	}
+	#game-status {
+		margin: 0;
+		position: absolute;
+		top: 0;
+		left: 100vmin;
+		min-width: calc(100vw - 100vmin);
+		height: 100vmin;
+	}
+}
+
+@media (orientation: landscape) and (min-height: 8.4cm) {
+	body {
+		font-size: calc(8.4cm * 3 / 28);
+	}
+	h1 {
+		display: initial;
+		font-size: calc((100vh - 8.4cm) / 3);
+		width: calc((100vh - 8.4cm) / 2);
+		margin-top: calc((100vh - 8.4cm) / 2);
+		writing-mode: vertical-lr;
+		text-orientation: upright;
+		text-align: left;
+	}
+	#game-status {
+		top: calc((100vh - 8.4cm) / 2);
+		left: calc(((100vh - 8.4cm) / 2) + 8.4cm);
+		width: calc(100vw - (((100vh - 8.4cm) / 2) + 8.4cm));
+		height: 8.4cm;
+	}
+	#next-move {
+		top: calc((100vh - 8.4cm) / 2);
+		left: calc((100vh - 8.4cm) / 2);
+		width: 8.4cm;
+		height: 8.4cm;
+	}
+	#board {
+		margin-top: calc((100vh - 8.4cm) / 2);
+		margin-left: calc((100vh - 8.4cm) / 2);
+		width: 8.4cm;
+		height: 8.4cm;
+	}
+	#board div.edging.horizontal {
+		width: calc(8.4cm * 24 / 28);
+		height: calc(8.4cm * 2 / 28);
+		line-height: calc(8.4cm * 2 / 28);
+	}
+	#board div.edging.vertical {
+		width: calc(8.4cm * 2 / 28);
+		height: calc(8.4cm * 24 / 28);
+		line-height: calc(8.4cm * 3 / 28);
+	}
+	#board div.edging.corner {
+		width: calc(8.4cm * 2 / 28);
+		height: calc(8.4cm * 2 / 28);
+		line-height: calc(8.4cm * 2 / 28);
+	}
+	#board .grid {
+		width: calc(8.4cm * 24 / 28);
+		height: calc(8.4cm * 24 / 28);
+	}
+	#promotion-overlay span.piece {
+		margin: 0 calc((8.4cm * 3 / 28) / 4);
+		width: calc(8.4cm * 3 / 28);
+		height: calc(8.4cm * 3 / 28);
+		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
+	}
+	#game-status span.piece {
+		width: calc(8.4cm * 3 / 28);
+		height: calc(8.4cm * 3 / 28);
+		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
+	}
+
+}
+@media (orientation: landscape) and (min-height: 12cm) {
+	body {
+		font-size: calc(8.4cm * 3 / 28);
+	}
+	h1 {
+		font-size: calc((12cm - 8.4cm) / 3);
+		width: calc((100vh - 70vmin) / 2);
+		margin-top: calc((100vh - 70vmin) / 2);
+	}
+	#game-status {
+		top: calc((100vh - 70vmin) / 2);
+		left: calc(((100vh - 70vmin) / 2) + 70vmin);
+		width: calc(100vw - (((100vh - 70vmin) / 2) + 70vmin));
+		height: 70vmin;
+	}
+	#next-move {
+		top: calc((100vh - 70vmin) / 2);
+		left: calc((100vh - 70vmin) / 2);
+		width: 70vmin;
+		height: 70vmin;
+	}
+	#board {
+		margin-top: calc((100vh - 70vmin) / 2);
+		margin-left: calc((100vh - 70vmin) / 2);
+		width: 70vmin;
+		height: 70vmin;
+		font-size: calc(70vmin * 3 / 28);
+	}
+	#board div.edging.horizontal {
+		width: calc(70vmin * 24 / 28);
+		height: calc(70vmin * 2 / 28);
+		line-height: calc(70vmin * 2 / 28);
+	}
+	#board div.edging.vertical {
+		width: calc(70vmin * 2 / 28);
+		height: calc(70vmin * 24 / 28);
+		line-height: calc(70vmin * 3 / 28);
+	}
+	#board div.edging.corner {
+		width: calc(70vmin * 2 / 28);
+		height: calc(70vmin * 2 / 28);
+		line-height: calc(70vmin * 2 / 28);
+	}
+	#board .grid {
+		width: calc(70vmin * 24 / 28);
+		height: calc(70vmin * 24 / 28);
+	}
+	#promotion-overlay span.piece {
+		margin: 0 calc((70vmin * 3 / 28) / 4);
+		width: calc(70vmin * 3 / 28);
+		height: calc(70vmin * 3 / 28);
+		font-size: calc((70vmin * 3 / 28) * 5 / 6);
+	}
+	#game-status span.piece {
+		width: calc(70vmin * 3 / 28);
+		height: calc(70vmin * 3 / 28);
+		font-size: calc((70vmin * 3 / 28) * 5 / 6);
+	}
+
 }
