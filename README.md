@@ -30,8 +30,8 @@ Go to URLchess page, make your move and send generated link to your oponent.
 ### Roadmap
 This is an early relase. Improvements will be done soon. Some of them:
 - previous moves explorer
-- responsive design
-- design enhance (buttons, background, ...)
+- show thrown out (killed) pieces
+- design tweaks (buttons, ...)
 - more touch friendly ui (dragable pices?)
 - multilanguage?
 - ...
