@@ -8,7 +8,7 @@ URLchess - simple anonymus chess played via url
 ### Instalation
 Get or update URLchess and dependencies with:
 ```
-go get -u github.com/jezek/URLchess
+go get -u -v github.com/jezek/URLchess
 ```
 
 Go to URLchess project directory and generate javascript content using:
