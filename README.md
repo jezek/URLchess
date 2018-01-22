@@ -29,8 +29,11 @@ Go to URLchess page, make your move and send generated link to your oponent.
 
 ### Roadmap
 This is an early relase. Improvements will be done soon. Some of them:
-- previous moves explorer
+- player should be able to ask for draw and if accepted, then draw the game
+- player should be able to resign and loose
+- show (mark) if last move was a killing move
 - king check highlighting
+- previous moves explorer
 - show thrown out (killed) pieces
 - design tweaks (buttons, ...)
 - minimize js file size (don't use some packages like fmt, ...)
