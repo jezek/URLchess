@@ -20,7 +20,7 @@ h1 {
 	left: 0;
 }
 
-#game-status {
+#game-status, #thrown-outs-container {
 	margin: 0;
 	width: 100vmin;
 }
@@ -210,7 +210,29 @@ h1 {
 	transform: rotate(-180deg);
 }
 
+/* thrown out pieces */
+#thrown-outs-container {
+	position: relative;
+	font-size: 0.5em;
+}
+#thrown-outs-container div.thrown-outs {
+	position: absolute;
+	top: 0;
+	width: 2em;
+	background-color: #592b05;
+}
+#thrown-outs-white {
+	left: 0;
+}
+#thrown-outs-black {
+	right: 0;
+	direction: rtl;
+}
+div.thrown-outs .piece {
+	background-color: rgba(255, 255, 255, 0.6);
+}
 
+/* next move */
 #next-move {
 	position: absolute;
 	top: 0;
@@ -291,7 +313,7 @@ h1 {
 		display: initial;
 		font-size: calc((100vw - 8.4cm) / 3);
 	}
-	h1, #game-status {
+	h1, #game-status, #thrown-outs-container {
 		margin-left: calc((100vw - 8.4cm) / 2);
 		width: 8.4cm;
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
+var playablePiecesType = []piece.Type{piece.Pawn, piece.Rook, piece.Knight, piece.Bishop, piece.Queen, piece.King}
 var promotablePiecesType = []piece.Type{piece.Rook, piece.Knight, piece.Bishop, piece.Queen}
 
 var pieceTypesToName = map[piece.Type]string{
@@ -76,6 +77,7 @@ func main() {
 	}
 
 	g := game.New()
+	gtos := make(gameThrowOuts, len(moves))
 
 	{ // apply game moves
 		for i, move := range moves {
@@ -84,15 +86,38 @@ func main() {
 				return
 			}
 
+			// position before move
+			pbm := g.Position()
+
 			_, merr := g.MakeMove(move)
 			if merr != nil {
 				document.Call("write", "Errorneous move number "+strconv.Itoa(i+1)+": "+merr.Error())
 				return
 			}
+
+			// throw outs for this move
+			tos := throwOuts{}
+
+			// copy previous move throw outs
+			if i > 0 {
+				for p, c := range gtos[i-1] {
+					tos[p] = c
+				}
+			}
+
+			// was a piece thrown out = move destination contains some piece
+			if p := pbm.OnSquare(move.To()); p.Type != piece.None {
+				if _, ok := tos[p]; !ok {
+					tos[p] = 0
+				}
+				tos[p]++
+			}
+
+			gtos[i] = tos
 		}
 	}
 
-	app := app{movesString, g, move.Null, map[square.Square]func(square.Square, *js.Object){}}
+	app := app{movesString, g, gtos, move.Null, map[square.Square]func(square.Square, *js.Object){}}
 	app.drawBoard()
 
 	//js.Global.Call("alert", "calling update board from main")
@@ -105,6 +130,7 @@ func main() {
 type app struct {
 	movesString    string
 	game           *game.Game
+	gameGc         gameThrowOuts
 	nextMove       move.Move
 	squaresHandler map[square.Square]func(sq square.Square, event *js.Object)
 }
@@ -241,13 +267,22 @@ func (app *app) drawBoard() {
 		document.Call("write", "</div>")
 	}
 
-	hintString := "copy this link and send it to your oponent"
-
-	if exec := js.Global.Get("document").Get("execCommand"); exec != nil && exec != js.Undefined {
-		hintString = "this link has been copied to clipboard, send it to your oponent"
+	{ // thrown out pieces
+		document.Call("write", "<div id=\"thrown-outs-container\">")
+		for _, c := range piece.Colors {
+			document.Call("write", "<div id=\"thrown-outs-"+strings.ToLower(c.String())+"\" class=\"thrown-outs\"></div>")
+		}
+		document.Call("write", "</div>")
 	}
 
-	document.Call("write", `<div id="next-move" class="hidden">
+	{ // next move
+		hintString := "copy this link and send it to your oponent"
+
+		if exec := js.Global.Get("document").Get("execCommand"); exec != nil && exec != js.Undefined {
+			hintString = "this link has been copied to clipboard, send it to your oponent"
+		}
+
+		document.Call("write", `<div id="next-move" class="hidden">
 	<p class="link">
 		Next move URL link:
 		<input id="next-move-input" readonly="readonly" value=""/>
@@ -258,11 +293,14 @@ func (app *app) drawBoard() {
 		<a id="next-move-back" href="">undo move</a>
 	</p>
 </div>`)
+	}
 
-	document.Call("write", `<div id="game-status">
+	{ // game status
+		document.Call("write", `<div id="game-status">
 	<p id="game-status-text">... loading ...</p>
 	<p id="game-status-player">`+piecesToString[piece.New(piece.White, piece.King)]+piecesToString[piece.New(piece.Black, piece.King)]+`</p>
 </div>`)
+	}
 
 	{ // event listeners
 
@@ -390,6 +428,14 @@ func (app *app) updateBoard() error {
 	{ // clear playground
 
 		//TODO clear board
+
+		// clear thrown out pieces
+		for _, c := range piece.Colors {
+			if tos := js.Global.Get("document").Call("getElementById", "thrown-outs-"+strings.ToLower(c.String())); tos != nil {
+				tos.Set("innerHTML", "")
+			}
+		}
+
 		// clear status
 		if gameStatusText := js.Global.Get("document").Call("getElementById", "game-status-text"); gameStatusText != nil {
 			gameStatusText.Set("innerHTML", "")
@@ -667,6 +713,37 @@ func (app *app) updateBoard() error {
 		return nextMoveError
 	}
 
+	//js.Global.Call("alert", len(app.gameGc))
+
+	// fill thrown out pieces
+	if gcl := len(app.gameGc); gcl > 0 {
+		for _, c := range piece.Colors {
+			id := "thrown-outs-" + strings.ToLower(c.String())
+			if tosElm := js.Global.Get("document").Call("getElementById", id); tosElm != nil {
+				tos := throwOuts{}
+				for p, n := range app.gameGc[gcl-1] {
+					if p.Color == c {
+						tos[p] = n
+					}
+				}
+				tosElmStr := ""
+
+				if len(tos) != 0 {
+					for _, pt := range playablePiecesType {
+						if n, ok := tos[piece.New(c, pt)]; ok {
+							tosElmStr += "<div class=\"piececount\">"
+							tosElmStr += piecesToString[piece.New(c, pt)]
+							tosElmStr += "<span class=\"count\">" + strconv.Itoa(int(n)) + "</span>"
+							tosElmStr += "</div>"
+						}
+					}
+				}
+
+				tosElm.Set("innerHTML", tosElmStr)
+			}
+		}
+	}
+
 	// fill game status
 	text := "Moving player"
 	player := ""
@@ -723,3 +800,6 @@ func (app *app) squareHandler(event *js.Object) {
 	//js.Global.Call("alert", "handle "+elmId+" square")
 	handler(sq, event)
 }
+
+type gameThrowOuts []throwOuts
+type throwOuts map[piece.Piece]uint8
