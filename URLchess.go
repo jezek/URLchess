@@ -53,7 +53,7 @@ func main() {
 		return
 	}
 
-	document.Call("write", "<h1>URLchess</h1>")
+	document.Call("write", "<div id=\"header\">URLchess</div>")
 
 	defer func() {
 		js.Global.Get("document").Call("write", `<div id="footer">

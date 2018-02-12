@@ -12,19 +12,20 @@ input {
 	background-color: #101020;
 	color: #dfdfef;
 }
-h1 {
+.piece {
+	color: black;
+}
+
+/* basic layout */
+#header {
 	margin: 0;
 	display: none;
 	position: absolute;
 	top: 0;
 	left: 0;
+	font-weight: bold;
+	padding-top: 0.5em;
 }
-
-#game-status, #thrown-outs-container {
-	margin: 0;
-	width: 100vmin;
-}
-
 #board {
 	position:relative;
 	width: 100vmin;
@@ -33,11 +34,48 @@ h1 {
 	text-align: center;
 	vertical-align: middle;
 	user-select: none;
+	overflow: hidden;
 }
-.piece {
-	color: black;
+#next-move {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100vmin;
+	height: 100vmin;
+	font-size: 0.5em;
+	box-sizing: border-box;
+	background-color: rgba(0, 0, 0, 0.75);
+	opacity: 0.8;
+	display: flex;
+	justify-content: center;
+	flex-flow: column;
+}
+#thrown-outs-container {
+	position: relative;
+	margin: 0;
+	width: 100vmin;
+	height: calc(100vmin * 2 / 28);
+	line-height: calc(100vmin * 2 / 28);
+	font-size: 0.5em;
+	overflow: hidden;
+}
+#game-status {
+	padding-top: 0.1em;
+	margin: 0;
+	width: 100vmin;
+	min-height: 100vmin;
+	overflow: hidden;
+	box-sizing: border-box;
+}
+#footer {
+	position: relative;
+	font-size:0.3em;
+	text-align: right;
 }
 
+/*********/
+/* board */
+/*********/
 #board div.edging, #board div.grid {
 	box-sizing: border-box;
 	float: left;
@@ -210,16 +248,16 @@ h1 {
 	transform: rotate(-180deg);
 }
 
+/*********************/
 /* thrown out pieces */
-#thrown-outs-container {
-	position: relative;
-	font-size: 0.5em;
-}
+/*********************/
 #thrown-outs-container div.thrown-outs {
 	position: absolute;
+	box-sizing: border-box;
 	top: 0;
-	width: 2em;
-	background-color: #592b05;
+	width: 50%;
+	padding: 0 0.5em;
+	height: 100%;
 }
 #thrown-outs-white {
 	left: 0;
@@ -228,25 +266,26 @@ h1 {
 	right: 0;
 	direction: rtl;
 }
+#thrown-outs-container .piececount {
+	width: 20%;
+	height: 100%;
+}
+#thrown-outs-white .piececount {
+	float: left;
+}
+#thrown-outs-black .piececount {
+	float: right;
+}
 div.thrown-outs .piece {
 	background-color: rgba(255, 255, 255, 0.6);
 }
-
-/* next move */
-#next-move {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100vmin;
-	height: 100vmin;
-	font-size: 0.5em;
-	box-sizing: border-box;
-	background-color: rgba(0, 0, 0, 0.75);
-	opacity: 0.8;
-	display: flex;
-	justify-content: center;
-	flex-flow: column;
+div.thrown-outs .count {
+	font-size: 0.7em;
 }
+
+/*************/
+/* next move */
+/*************/
 #next-move.hidden {
 	display: none;
 }
@@ -280,11 +319,9 @@ div.thrown-outs .piece {
 	margin: 0 1em;
 }
 
-
-#game-status {
-	margin-top: 0.5em;
-}
-
+/***************/
+/* game status */
+/***************/
 #game-status p {
 	margin: 0;
 	text-align: center;
@@ -297,25 +334,31 @@ div.thrown-outs .piece {
 	height: calc(100vmin * 3 / 28);
 	font-size: calc(1em * 5 / 6);
 }
-
-#footer {
-	position: absolute;
-	top: 100vh;
-	right: 0;
-	font-size:0.3em;
+#game-status-text {
+	font-size: 0.6em;
 }
 
+
+/*********************/
+/* responsive design */
+/*********************/
 @media (orientation: portrait) and (min-width: 8.4cm) {
+
 	body {
 		font-size: calc(8.4cm * 3 / 28);
 	}
-	h1 {
+
+	#header, #board, #game-status, #thrown-outs-container {
+		margin-left: calc((100vw - 8.4cm) / 2);
+		width: 8.4cm;
+	}
+	#header {
 		display: initial;
 		font-size: calc((100vw - 8.4cm) / 3);
 	}
-	h1, #game-status, #thrown-outs-container {
-		margin-left: calc((100vw - 8.4cm) / 2);
-		width: 8.4cm;
+	#board {
+		margin-top: calc((100vw - 8.4cm) / 2);
+		height: 8.4cm;
 	}
 	#next-move {
 		top: calc((100vw - 8.4cm) / 2);
@@ -323,12 +366,15 @@ div.thrown-outs .piece {
 		width: 8.4cm;
 		height: 8.4cm;
 	}
-	#board {
-		margin-top: calc((100vw - 8.4cm) / 2);
-		margin-left: calc((100vw - 8.4cm) / 2);
-		width: 8.4cm;
-		height: 8.4cm;
+	#game-status {
+		min-height: 8.4cm;
 	}
+	#thrown-outs-container {
+		height: calc(8.4cm * 2 / 28);
+		line-height: calc(8.4cm * 2 / 28);
+	}
+
+
 	#board div.edging.horizontal {
 		width: calc(8.4cm * 24 / 28);
 		height: calc(8.4cm * 2 / 28);
@@ -361,17 +407,61 @@ div.thrown-outs .piece {
 	}
 
 }
+@media (orientation: portrait) and (min-width: 10.2cm) {
+	/* display is wide enugh to rearange trown outs to side */
+	#thrown-outs-container {
+		position: absolute;
+		top: calc((100vw - 8.4cm) / 2);
+		left: calc(8.4cm + ((100vw - 8.4cm) / 2));
+		width: calc(8.4cm * 3 / 28);
+		height: 8.4cm;
+		margin:0;
+	}
+	#thrown-outs-container div.thrown-outs {
+		top: initial;
+		left: 0;
+		width: 100%;
+		padding: 0.5em 0;
+		height: 50%;
+		direction: initial;
+	}
+	#thrown-outs-white {
+		bottom: 0;
+	}
+	#thrown-outs-black {
+		top: 0;
+	}
+	#thrown-outs-container .piececount {
+		box-sizing: border-box;
+		width: 100%;
+		height: 20%;
+		padding-top: 0.25em;
+		text-align: center;
+	}
+	#thrown-outs-white {
+	transform: rotate(180deg);
+	}
+	#thrown-outs-white .piececount {
+	transform: rotate(-180deg);
+	}
+}
 @media (orientation: portrait) and (min-width: 12cm) {
+
 	body {
-		font-size: calc(8.4cm * 3 / 28);
+		font-size: calc(70vmin * 3 / 28);
 	}
-	h1 {
-		display: initial;
-		font-size: calc((12cm - 8.4cm) / 3);
-	}
-	h1, #game-status {
+
+	#header, #board, #game-status {
 		margin-left: calc((100vw - 70vmin) / 2);
 		width: 70vmin;
+	}
+	#header {
+		display: initial;
+		font-size: calc((100vw - 70vmin) / 3);
+	}
+	#board {
+		margin-top: calc((100vw - 70vmin) / 2);
+		height: 70vmin;
 	}
 	#next-move {
 		top: calc((100vw - 70vmin) / 2);
@@ -379,13 +469,18 @@ div.thrown-outs .piece {
 		width: 70vmin;
 		height: 70vmin;
 	}
-	#board {
-		margin-top: calc((100vw - 70vmin) / 2);
-		margin-left: calc((100vw - 70vmin) / 2);
-		width: 70vmin;
-		height: 70vmin;
-		font-size: calc(70vmin * 3 / 28);
+	#game-status {
+		min-height: 70vmin;
 	}
+	#thrown-outs-container {
+		position: absolute;
+		top: calc((100vw - 70vmin) / 2);
+		left: calc(70vmin + ((100vw - 70vmin) / 2));
+		width: calc(70vmin * 3 / 28);
+		height: 70vmin;
+		margin: 0;
+	}
+
 	#board div.edging.horizontal {
 		width: calc(70vmin * 24 / 28);
 		height: calc(70vmin * 2 / 28);
@@ -420,21 +515,108 @@ div.thrown-outs .piece {
 }
 
 @media (orientation: landscape) {
-	#game-status {
-		width: initial;
+	#board, #thrown-outs-container, #game-status {
+		margin-left: calc((100vw - 100vh) / 2);
 	}
-	#game-status {
+	#header {
+		display: initial;
 		margin: 0;
+		padding: 0;
+		font-size: calc((100vw - 100vmin) / 3);
+		width: calc((100vw - 100vmin) / 2);
+		top: calc((100vh - 100vmin) / 2);
+		writing-mode: vertical-rl;
+		text-orientation: upright;
+	}
+	#next-move {
+		left: calc((100vw - 100vh) / 2);
+	}
+}
+@media (orientation: landscape) and (min-aspect-ratio: 34/28) {
+	#header {
+		font-size: calc(70vmin * 3 / 28);
+	}
+	#thrown-outs-container {
 		position: absolute;
 		top: 0;
-		left: 100vmin;
-		min-width: calc(100vw - 100vmin);
+		left: calc(((100vw - 100vmin) / 2) + 100vmin);
+		width: calc((100vmin * 3) / 28);
 		height: 100vmin;
+		margin: 0;
 	}
-	#footer {
-		opacity: 0.6;
-		bottom: 0;
+	#thrown-outs-container div.thrown-outs {
 		top: initial;
+		left: 0;
+		width: 100%;
+		padding: 0.5em 0;
+		height: 50%;
+		direction: initial;
+	}
+	#thrown-outs-white {
+		bottom: 0;
+	}
+	#thrown-outs-black {
+		top: 0;
+	}
+	#thrown-outs-container .piececount {
+		box-sizing: border-box;
+		width: 100%;
+		height: 20%;
+		padding-top: 0.25em;
+		text-align: center;
+	}
+	#thrown-outs-white {
+	transform: rotate(180deg);
+	}
+	#thrown-outs-white .piececount {
+	transform: rotate(-180deg);
+	}
+}
+@media (orientation: landscape) and (min-aspect-ratio: 43/28) {
+	#header {
+		display: none;
+	}
+	#board {
+		margin-left: 0;
+	}
+	#next-move {
+		left: 0;
+	}
+	#thrown-outs-container {
+		left: 100vmin;
+	}
+	#game-status {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: calc(100vw - ((100vmin / 28) * 31));
+		height: 100vmin;
+		margin: 0;
+	}
+}
+@media (orientation: landscape) and (min-aspect-ratio: 59/28) {
+	#header {
+		display: initial;
+		width: calc((100vw - ((100vmin / 28) * 59)) / 2);
+		font-size: calc((100vw - ((100vmin / 28) * 59)) / 2);
+	}
+	#board {
+		margin-left: calc((100vw - ((100vmin / 28) * 59)) / 2);
+	}
+	#next-move {
+		left: calc((100vw - ((100vmin / 28) * 59)) / 2);
+	}
+	#thrown-outs-container {
+		left: calc(100vmin + ((100vw - ((100vmin / 28) * 59)) / 2));
+	}
+	#game-status {
+		right: calc((100vw - ((100vmin / 28) * 59)) / 2);
+		width: 100vmin;
+	}
+}
+@media (orientation: landscape) and (min-aspect-ratio: 62/28) {
+	#header {
+		font-size: calc((100vmin * 2) / 28);
 	}
 }
 
@@ -442,33 +624,37 @@ div.thrown-outs .piece {
 	body {
 		font-size: calc(8.4cm * 3 / 28);
 	}
-	h1 {
-		display: initial;
-		font-size: calc((100vh - 8.4cm) / 3);
-		width: calc((100vh - 8.4cm) / 2);
-		margin-top: calc((100vh - 8.4cm) / 2);
-		writing-mode: vertical-lr;
-		text-orientation: upright;
-		text-align: left;
+
+	#header, #board, #game-status, #thrown-outs-container {
+		margin-left: calc((100vw - 8.4cm) / 2);
+		width: 8.4cm;
 	}
-	#game-status {
+	#header {
+		display: initial;
+		margin: 0;
+		padding: 0;
+		font-size: calc((100vw - 8.4cm) / 3);
+		width: calc((100vw - 8.4cm) / 2);
 		top: calc((100vh - 8.4cm) / 2);
-		left: calc(((100vh - 8.4cm) / 2) + 8.4cm);
-		width: calc(100vw - (((100vh - 8.4cm) / 2) + 8.4cm));
+		writing-mode: vertical-rl;
+		text-orientation: upright;
+	}
+	#board {
+		margin-top: calc((100vh - 8.4cm) / 2);
 		height: 8.4cm;
 	}
 	#next-move {
 		top: calc((100vh - 8.4cm) / 2);
-		left: calc((100vh - 8.4cm) / 2);
+		left: calc((100vw - 8.4cm) / 2);
 		width: 8.4cm;
 		height: 8.4cm;
 	}
-	#board {
-		margin-top: calc((100vh - 8.4cm) / 2);
-		margin-left: calc((100vh - 8.4cm) / 2);
-		width: 8.4cm;
-		height: 8.4cm;
+	#thrown-outs-container {
+		height: calc(8.4cm * 2 / 28);
+		line-height: calc(8.4cm * 2 / 28);
 	}
+	
+
 	#board div.edging.horizontal {
 		width: calc(8.4cm * 24 / 28);
 		height: calc(8.4cm * 2 / 28);
@@ -499,36 +685,159 @@ div.thrown-outs .piece {
 		height: calc(8.4cm * 3 / 28);
 		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
 	}
-
 }
-@media (orientation: landscape) and (min-height: 12cm) {
-	body {
-		font-size: calc(8.4cm * 3 / 28);
+@media (orientation: landscape) and (min-width: 10.2cm) and (min-height: 8.4cm) {
+	#header {
+		font-size: calc((8.4cm * 2) / 28);
 	}
-	h1 {
-		font-size: calc((12cm - 8.4cm) / 3);
-		width: calc((100vh - 70vmin) / 2);
-		margin-top: calc((100vh - 70vmin) / 2);
+	#board, #game-status {
+		margin-left: calc((100vw - 8.4cm) / 2);
+	}
+	#next-move {
+		left: calc((100vw - 8.4cm) / 2);
+	}
+	#thrown-outs-container {
+		position: absolute;
+		top: calc((100vh - 8.4cm) / 2);
+		left: calc(((100vw - 8.4cm) / 2) + 8.4cm);
+		width: calc((8.4cm * 3) / 28);
+		height: 8.4cm;
+		margin: 0;
+	}
+	#thrown-outs-container div.thrown-outs {
+		top: initial;
+		left: 0;
+		width: 100%;
+		padding: 0.5em 0;
+		height: 50%;
+		direction: initial;
+	}
+	#thrown-outs-white {
+		bottom: 0;
+	}
+	#thrown-outs-black {
+		top: 0;
+	}
+	#thrown-outs-container .piececount {
+		box-sizing: border-box;
+		width: 100%;
+		height: 20%;
+		padding-top: 0.25em;
+		text-align: center;
+	}
+	#thrown-outs-white {
+	transform: rotate(180deg);
+	}
+	#thrown-outs-white .piececount {
+	transform: rotate(-180deg);
+	}
+}
+@media (orientation: landscape) and (min-width: 12.9cm) and (min-height: 8.4cm) {
+	#header {
+		font-size: calc((100vh - 8.4cm) / 3);
+    padding-top: 0.5em;
+		top: 0;
+		left: 0;
+		writing-mode: initial;
+		text-orientation: initial;
+		width: 8.4cm;
+	}
+	#board {
+		margin-left: 0;
+	}
+	#next-move {
+		left: 0;
+	}
+	#thrown-outs-container {
+		left: 8.4cm;
 	}
 	#game-status {
-		top: calc((100vh - 70vmin) / 2);
-		left: calc(((100vh - 70vmin) / 2) + 70vmin);
-		width: calc(100vw - (((100vh - 70vmin) / 2) + 70vmin));
+		position: absolute;
+		top: calc((100vh - 8.4cm) / 2);
+		left: 9.3cm;
+		width: calc(100vw - 9.3cm);
+		height: 8.4cm;
+		min-height: 8.4cm;
+		margin: 0;
+	}
+}
+@media (orientation: landscape) and (min-width: 17.7cm) and (min-height: 8.4cm) {
+	#board {
+		margin-left: calc((100vw - ((8.4cm / 28) * 59)) / 2);
+	}
+	#next-move {
+		left: calc((100vw - ((8.4cm / 28) * 59)) / 2);
+	}
+	#thrown-outs-container {
+		left: calc(8.4cm + ((100vw - ((8.4cm / 28) * 59)) / 2));
+	}
+	#game-status {
+		left: calc(((100vw - ((8.4cm / 28) * 59)) / 2) + 9.3cm);
+		width: 8.4cm;
+	}
+}
+@media (orientation: landscape) and (min-width: 18.6cm) and (min-height: 8.4cm) {
+	#header {
+		display: initial;
+		margin: 0;
+		padding: 0;
+		font-size: calc((100vw - ((8.4cm / 28) * 59)) / 3);
+		width: calc((100vw - ((8.4cm / 28) * 59)) / 2);
+		top: calc((100vh - 8.4cm) / 2);
+		writing-mode: vertical-rl;
+		text-orientation: upright;
+	}
+}
+@media (orientation: landscape) and (min-width: 19.5cm) and (min-height: 8.4cm) {
+	#header {
+		font-size: calc((8.4cm * 2) / 28);
+	}
+}
+
+@media (orientation: landscape) and (min-height: 12cm) {
+	body {
+		font-size: calc(70vmin * 3 / 28);
+	}
+
+	#board, #game-status {
+		margin-left: calc((100vw - 70vmin) / 2);
+		width: 70vmin;
+	}
+	#header {
+		display: initial;
+		font-size: calc((100vh - 70vmin) / 3);
+		padding-top: 0.5em;
+		top: 0;
+		left: calc((100vw - 70vmin) / 2);
+		writing-mode: initial;
+		text-orientation: initial;
+		width: 70vmin;
+	}
+	#board {
+		margin-top: calc((100vh - 70vmin) / 2);
 		height: 70vmin;
 	}
 	#next-move {
 		top: calc((100vh - 70vmin) / 2);
-		left: calc((100vh - 70vmin) / 2);
+		left: calc((100vw - 70vmin) / 2);
 		width: 70vmin;
 		height: 70vmin;
 	}
-	#board {
-		margin-top: calc((100vh - 70vmin) / 2);
-		margin-left: calc((100vh - 70vmin) / 2);
-		width: 70vmin;
+	#thrown-outs-container {
+		position: absolute;
+		top: calc((100vh - 70vmin) / 2);
+		left: calc(70vmin + ((100vw - 70vmin) / 2));
+		width: calc(70vmin * 3 / 28);
 		height: 70vmin;
-		font-size: calc(70vmin * 3 / 28);
+		margin: 0;
 	}
+	#game-status {
+		position: relative;
+		top: 0;
+		left: 0;
+	}
+	
+
 	#board div.edging.horizontal {
 		width: calc(70vmin * 24 / 28);
 		height: calc(70vmin * 2 / 28);
@@ -559,5 +868,45 @@ div.thrown-outs .piece {
 		height: calc(70vmin * 3 / 28);
 		font-size: calc((70vmin * 3 / 28) * 5 / 6);
 	}
-
+}
+@media (orientation: landscape) and (min-aspect-ratio: 43/40) and (min-height: 12cm) {
+	#header {
+		left: 0;
+	}
+	#board {
+		margin-left: 0;
+	}
+	#next-move {
+		left: 0;
+	}
+	#thrown-outs-container {
+		left: 70vmin;
+	}
+	#game-status {
+		position: absolute;
+		top: calc((100vh - 70vmin) / 2);
+		left: calc((70vmin * 31) / 28);
+		width: calc(100vw - ((70vmin * 31) / 28));
+		height: 70vmin;
+		min-height: 70vmin;
+		margin: 0;
+	}
+}
+@media (orientation: landscape) and (min-aspect-ratio: 59/40) and (min-height: 12cm) {
+	#header {
+		left: calc((100vw - ((70vmin * 59) / 28)) / 2);
+	}
+	#board {
+		margin-left: calc((100vw - ((70vmin * 59) / 28)) / 2);
+	}
+	#next-move {
+		left: calc((100vw - ((70vmin * 59) / 28)) / 2);
+	}
+	#thrown-outs-container {
+		left: calc(((100vw - ((70vmin * 59) / 28)) / 2) + 70vmin);
+	}
+	#game-status {
+		left: calc(((100vw - ((70vmin *59) / 28)) / 2) + ((70vmin * 31) / 28));
+		width: 70vmin;
+	}
 }
