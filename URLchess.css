@@ -35,7 +35,6 @@ input {
 	vertical-align: middle;
 	user-select: none;
 	overflow: hidden;
-	z-index: 1;
 }
 #next-move {
 	position: absolute;
@@ -50,7 +49,6 @@ input {
 	display: flex;
 	justify-content: center;
 	flex-flow: column;
-	z-index: 2;
 }
 #thrown-outs-container {
 	position: relative;
@@ -59,7 +57,7 @@ input {
 	height: calc(100vmin * 2 / 28);
 	line-height: calc(100vmin * 2 / 28);
 	font-size: 0.5em;
-	overflow: hidden;
+	overflow: visible;
 }
 #game-status {
 	padding-top: 0.1em;
@@ -249,17 +247,6 @@ input {
 #board.rotated180deg .grid span.marker span.piece, #board.rotated180deg #promotion-overlay {
 	transform: rotate(-180deg);
 }
-#thrown-outs-container, #thrown-outs-container .piececount {
-	transition-duration: 0.4s;
-	transition-property: transform;
-	transition-timing-function: step-end;
-}
-#thrown-outs-container.rotated180deg {
-	transform: rotate(180deg);
-}
-#thrown-outs-container.rotated180deg .piececount{
-	transform: rotate(-180deg);
-}
 /*********************/
 /* thrown out pieces */
 /*********************/
@@ -275,24 +262,38 @@ input {
 	left: 0;
 }
 #thrown-outs-black {
-	right: 0;
-	direction: rtl;
+	left: 50%;
 }
 #thrown-outs-container .piececount {
+	box-sizing: border-box;
 	width: 20%;
 	height: 100%;
-}
-#thrown-outs-white .piececount {
 	float: left;
-}
-#thrown-outs-black .piececount {
-	float: right;
+	text-align: center;
+	padding-top: 0.1em;
 }
 div.thrown-outs .piece {
 	background-color: rgba(255, 255, 255, 0.6);
 }
 div.thrown-outs .count {
 	font-size: 0.7em;
+}
+/* throen out pieces flipping at board rotation */
+#thrown-outs-container, #thrown-outs-container .thrown-outs, #thrown-outs-container .piececount { 
+	transition-duration: 0.8s;
+	transition-property: all;
+}
+#thrown-outs-container.rotated180deg div.thrown-outs {
+	transform: rotate(180deg);
+}
+#thrown-outs-container.rotated180deg #thrown-outs-white {
+	left: 50%;
+}
+#thrown-outs-container.rotated180deg #thrown-outs-black {
+	left: 0;
+}
+#thrown-outs-container.rotated180deg .piececount {
+	transform: rotate(-180deg);
 }
 
 /*************/
@@ -422,42 +423,22 @@ div.thrown-outs .count {
 @media (orientation: portrait) and (min-width: 10.2cm) {
 	/* display is wide enugh to rearange trown outs to side */
 	#thrown-outs-container {
-		position: absolute;
-		top: calc((100vw - 8.4cm) / 2);
-		left: calc(8.4cm + ((100vw - 8.4cm) / 2));
-		width: calc(8.4cm * 3 / 28);
-		height: 8.4cm;
-		margin:0;
-	}
-	#thrown-outs-container div.thrown-outs {
-		top: initial;
-		left: 0;
-		width: 100%;
-		padding: 0.5em 0;
-		height: 50%;
-		direction: initial;
-	}
-	#thrown-outs-white {
-		bottom: 0;
-	}
-	#thrown-outs-black {
-		top: 0;
+		height: calc(8.4cm * 3 / 28);
+		transform: rotate(-90deg);
+		transform-origin: center -4.2cm;
 	}
 	#thrown-outs-container .piececount {
-		box-sizing: border-box;
-		width: 100%;
-		height: 20%;
-		padding-top: 0.25em;
-		text-align: center;
-	}
-	#thrown-outs-white {
-	transform: rotate(180deg);
+		transform: rotate(90deg);
 	}
 	#thrown-outs-white .piececount {
-	transform: rotate(-180deg);
+		padding-top: 0.7em
 	}
-	#thrown-outs-container.rotated180deg #thrown-outs-white .piececount{
-		transform: rotate(0deg);
+	#thrown-outs-container.rotated180deg .piececount {
+		transform: rotate(-90deg);
+		padding-top: 0.1em;
+	}
+	#thrown-outs-container.rotated180deg #thrown-outs-black .piececount {
+		padding-top: 0.7em
 	}
 }
 @media (orientation: portrait) and (min-width: 12cm) {
@@ -488,12 +469,10 @@ div.thrown-outs .count {
 		min-height: 70vmin;
 	}
 	#thrown-outs-container {
-		position: absolute;
-		top: calc((100vw - 70vmin) / 2);
-		left: calc(70vmin + ((100vw - 70vmin) / 2));
-		width: calc(70vmin * 3 / 28);
-		height: 70vmin;
-		margin: 0;
+		margin-left: calc((100vw - 70vmin) / 2);
+		width: 70vmin;
+		height: calc(70vmin * 3 / 28);
+		transform-origin: center -35vmin;
 	}
 
 	#board div.edging.horizontal {
@@ -552,56 +531,33 @@ div.thrown-outs .count {
 		font-size: calc(70vmin * 3 / 28);
 	}
 	#thrown-outs-container {
-		position: absolute;
-		top: 0;
-		left: calc(((100vw - 100vmin) / 2) + 100vmin);
-		width: calc((100vmin * 3) / 28);
-		height: 100vmin;
-		margin: 0;
-	}
-	#thrown-outs-container div.thrown-outs {
-		top: initial;
-		left: 0;
-		width: 100%;
-		padding: 0.5em 0;
-		height: 50%;
-		direction: initial;
-	}
-	#thrown-outs-white {
-		bottom: 0;
-	}
-	#thrown-outs-black {
-		top: 0;
+		height: calc(100vmin * 3 / 28);
+		transform: rotate(-90deg);
+		transform-origin: center -50vmin;
 	}
 	#thrown-outs-container .piececount {
-		box-sizing: border-box;
-		width: 100%;
-		height: 20%;
-		padding-top: 0.25em;
-		text-align: center;
-	}
-	#thrown-outs-white {
-	transform: rotate(180deg);
+		transform: rotate(90deg);
 	}
 	#thrown-outs-white .piececount {
-	transform: rotate(-180deg);
+		padding-top: 0.7em
 	}
-	#thrown-outs-container.rotated180deg #thrown-outs-white .piececount{
-		transform: rotate(0deg);
+	#thrown-outs-container.rotated180deg .piececount {
+		transform: rotate(-90deg);
+		padding-top: 0.1em;
+	}
+	#thrown-outs-container.rotated180deg #thrown-outs-black .piececount {
+		padding-top: 0.7em
 	}
 }
 @media (orientation: landscape) and (min-aspect-ratio: 43/28) {
 	#header {
 		display: none;
 	}
-	#board {
+	#board, #thrown-outs-container {
 		margin-left: 0;
 	}
 	#next-move {
 		left: 0;
-	}
-	#thrown-outs-container {
-		left: 100vmin;
 	}
 	#game-status {
 		position: absolute;
@@ -618,14 +574,11 @@ div.thrown-outs .count {
 		width: calc((100vw - ((100vmin / 28) * 59)) / 2);
 		font-size: calc((100vw - ((100vmin / 28) * 59)) / 2);
 	}
-	#board {
+	#board, #thrown-outs-container {
 		margin-left: calc((100vw - ((100vmin / 28) * 59)) / 2);
 	}
 	#next-move {
 		left: calc((100vw - ((100vmin / 28) * 59)) / 2);
-	}
-	#thrown-outs-container {
-		left: calc(100vmin + ((100vw - ((100vmin / 28) * 59)) / 2));
 	}
 	#game-status {
 		right: calc((100vw - ((100vmin / 28) * 59)) / 2);
@@ -708,49 +661,29 @@ div.thrown-outs .count {
 	#header {
 		font-size: calc((8.4cm * 2) / 28);
 	}
-	#board, #game-status {
+	#board, #game-status, #thrown-outs-container {
 		margin-left: calc((100vw - 8.4cm) / 2);
 	}
 	#next-move {
 		left: calc((100vw - 8.4cm) / 2);
 	}
 	#thrown-outs-container {
-		position: absolute;
-		top: calc((100vh - 8.4cm) / 2);
-		left: calc(((100vw - 8.4cm) / 2) + 8.4cm);
-		width: calc((8.4cm * 3) / 28);
-		height: 8.4cm;
-		margin: 0;
-	}
-	#thrown-outs-container div.thrown-outs {
-		top: initial;
-		left: 0;
-		width: 100%;
-		padding: 0.5em 0;
-		height: 50%;
-		direction: initial;
-	}
-	#thrown-outs-white {
-		bottom: 0;
-	}
-	#thrown-outs-black {
-		top: 0;
+		height: calc(8.4cm * 3 / 28);
+		transform: rotate(-90deg);
+		transform-origin: center -4.2cm;
 	}
 	#thrown-outs-container .piececount {
-		box-sizing: border-box;
-		width: 100%;
-		height: 20%;
-		padding-top: 0.25em;
-		text-align: center;
-	}
-	#thrown-outs-white {
-	transform: rotate(180deg);
+		transform: rotate(90deg);
 	}
 	#thrown-outs-white .piececount {
-	transform: rotate(-180deg);
+		padding-top: 0.7em
 	}
-	#thrown-outs-container.rotated180deg #thrown-outs-white .piececount{
-		transform: rotate(0deg);
+	#thrown-outs-container.rotated180deg .piececount {
+		transform: rotate(-90deg);
+		padding-top: 0.1em;
+	}
+	#thrown-outs-container.rotated180deg #thrown-outs-black .piececount {
+		padding-top: 0.7em
 	}
 }
 @media (orientation: landscape) and (min-width: 12.9cm) and (min-height: 8.4cm) {
@@ -763,14 +696,11 @@ div.thrown-outs .count {
 		text-orientation: initial;
 		width: 8.4cm;
 	}
-	#board {
+	#board, #thrown-outs-container {
 		margin-left: 0;
 	}
 	#next-move {
 		left: 0;
-	}
-	#thrown-outs-container {
-		left: 8.4cm;
 	}
 	#game-status {
 		position: absolute;
@@ -783,14 +713,11 @@ div.thrown-outs .count {
 	}
 }
 @media (orientation: landscape) and (min-width: 17.7cm) and (min-height: 8.4cm) {
-	#board {
+	#board, #thrown-outs-container {
 		margin-left: calc((100vw - ((8.4cm / 28) * 59)) / 2);
 	}
 	#next-move {
 		left: calc((100vw - ((8.4cm / 28) * 59)) / 2);
-	}
-	#thrown-outs-container {
-		left: calc(8.4cm + ((100vw - ((8.4cm / 28) * 59)) / 2));
 	}
 	#game-status {
 		left: calc(((100vw - ((8.4cm / 28) * 59)) / 2) + 9.3cm);
@@ -820,7 +747,7 @@ div.thrown-outs .count {
 		font-size: calc(70vmin * 3 / 28);
 	}
 
-	#board, #game-status {
+	#board, #game-status, #thrown-outs-container {
 		margin-left: calc((100vw - 70vmin) / 2);
 		width: 70vmin;
 	}
@@ -838,19 +765,14 @@ div.thrown-outs .count {
 		margin-top: calc((100vh - 70vmin) / 2);
 		height: 70vmin;
 	}
+	#thrown-outs-container {
+		transform-origin: center -35vmin;
+	}
 	#next-move {
 		top: calc((100vh - 70vmin) / 2);
 		left: calc((100vw - 70vmin) / 2);
 		width: 70vmin;
 		height: 70vmin;
-	}
-	#thrown-outs-container {
-		position: absolute;
-		top: calc((100vh - 70vmin) / 2);
-		left: calc(70vmin + ((100vw - 70vmin) / 2));
-		width: calc(70vmin * 3 / 28);
-		height: 70vmin;
-		margin: 0;
 	}
 	#game-status {
 		position: relative;
@@ -894,14 +816,11 @@ div.thrown-outs .count {
 	#header {
 		left: 0;
 	}
-	#board {
+	#board, #thrown-outs-container {
 		margin-left: 0;
 	}
 	#next-move {
 		left: 0;
-	}
-	#thrown-outs-container {
-		left: 70vmin;
 	}
 	#game-status {
 		position: absolute;
@@ -917,14 +836,11 @@ div.thrown-outs .count {
 	#header {
 		left: calc((100vw - ((70vmin * 59) / 28)) / 2);
 	}
-	#board {
+	#board, #thrown-outs-container {
 		margin-left: calc((100vw - ((70vmin * 59) / 28)) / 2);
 	}
 	#next-move {
 		left: calc((100vw - ((70vmin * 59) / 28)) / 2);
-	}
-	#thrown-outs-container {
-		left: calc(((100vw - ((70vmin * 59) / 28)) / 2) + 70vmin);
 	}
 	#game-status {
 		left: calc(((100vw - ((70vmin *59) / 28)) / 2) + ((70vmin * 31) / 28));

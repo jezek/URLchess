@@ -15,6 +15,7 @@ import (
 
 var playablePiecesType = []piece.Type{piece.Pawn, piece.Rook, piece.Knight, piece.Bishop, piece.Queen, piece.King}
 var promotablePiecesType = []piece.Type{piece.Rook, piece.Knight, piece.Bishop, piece.Queen}
+var thrownOutPiecesOrderType = []piece.Type{piece.Pawn, piece.Rook, piece.Knight, piece.Bishop, piece.Queen}
 
 var pieceTypesToName = map[piece.Type]string{
 	piece.Pawn:   "pawn",
@@ -721,6 +722,7 @@ func (app *app) updateBoard() error {
 			id := "thrown-outs-" + strings.ToLower(c.String())
 			if tosElm := js.Global.Get("document").Call("getElementById", id); tosElm != nil {
 				tos := thrownOuts{}
+				// fill thrown outs only for current color "c"
 				for p, n := range app.gameGc[gcl-1] {
 					if p.Color == c {
 						tos[p] = n
@@ -729,12 +731,41 @@ func (app *app) updateBoard() error {
 				tosElmStr := ""
 
 				if len(tos) != 0 {
-					for _, pt := range playablePiecesType {
+					// there are thrown out pieces for current color
+
+					// fill black in reversed order
+					thrownOutPieces := make([]piece.Type, len(thrownOutPiecesOrderType))
+					for i, p := range thrownOutPiecesOrderType {
+						j := i
+						if c == piece.Black {
+							j = len(thrownOutPiecesOrderType) - 1 - i
+						}
+						thrownOutPieces[j] = p
+					}
+
+					// fill blanks if black
+					if c == piece.Black {
+						bc := len(thrownOutPiecesOrderType) - len(tos)
+						for i := 0; i < bc; i++ {
+							tosElmStr += "<div class=\"piececount\"></div>"
+						}
+					}
+
+					// fill pieces
+					for _, pt := range thrownOutPieces {
 						if n, ok := tos[piece.New(c, pt)]; ok {
 							tosElmStr += "<div class=\"piececount\">"
 							tosElmStr += piecesToString[piece.New(c, pt)]
 							tosElmStr += "<span class=\"count\">" + strconv.Itoa(int(n)) + "</span>"
 							tosElmStr += "</div>"
+						}
+					}
+
+					// fill blanks if white
+					if c == piece.White {
+						bc := len(thrownOutPiecesOrderType) - len(tos)
+						for i := 0; i < bc; i++ {
+							tosElmStr += "<div class=\"piececount\"></div>"
 						}
 					}
 				}
