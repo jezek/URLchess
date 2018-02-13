@@ -116,6 +116,9 @@ func main() {
 
 			gtos[i] = tos
 		}
+
+		// prepend one empty throw outs
+		gtos = append(gameThrownOuts{thrownOuts{}}, gtos...)
 	}
 
 	app := app{movesString, g, gtos, move.Null, map[square.Square]func(square.Square, *js.Object){}}
@@ -714,8 +717,6 @@ func (app *app) updateBoard() error {
 		return nextMoveError
 	}
 
-	//js.Global.Call("alert", len(app.gameGc))
-
 	// fill thrown out pieces
 	if gcl := len(app.gameGc); gcl > 0 {
 		for _, c := range piece.Colors {
@@ -751,10 +752,22 @@ func (app *app) updateBoard() error {
 						}
 					}
 
+					lastMoveThrownOutPiece := piece.Piece{}
+					if gcl-2 >= 0 {
+						prevPos := app.game.Positions[gcl-2]
+						lastMovePosition := app.game.Position().LastMove
+						lastMoveThrownOutPiece = prevPos.OnSquare(lastMovePosition.To())
+					}
+
 					// fill pieces
 					for _, pt := range thrownOutPieces {
-						if n, ok := tos[piece.New(c, pt)]; ok {
-							tosElmStr += "<div class=\"piececount\">"
+						pc := piece.New(c, pt)
+						if n, ok := tos[pc]; ok {
+							class := []string{"piececount"}
+							if lastMoveThrownOutPiece == pc {
+								class = append(class, "last-move")
+							}
+							tosElmStr += "<div class=\"" + strings.Join(class, " ") + "\">"
 							tosElmStr += piecesToString[piece.New(c, pt)]
 							tosElmStr += "<span class=\"count\">" + strconv.Itoa(int(n)) + "</span>"
 							tosElmStr += "</div>"

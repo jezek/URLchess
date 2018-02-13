@@ -277,6 +277,9 @@ input {
 	text-align: center;
 	padding-top: 0.1em;
 }
+#thrown-outs-container .piececount.last-move .piece {
+	background-color: rgba(255, 100, 100, 0.6);
+}
 div.thrown-outs .piece {
 	background-color: rgba(255, 255, 255, 0.6);
 }
@@ -774,6 +777,7 @@ div.thrown-outs .count {
 		height: 70vmin;
 	}
 	#thrown-outs-container {
+		height: calc(70vmin * 3 / 28);
 		transform-origin: center -35vmin;
 	}
 	#next-move {
