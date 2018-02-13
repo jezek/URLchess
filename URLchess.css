@@ -35,6 +35,7 @@ input {
 	vertical-align: middle;
 	user-select: none;
 	overflow: hidden;
+	z-index: 1;
 }
 #next-move {
 	position: absolute;
@@ -49,6 +50,7 @@ input {
 	display: flex;
 	justify-content: center;
 	flex-flow: column;
+	z-index: 2;
 }
 #thrown-outs-container {
 	position: relative;
@@ -237,7 +239,7 @@ input {
 	background-color: rgba(255, 255, 0, 0.6);
 }
 /* board rotation */
-#board, #board .grid span.piece {
+#board, #board .grid span.piece { 
 	transition-duration: 0.8s;
 	transition-property: transform;
 }
@@ -247,7 +249,17 @@ input {
 #board.rotated180deg .grid span.marker span.piece, #board.rotated180deg #promotion-overlay {
 	transform: rotate(-180deg);
 }
-
+#thrown-outs-container, #thrown-outs-container .piececount {
+	transition-duration: 0.4s;
+	transition-property: transform;
+	transition-timing-function: step-end;
+}
+#thrown-outs-container.rotated180deg {
+	transform: rotate(180deg);
+}
+#thrown-outs-container.rotated180deg .piececount{
+	transform: rotate(-180deg);
+}
 /*********************/
 /* thrown out pieces */
 /*********************/
@@ -444,6 +456,9 @@ div.thrown-outs .count {
 	#thrown-outs-white .piececount {
 	transform: rotate(-180deg);
 	}
+	#thrown-outs-container.rotated180deg #thrown-outs-white .piececount{
+		transform: rotate(0deg);
+	}
 }
 @media (orientation: portrait) and (min-width: 12cm) {
 
@@ -570,6 +585,9 @@ div.thrown-outs .count {
 	}
 	#thrown-outs-white .piececount {
 	transform: rotate(-180deg);
+	}
+	#thrown-outs-container.rotated180deg #thrown-outs-white .piececount{
+		transform: rotate(0deg);
 	}
 }
 @media (orientation: landscape) and (min-aspect-ratio: 43/28) {
@@ -730,6 +748,9 @@ div.thrown-outs .count {
 	}
 	#thrown-outs-white .piececount {
 	transform: rotate(-180deg);
+	}
+	#thrown-outs-container.rotated180deg #thrown-outs-white .piececount{
+		transform: rotate(0deg);
 	}
 }
 @media (orientation: landscape) and (min-width: 12.9cm) and (min-height: 8.4cm) {

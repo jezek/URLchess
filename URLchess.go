@@ -77,7 +77,7 @@ func main() {
 	}
 
 	g := game.New()
-	gtos := make(gameThrowOuts, len(moves))
+	gtos := make(gameThrownOuts, len(moves))
 
 	{ // apply game moves
 		for i, move := range moves {
@@ -96,7 +96,7 @@ func main() {
 			}
 
 			// throw outs for this move
-			tos := throwOuts{}
+			tos := thrownOuts{}
 
 			// copy previous move throw outs
 			if i > 0 {
@@ -130,7 +130,7 @@ func main() {
 type app struct {
 	movesString    string
 	game           *game.Game
-	gameGc         gameThrowOuts
+	gameGc         gameThrownOuts
 	nextMove       move.Move
 	squaresHandler map[square.Square]func(sq square.Square, event *js.Object)
 }
@@ -150,6 +150,18 @@ func (app *app) drawBoard() {
 	}
 
 	rotateBoard180deg := rotationSupported && app.game.ActiveColor() == piece.Black
+
+	rotateBoard180degFunc := func(event *js.Object) {
+		for _, elmId := range []string{"board", "thrown-outs-container"} {
+			if elm := document.Call("getElementById", elmId); elm != nil {
+				if elm.Get("classList").Call("contains", "rotated180deg").Bool() {
+					elm.Get("classList").Call("remove", "rotated180deg")
+				} else {
+					elm.Get("classList").Call("add", "rotated180deg")
+				}
+			}
+		}
+	}
 
 	{ // board
 		class := ""
@@ -181,15 +193,7 @@ func (app *app) drawBoard() {
 			edging.Call(
 				"addEventListener",
 				"click",
-				func(event *js.Object) {
-					if board := document.Call("getElementById", "board"); board != nil {
-						if board.Get("classList").Call("contains", "rotated180deg").Bool() {
-							board.Get("classList").Call("remove", "rotated180deg")
-						} else {
-							board.Get("classList").Call("add", "rotated180deg")
-						}
-					}
-				},
+				rotateBoard180degFunc,
 			)
 		}
 	}
@@ -228,15 +232,7 @@ func (app *app) drawBoard() {
 			edging.Call(
 				"addEventListener",
 				"click",
-				func(event *js.Object) {
-					if board := document.Call("getElementById", "board"); board != nil {
-						if board.Get("classList").Call("contains", "rotated180deg").Bool() {
-							board.Get("classList").Call("remove", "rotated180deg")
-						} else {
-							board.Get("classList").Call("add", "rotated180deg")
-						}
-					}
-				},
+				rotateBoard180degFunc,
 			)
 		}
 
@@ -268,7 +264,11 @@ func (app *app) drawBoard() {
 	}
 
 	{ // thrown out pieces
-		document.Call("write", "<div id=\"thrown-outs-container\">")
+		class := ""
+		if rotateBoard180deg {
+			class = " class=\"rotated180deg\""
+		}
+		document.Call("write", "<div id=\"thrown-outs-container\""+class+">")
 		for _, c := range piece.Colors {
 			document.Call("write", "<div id=\"thrown-outs-"+strings.ToLower(c.String())+"\" class=\"thrown-outs\"></div>")
 		}
@@ -328,20 +328,24 @@ func (app *app) drawBoard() {
 					"addEventListener",
 					"click",
 					func(event *js.Object) {
-						if board := document.Call("getElementById", "board"); board != nil {
+						if nm := document.Call("getElementById", "next-move"); nm != nil {
+							nm.Get("classList").Call("add", "hidden")
+						}
 
+						if !rotationSupported {
+							return
+						}
+
+						if board := document.Call("getElementById", "board"); board != nil {
 							// rotate only if needed
 							shouldBeRotatedInNextMove := app.game.Position().ActiveColor != piece.Black
 							isRotated := board.Get("classList").Call("contains", "rotated180deg").Bool()
 
 							if shouldBeRotatedInNextMove != isRotated {
-								//rotate, wait, cange location
 								event.Call("preventDefault")
-								if isRotated {
-									board.Get("classList").Call("remove", "rotated180deg")
-								} else {
-									board.Get("classList").Call("add", "rotated180deg")
-								}
+
+								//rotate, wait, change location
+								rotateBoard180degFunc(event)
 
 								url := link.Call("getAttribute", "href")
 								js.Global.Call(
@@ -349,13 +353,9 @@ func (app *app) drawBoard() {
 									func() {
 										js.Global.Get("location").Set("href", url)
 									},
-									800,
+									775,
 								)
 							}
-							if nm := document.Call("getElementById", "next-move"); nm != nil {
-								nm.Get("classList").Call("add", "hidden")
-							}
-
 						}
 					},
 					false,
@@ -507,6 +507,8 @@ func (app *app) updateBoard() error {
 			//set drawing position to next move
 			drawPosition = app.game.Position().MakeMove(app.nextMove)
 
+			//TODO check for thrown out piece and add to container if true
+
 			nextMoveString, err := encodeMove(app.nextMove) // encoding.go
 			if err != nil {
 				nextMoveError = errors.New("Next move encoding error: " + err.Error())
@@ -628,8 +630,6 @@ func (app *app) updateBoard() error {
 								//js.Global.Call("alert", "promote not filled, do something about it")
 								if promotionOverlay := js.Global.Get("document").Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
 
-									//TODO? hide unpromotable pieces
-
 									// fill piece figure to promotable pieces elements
 									for _, pt := range promotablePiecesType {
 										if _, ok := legalFromToMoves[move.Move{
@@ -720,7 +720,7 @@ func (app *app) updateBoard() error {
 		for _, c := range piece.Colors {
 			id := "thrown-outs-" + strings.ToLower(c.String())
 			if tosElm := js.Global.Get("document").Call("getElementById", id); tosElm != nil {
-				tos := throwOuts{}
+				tos := thrownOuts{}
 				for p, n := range app.gameGc[gcl-1] {
 					if p.Color == c {
 						tos[p] = n
@@ -801,5 +801,5 @@ func (app *app) squareHandler(event *js.Object) {
 	handler(sq, event)
 }
 
-type gameThrowOuts []throwOuts
-type throwOuts map[piece.Piece]uint8
+type gameThrownOuts []thrownOuts
+type thrownOuts map[piece.Piece]uint8
