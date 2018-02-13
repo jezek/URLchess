@@ -60,6 +60,7 @@ input {
 	overflow: visible;
 }
 #game-status {
+	position: relative;
 	padding-top: 0.1em;
 	margin: 0;
 	width: 100vmin;
@@ -237,6 +238,10 @@ input {
 	background-color: rgba(255, 255, 0, 0.6);
 }
 /* board rotation */
+#board, #promotion-overlay, #next-move, #header, #board .edging, #board .grid {
+	transition-duration: 0.8s;
+	transition-property: top, left, margin, width, height, transform;
+}
 #board, #board .grid span.piece { 
 	transition-duration: 0.8s;
 	transition-property: transform;
@@ -279,9 +284,9 @@ div.thrown-outs .count {
 	font-size: 0.7em;
 }
 /* throen out pieces flipping at board rotation */
-#thrown-outs-container, #thrown-outs-container .thrown-outs, #thrown-outs-container .piececount { 
+#board, #thrown-outs-container, #thrown-outs-container .thrown-outs, #thrown-outs-container .piececount { 
 	transition-duration: 0.8s;
-	transition-property: all;
+	transition-property: top, left, margin, width, height, transform;
 }
 #thrown-outs-container.rotated180deg div.thrown-outs {
 	transform: rotate(180deg);
@@ -383,7 +388,7 @@ div.thrown-outs .count {
 		min-height: 8.4cm;
 	}
 	#thrown-outs-container {
-		height: calc(8.4cm * 2 / 28);
+		height: calc((8.4cm * 2) / 28);
 		line-height: calc(8.4cm * 2 / 28);
 	}
 
@@ -423,7 +428,7 @@ div.thrown-outs .count {
 @media (orientation: portrait) and (min-width: 10.2cm) {
 	/* display is wide enugh to rearange trown outs to side */
 	#thrown-outs-container {
-		height: calc(8.4cm * 3 / 28);
+		height: calc((8.4cm * 3) / 28);
 		transform: rotate(-90deg);
 		transform-origin: center -4.2cm;
 	}
@@ -439,6 +444,9 @@ div.thrown-outs .count {
 	}
 	#thrown-outs-container.rotated180deg #thrown-outs-black .piececount {
 		padding-top: 0.7em
+	}
+	#game-status {
+		top: calc((-8.4cm * 3) / 28);
 	}
 }
 @media (orientation: portrait) and (min-width: 12cm) {
