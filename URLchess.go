@@ -533,6 +533,7 @@ func (app *app) updateBoard() error {
 
 				// select input text & copy to clipboard
 				if nextMoveInput := js.Global.Get("document").Call("getElementById", "next-move-input"); nextMoveInput != nil {
+					nextMoveInput.Call("focus")
 					nextMoveInput.Call("select")
 					js.Global.Get("document").Call("execCommand", "Copy")
 					nextMoveInput.Call("blur")
