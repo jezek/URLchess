@@ -473,6 +473,13 @@ func (app *app) updateBoard() error {
 	}
 
 	drawPosition := app.game.Position()
+	drawThrownOuts := thrownOuts{}
+	if gcl := len(app.gameGc); gcl > 0 {
+		for p, n := range app.gameGc[gcl-1] {
+			drawThrownOuts[p] = n
+		}
+	}
+
 	// precalculate next move markers and stuff
 	var nextMoveError error
 	nextMoveMarkerClasses := map[square.Square][]string{}
@@ -511,7 +518,13 @@ func (app *app) updateBoard() error {
 			//set drawing position to next move
 			drawPosition = app.game.Position().MakeMove(app.nextMove)
 
-			//TODO check for thrown out piece and add to container if true
+			//check for thrown out piece and add to container if true
+			if tsp := app.game.Position().OnSquare(app.nextMove.To()); tsp.Type != piece.None {
+				if _, ok := drawThrownOuts[tsp]; !ok {
+					drawThrownOuts[tsp] = 0
+				}
+				drawThrownOuts[tsp]++
+			}
 
 			nextMoveString, err := encodeMove(app.nextMove) // encoding.go
 			if err != nil {
@@ -684,6 +697,7 @@ func (app *app) updateBoard() error {
 			return errors.New("Can't find square element: " + sq.String())
 		}
 
+		pc := drawPosition.OnSquare(sq)
 		markerClasses := []string{"marker"}
 		{ // marker classes fill
 
@@ -706,9 +720,14 @@ func (app *app) updateBoard() error {
 					markerClasses = append(markerClasses, m...)
 				}
 			}
+
+			{ // king in check
+				if pc.Type == piece.King && drawPosition.Check(pc.Color) {
+					markerClasses = append(markerClasses, "check")
+				}
+			}
 		}
 
-		pc := drawPosition.OnSquare(sq)
 		innerHTML := "<span class=\"" + strings.Join(markerClasses, " ") + "\">" + piecesToString[pc] + "</span>"
 
 		sqElm.Set("innerHTML", innerHTML)
@@ -719,13 +738,13 @@ func (app *app) updateBoard() error {
 	}
 
 	// fill thrown out pieces
-	if gcl := len(app.gameGc); gcl > 0 {
+	if len(drawThrownOuts) > 0 {
 		for _, c := range piece.Colors {
 			id := "thrown-outs-" + strings.ToLower(c.String())
 			if tosElm := js.Global.Get("document").Call("getElementById", id); tosElm != nil {
 				tos := thrownOuts{}
 				// fill thrown outs only for current color "c"
-				for p, n := range app.gameGc[gcl-1] {
+				for p, n := range drawThrownOuts {
 					if p.Color == c {
 						tos[p] = n
 					}
@@ -754,9 +773,15 @@ func (app *app) updateBoard() error {
 					}
 
 					lastMoveThrownOutPiece := piece.Piece{}
-					if gcl-2 >= 0 {
-						prevPos := app.game.Positions[gcl-2]
-						lastMovePosition := app.game.Position().LastMove
+					if drawPosition.Equals(app.game.Position()) {
+						if gcl := len(app.game.Positions); gcl-2 >= 0 {
+							prevPos := app.game.Positions[gcl-2]
+							lastMovePosition := app.game.Position().LastMove
+							lastMoveThrownOutPiece = prevPos.OnSquare(lastMovePosition.To())
+						}
+					} else {
+						prevPos := app.game.Position()
+						lastMovePosition := app.nextMove
 						lastMoveThrownOutPiece = prevPos.OnSquare(lastMovePosition.To())
 					}
 
