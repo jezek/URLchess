@@ -16,7 +16,7 @@ Go to URLchess project directory and generate javascript content using:
 gopherjs build -m
 ```
 
-Copy `index.html`, `URLchess.js` and `URLchess.css` to your server accessible from internet and feel free to play
+Copy `index.html`, `URLchess.js` and `URLchess.css` to your server accessible from internet (or just run it in browser) and feel free to play
 
 ### Demo
 Try at [URLchess project pages](https://jezek.github.io/URLchess).
