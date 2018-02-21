@@ -1,16 +1,16 @@
 body {
 	margin: 0;
-	background-color: #101020;
-	color: #dfdfef;
+	background-color: #0e1e1e;
+	color: #dfefef;
 	/* font-size: width (or height) of 1 #board .grid square; */
 	font-size: calc(100vmin * 3 / 28);
 }
 a {
-	color: #dfdfef;
+	color: #dfefef;
 }
 input {
-	background-color: #101020;
-	color: #dfdfef;
+	background-color: #0e1e1e;
+	color: #dfefef;
 }
 .piece {
 	color: black;
@@ -44,8 +44,7 @@ input {
 	height: 100vmin;
 	font-size: 0.5em;
 	box-sizing: border-box;
-	background-color: rgba(0, 0, 0, 0.75);
-	opacity: 0.8;
+	background-color: rgba(14, 30, 30, 0.875);
 	display: flex;
 	justify-content: center;
 	flex-flow: column;
@@ -165,28 +164,31 @@ input {
 #board .grid span.marker {
 }
 #board .grid span.marker.last-move-white {
-	background-color: rgba(0, 255, 0, 0.2);
+	background-color: rgba(0, 255, 0, 0.125);
 }
 #board .grid span.marker.last-move-black {
-	background-color: rgba(0, 0, 255, 0.2);
+	background-color: rgba(0, 0, 255, 0.125);
+}
+#board .grid span.marker.check {
+	background-color: rgba(255, 0, 0, 0.4);
 }
 #board .grid span.marker.next-move-white {
-	background-color: rgba(0, 255, 0, 0.2);
+	background-color: rgba(0, 255, 0, 0.125);
 }
 #board .grid span.marker.next-move-black {
-	background-color: rgba(0, 0, 255, 0.2);
+	background-color: rgba(0, 0, 255, 0.125);
 }
 #board .grid span.marker.last-move.next-move-to {
-	background-color: rgba(0, 255, 255, 0.2);
+	background-color: rgba(0, 255, 255, 0.125);
 }
 #board .grid span.marker.next-move-possible-to {
 	background-color: transparent;
 }
 #board .grid span.marker.last-move-white.next-move-possible-to {
-	background-color: rgba(0, 255, 0, 0.2);
+	background-color: rgba(0, 255, 0, 0.125);
 }
 #board .grid span.marker.last-move-black.next-move-possible-to {
-	background-color: rgba(0, 0, 255, 0.2);
+	background-color: rgba(0, 0, 255, 0.125);
 }
 #board .grid span.marker.next-move-possible-to::after {
 	content: "•";
@@ -203,20 +205,17 @@ input {
 	color: rgba(0, 0, 255, 0.5);
 }
 #board .grid span.marker.next-move-possible-to.next-move-white:hover {
-	background-color: rgba(0, 255, 0, 0.2);
+	background-color: rgba(0, 255, 0, 0.125);
 }
 #board .grid span.marker.next-move-possible-to.next-move-black:hover {
-	background-color: rgba(0, 0, 255, 0.2);
+	background-color: rgba(0, 0, 255, 0.125);
 }
 #board .grid span.marker.last-move-black.next-move-possible-to.next-move-white:hover,
 #board .grid span.marker.last-move-white.next-move-possible-to.next-move-black:hover {
-	background-color: rgba(0, 255, 255, 0.2);
+	background-color: rgba(0, 255, 255, 0.125);
 }
 #board .grid span.marker.next-move-possible-to:hover::after {
 	content: "";
-}
-#board .grid span.marker.check {
-	background-color: rgba(255, 0, 0, 0.3);
 }
 
 #promotion-overlay {
@@ -226,7 +225,7 @@ input {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background-color: rgba(0, 0, 0, 0.6);
+	background-color: rgba(14, 30, 30, 0.875);
 }
 #promotion-overlay.show {
 	display: flex;
@@ -236,14 +235,14 @@ input {
 #promotion-overlay span.piece {
 	display: block;
 	margin: 0 calc((100vmin * 3 / 28) / 4);
-	background-color: rgba(255, 255, 255, 0.6);
+	background-color: rgba(223, 239, 239, 0.6);
 	font-size: calc(1em * 5 / 6);
 	width: calc(100vmin * 3 / 28);
 	height: calc(100vmin * 3 / 28);
 	cursor: pointer;
 }
 #promotion-overlay span.piece:hover {
-	background-color: rgba(255, 255, 0, 0.6);
+	background-color: rgba(0, 255, 255, 0.6);
 }
 /* board rotation */
 #board, #promotion-overlay, #next-move, #header, #board .edging, #board .grid {
@@ -289,7 +288,7 @@ input {
 	background-color: rgba(255, 100, 100, 0.6);
 }
 div.thrown-outs .piece {
-	background-color: rgba(255, 255, 255, 0.6);
+	background-color: rgba(223, 239, 239, 0.6);
 }
 div.thrown-outs .count {
 	font-size: 0.7em;
@@ -358,7 +357,7 @@ div.thrown-outs .count {
 #game-status span.piece {
 	margin-top: 0.25em;
 	display: inline-block;
-	background-color: rgba(255, 255, 255, 0.6);
+	background-color: rgba(223, 239, 239, 0.6);
 	width: calc(100vmin * 3 / 28);
 	height: calc(100vmin * 3 / 28);
 	font-size: calc(1em * 5 / 6);
