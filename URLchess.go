@@ -106,8 +106,17 @@ func main() {
 				}
 			}
 
-			// was a piece thrown out = move destination contains some piece
+			// was a piece thrown out regulary? = move destination contains some piece
 			if p := pbm.OnSquare(move.To()); p.Type != piece.None {
+				if _, ok := tos[p]; !ok {
+					tos[p] = 0
+				}
+				tos[p]++
+			}
+
+			// was en passant throw out? = moved piece is pawn and move destination is an en passan square in previous move
+			if mp := pbm.OnSquare(move.From()); mp.Type == piece.Pawn && move.To() == pbm.EnPassant {
+				p := piece.New(piece.Colors[(pbm.ActiveColor+1)%2], piece.Pawn)
 				if _, ok := tos[p]; !ok {
 					tos[p] = 0
 				}
@@ -518,12 +527,24 @@ func (app *app) updateBoard() error {
 			//set drawing position to next move
 			drawPosition = app.game.Position().MakeMove(app.nextMove)
 
-			//check for thrown out piece and add to container if true
-			if tsp := app.game.Position().OnSquare(app.nextMove.To()); tsp.Type != piece.None {
-				if _, ok := drawThrownOuts[tsp]; !ok {
-					drawThrownOuts[tsp] = 0
+			{ //check for thrown out piece and add to container if true
+
+				// regular throw out
+				if tsp := app.game.Position().OnSquare(app.nextMove.To()); tsp.Type != piece.None {
+					if _, ok := drawThrownOuts[tsp]; !ok {
+						drawThrownOuts[tsp] = 0
+					}
+					drawThrownOuts[tsp]++
 				}
-				drawThrownOuts[tsp]++
+
+				// en passant throw out
+				if mp := app.game.Position().OnSquare(app.nextMove.From()); mp.Type == piece.Pawn && app.nextMove.To() == app.game.EnPassant() {
+					tsp := piece.New(piece.Colors[(app.game.ActiveColor()+1)%2], piece.Pawn)
+					if _, ok := drawThrownOuts[tsp]; !ok {
+						drawThrownOuts[tsp] = 0
+					}
+					drawThrownOuts[tsp]++
+				}
 			}
 
 			nextMoveString, err := encodeMove(app.nextMove) // encoding.go
@@ -773,16 +794,27 @@ func (app *app) updateBoard() error {
 					}
 
 					lastMoveThrownOutPiece := piece.Piece{}
+					//TODO refactor duplicate code
 					if drawPosition.Equals(app.game.Position()) {
 						if gcl := len(app.game.Positions); gcl-2 >= 0 {
 							prevPos := app.game.Positions[gcl-2]
-							lastMovePosition := app.game.Position().LastMove
-							lastMoveThrownOutPiece = prevPos.OnSquare(lastMovePosition.To())
+							lastMove := app.game.Position().LastMove
+
+							lastMoveThrownOutPiece = prevPos.OnSquare(lastMove.To())
+							// last move with pawn to en passant position
+							if mp := prevPos.OnSquare(lastMove.From()); mp.Type == piece.Pawn && prevPos.EnPassant == lastMove.To() {
+								lastMoveThrownOutPiece = piece.New(piece.Colors[(prevPos.ActiveColor+1)%2], piece.Pawn)
+							}
 						}
 					} else {
 						prevPos := app.game.Position()
-						lastMovePosition := app.nextMove
-						lastMoveThrownOutPiece = prevPos.OnSquare(lastMovePosition.To())
+						lastMove := app.nextMove
+
+						lastMoveThrownOutPiece = prevPos.OnSquare(lastMove.To())
+						// last move with pawn to en passant position
+						if mp := prevPos.OnSquare(lastMove.From()); mp.Type == piece.Pawn && prevPos.EnPassant == lastMove.To() {
+							lastMoveThrownOutPiece = piece.New(piece.Colors[(prevPos.ActiveColor+1)%2], piece.Pawn)
+						}
 					}
 
 					// fill pieces
