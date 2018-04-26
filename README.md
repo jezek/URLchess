@@ -1,5 +1,14 @@
 URLchess - simple anonymus chess played via url
 -----------------------------------------------
+### Demo
+Try at [URLchess project pages](https://jezek.github.io/URLchess).
+
+### Why?
+To play chess via mail (or messenger app) without need to register somewhere
+
+### How to play?
+- 1st move: Go to [URLchess page](https://jezek.github.io/URLchess), make your move and send generated link to your oponent (via email, messenger, sms, ...).
+- Reply to move: Click on link, you got from your oponent, make move and send generated link back.
 
 ### Dependencies
 - [gopherjs](https://github.com/gopherjs/gopherjs) to generate js
@@ -17,15 +26,6 @@ gopherjs build -m
 ```
 
 Copy `index.html`, `URLchess.js` and `URLchess.css` to your server accessible from internet (or just run it in browser) and feel free to play
-
-### Demo
-Try at [URLchess project pages](https://jezek.github.io/URLchess).
-
-### Why?
-To play chess via mail (or messanger app) without need to register somewhere
-
-### How to play?
-Go to URLchess page, make your move and send generated link to your oponent.
 
 ### Roadmap
 This is an early relase. Improvements will be done soon. Some of them:
