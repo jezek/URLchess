@@ -315,10 +315,15 @@ func (app *app) drawBoard() {
 </div>`)
 	}
 
-	{ // event listeners
+	{ // notification overlay
+		document.Call("write", `<div id="notification-overlay" class="_hidden">
+		<p class="message">Long live this notification</p>
+		<p class="hint">Click/tap anywhere to close</p>
+</div>`)
+	}
 
-		// next move back
-		if back := document.Call("getElementById", "next-move-back"); back != nil {
+	{ // event listeners
+		if back := document.Call("getElementById", "next-move-back"); back != nil { // next move back
 			back.Call(
 				"addEventListener",
 				"click",
@@ -334,8 +339,8 @@ func (app *app) drawBoard() {
 				false,
 			)
 		}
-		// next move link ckick
-		if ebl := document.Call("getElementById", "edging-bottom-left"); ebl != nil {
+
+		if ebl := document.Call("getElementById", "edging-bottom-left"); ebl != nil { // next move link ckick
 			if link := document.Call("getElementById", "next-move-link"); link != nil {
 				link.Call(
 					"addEventListener",
@@ -376,8 +381,7 @@ func (app *app) drawBoard() {
 			}
 		}
 
-		// map click events to grid squares
-		for i := int(63); i >= 0; i-- {
+		for i := int(63); i >= 0; i-- { // map click events to grid squares
 			sq := square.Square(i)
 			if sqElm := document.Call("getElementById", sq.String()); sqElm != nil {
 				sqElm.Call(
@@ -389,8 +393,7 @@ func (app *app) drawBoard() {
 			}
 		}
 
-		// promotion overlay
-		if promotionOverlay := document.Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
+		if promotionOverlay := document.Call("getElementById", "promotion-overlay"); promotionOverlay != nil { // promotion overlay
 			promotionOverlay.Call(
 				"addEventListener",
 				"click",
@@ -430,6 +433,20 @@ func (app *app) drawBoard() {
 					)
 				}
 			}
+		}
+
+		if notificationOverlay := document.Call("getElementById", "notification-overlay"); notificationOverlay != nil { // notification overlay
+			notificationOverlay.Set("hidden", true)
+			notificationOverlay.Call(
+				"addEventListener",
+				"click",
+				func(event *js.Object) {
+					event.Call("preventDefault")
+					//TODO logic
+					notificationOverlay.Get("classList").Call("add", "hidden")
+				},
+				false,
+			)
 		}
 	}
 }

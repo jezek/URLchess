@@ -67,6 +67,17 @@ input {
 	overflow: hidden;
 	box-sizing: border-box;
 }
+#notification-overlay {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100vw;
+	height: 100vh;
+	background-color: rgba(0, 0, 255, 0.05);
+	display: flex;
+	justify-content: center;
+	flex-flow: column;
+}
 #footer {
 	position: relative;
 	font-size:0.3em;
@@ -314,9 +325,6 @@ div.thrown-outs .count {
 /*************/
 /* next move */
 /*************/
-#next-move.hidden {
-	display: none;
-}
 #next-move p {
 	box-sizing: border-box;
 	margin:0;
@@ -346,6 +354,9 @@ div.thrown-outs .count {
 	display: block;
 	margin: 0 1em;
 }
+#next-move.hidden {
+	display: none;
+}
 
 /***************/
 /* game status */
@@ -366,6 +377,41 @@ div.thrown-outs .count {
 	font-size: 0.6em;
 }
 
+/************************/
+/* notification overlay */
+/************************/
+#notification-overlay p {
+	box-sizing: border-box;
+	margin:0;
+	padding:0;
+	text-align: center;
+	background-color: rgba(0, 0, 127, 0.9);
+	border-left: 0;
+	border-right: 0;
+	width: 100%;
+	transition-duration: 0.4s;
+	transition-property: height, padding, border, visibility;
+}
+#notification-overlay p.message {
+	height: 2em;
+	padding: 0.6em 0 0.4em;
+	border-top: 1vh solid rgba(0, 0, 255, 0.9);
+}
+#notification-overlay p.hint {
+	color: #777799;
+	font-size: 0.35em;
+	border-bottom: 1vh solid rgba(0, 0, 255, 0.9);
+}
+#notification-overlay.hidden {
+	visibility: hidden;
+	overflow: hidden;
+}
+#notification-overlay.hidden p {
+	height: 0;
+	padding: 0;
+	overflow: hidden;
+	border: 0;
+}
 
 /*********************/
 /* responsive design */
