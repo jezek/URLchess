@@ -73,7 +73,7 @@ input {
 	top: 0;
 	width: 100vw;
 	height: 100vh;
-	background-color: rgba(0, 0, 255, 0.05);
+	background-color: rgba(0, 0, 127, 0.1);
 	display: flex;
 	justify-content: center;
 	flex-flow: column;
@@ -328,18 +328,20 @@ div.thrown-outs .count {
 #next-move p {
 	box-sizing: border-box;
 	margin:0;
-	padding: 0.5em;
+	padding: 1em 0.5em;
 }
 #next-move p.link {
 	text-align: center;
 }
-#next-move p.link input, #next-move p.link span.hint {
+#next-move p.link input, #next-move p.link span.hint, #next-move p.link a {
 	display: block;
 }
 #next-move p.link input {
 	margin: 0 auto;
 	width: 90%;
 	background-color: transparent;
+	height: 2em;
+	text-align: center;
 }
 #next-move p.link span.hint {
 	font-size: 0.7em;
@@ -380,6 +382,11 @@ div.thrown-outs .count {
 /************************/
 /* notification overlay */
 /************************/
+#notification-overlay, #notification-overlay p {
+	transition-duration: 0.2s;
+	transition-property: height, min-height, padding, border, visibility;
+	overflow: hidden;
+}
 #notification-overlay p {
 	box-sizing: border-box;
 	margin:0;
@@ -389,13 +396,12 @@ div.thrown-outs .count {
 	border-left: 0;
 	border-right: 0;
 	width: 100%;
-	transition-duration: 0.4s;
-	transition-property: height, padding, border, visibility;
 }
 #notification-overlay p.message {
-	height: 2em;
-	padding: 0.6em 0 0.4em;
+	min-height: 2em;
+	padding: 0.6em 0.2em 0.4em;
 	border-top: 1vh solid rgba(0, 0, 255, 0.9);
+	font-size: 0.5em;
 }
 #notification-overlay p.hint {
 	color: #777799;
@@ -404,12 +410,11 @@ div.thrown-outs .count {
 }
 #notification-overlay.hidden {
 	visibility: hidden;
-	overflow: hidden;
 }
 #notification-overlay.hidden p {
+	min-height: 0;
 	height: 0;
 	padding: 0;
-	overflow: hidden;
 	border: 0;
 }
 

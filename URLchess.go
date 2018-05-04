@@ -164,6 +164,12 @@ func (app *app) drawBoard() {
 
 	rotateBoard180deg := rotationSupported && app.game.ActiveColor() == piece.Black
 
+	// is execCommand supported?
+	canExec := false
+	if exec := js.Global.Get("document").Get("execCommand"); exec != nil && exec != js.Undefined {
+		canExec = true
+	}
+
 	rotateBoard180degFunc := func(event *js.Object) {
 		for _, elmId := range []string{"board", "thrown-outs-container"} {
 			if elm := document.Call("getElementById", elmId); elm != nil {
@@ -289,59 +295,70 @@ func (app *app) drawBoard() {
 	}
 
 	{ // next move
-		hintString := "copy this link and send it to your oponent"
-
-		if exec := js.Global.Get("document").Get("execCommand"); exec != nil && exec != js.Undefined {
-			hintString = "this link has been copied to clipboard, send it to your oponent"
+		copyOrHint := `<span class="hint">copy this link and send it to your oponent</span>`
+		if canExec {
+			copyOrHint = `<a href="" id="next-move-copy">copy to clipboard</a>`
 		}
 
 		document.Call("write", `<div id="next-move" class="hidden">
 	<p class="link">
 		Next move URL link:
 		<input id="next-move-input" readonly="readonly" value=""/>
-		<span class="hint">`+hintString+`</span>
+		`+copyOrHint+`
 	</p>
   <p class="actions">
 		<a id="next-move-link" href="">make move</a>
 		<a id="next-move-back" href="">undo move</a>
 	</p>
 </div>`)
-	}
+		{ // listeners
+			if canExec {
+				if copy := document.Call("getElementById", "next-move-copy"); copy != nil { // next move copy
+					copy.Call(
+						"addEventListener",
+						"click",
+						func(event *js.Object) {
+							event.Call("preventDefault")
+							// select input text & copy to clipboard
+							if nextMoveInput := js.Global.Get("document").Call("getElementById", "next-move-input"); nextMoveInput != nil {
+								nextMoveInput.Call("focus")
+								nextMoveInput.Call("setSelectionRange", 0, nextMoveInput.Get("value").Get("length"))
+								js.Global.Get("document").Call("execCommand", "Copy")
+								nextMoveInput.Call("blur")
 
-	{ // game status
-		document.Call("write", `<div id="game-status">
-	<p id="game-status-text">... loading ...</p>
-	<p id="game-status-player">`+piecesToString[piece.New(piece.White, piece.King)]+piecesToString[piece.New(piece.Black, piece.King)]+`</p>
-</div>`)
-	}
+								// notification
+								if notificationOverlay := js.Global.Get("document").Call("getElementById", "notification-overlay"); notificationOverlay != nil {
+									// change message
+									if notificationMessage := js.Global.Get("document").Call("getElementById", "notification-message"); notificationMessage != nil {
+										notificationMessage.Set("innerHTML", "link has been copied to clipboard, send it to your oponent")
+									}
+									// show notification
+									notificationOverlay.Get("classList").Call("remove", "hidden")
+								}
+							}
+						},
+						false,
+					)
+				}
+			}
+			if back := document.Call("getElementById", "next-move-back"); back != nil { // next move back
+				back.Call(
+					"addEventListener",
+					"click",
+					func(event *js.Object) {
+						event.Call("preventDefault")
+						app.nextMove = move.Null
+						//js.Global.Call("alert", "calling update board from next-move-back listener")
+						if err := app.updateBoard(); err != nil {
+							document.Call("getElementById", "game-status").Set("innerHTML", err.Error())
+							return
+						}
+					},
+					false,
+				)
+			}
 
-	{ // notification overlay
-		document.Call("write", `<div id="notification-overlay" class="_hidden">
-		<p class="message">Long live this notification</p>
-		<p class="hint">Click/tap anywhere to close</p>
-</div>`)
-	}
-
-	{ // event listeners
-		if back := document.Call("getElementById", "next-move-back"); back != nil { // next move back
-			back.Call(
-				"addEventListener",
-				"click",
-				func(event *js.Object) {
-					event.Call("preventDefault")
-					app.nextMove = move.Null
-					//js.Global.Call("alert", "calling update board from next-move-back listener")
-					if err := app.updateBoard(); err != nil {
-						document.Call("getElementById", "game-status").Set("innerHTML", err.Error())
-						return
-					}
-				},
-				false,
-			)
-		}
-
-		if ebl := document.Call("getElementById", "edging-bottom-left"); ebl != nil { // next move link ckick
-			if link := document.Call("getElementById", "next-move-link"); link != nil {
+			if link := document.Call("getElementById", "next-move-link"); link != nil { // next move link
 				link.Call(
 					"addEventListener",
 					"click",
@@ -380,6 +397,41 @@ func (app *app) drawBoard() {
 				)
 			}
 		}
+	}
+
+	{ // game status
+		document.Call("write", `<div id="game-status">
+	<p id="game-status-text">... loading ...</p>
+	<p id="game-status-player">`+piecesToString[piece.New(piece.White, piece.King)]+piecesToString[piece.New(piece.Black, piece.King)]+`</p>
+</div>`)
+	}
+
+	{ // notification overlay
+		document.Call("write", `<div id="notification-overlay" class="hidden">
+		<p id="notification-message" class="message">long live this notification</p>
+		<p class="hint">Click or tap anywhere to close</p>
+</div>`)
+
+		// listeners
+		if notificationOverlay := document.Call("getElementById", "notification-overlay"); notificationOverlay != nil { // notification overlay
+			notificationOverlay.Set("hidden", true)
+			notificationOverlay.Call(
+				"addEventListener",
+				"click",
+				func(event *js.Object) {
+					event.Call("preventDefault")
+					// reset message
+					if notificationMessage := js.Global.Get("document").Call("getElementById", "notification-message"); notificationMessage != nil {
+						notificationMessage.Set("innerHTML", "long live this notification")
+					}
+					notificationOverlay.Get("classList").Call("add", "hidden")
+				},
+				false,
+			)
+		}
+	}
+
+	{ // event listeners
 
 		for i := int(63); i >= 0; i-- { // map click events to grid squares
 			sq := square.Square(i)
@@ -435,19 +487,6 @@ func (app *app) drawBoard() {
 			}
 		}
 
-		if notificationOverlay := document.Call("getElementById", "notification-overlay"); notificationOverlay != nil { // notification overlay
-			notificationOverlay.Set("hidden", true)
-			notificationOverlay.Call(
-				"addEventListener",
-				"click",
-				func(event *js.Object) {
-					event.Call("preventDefault")
-					//TODO logic
-					notificationOverlay.Get("classList").Call("add", "hidden")
-				},
-				false,
-			)
-		}
 	}
 }
 
@@ -564,6 +603,7 @@ func (app *app) updateBoard() error {
 				}
 			}
 
+			// update next-move properties
 			nextMoveString, err := encodeMove(app.nextMove) // encoding.go
 			if err != nil {
 				nextMoveError = errors.New("Next move encoding error: " + err.Error())
@@ -578,16 +618,9 @@ func (app *app) updateBoard() error {
 					nextMoveInput.Set("value", url)
 				}
 
+				// show next-move layer
 				if nextMove := js.Global.Get("document").Call("getElementById", "next-move"); nextMove != nil {
 					nextMove.Get("classList").Call("remove", "hidden")
-				}
-
-				// select input text & copy to clipboard
-				if nextMoveInput := js.Global.Get("document").Call("getElementById", "next-move-input"); nextMoveInput != nil {
-					nextMoveInput.Call("focus")
-					nextMoveInput.Call("select")
-					js.Global.Get("document").Call("execCommand", "Copy")
-					nextMoveInput.Call("blur")
 				}
 			}
 		} else {
