@@ -299,6 +299,10 @@ input {
 	background-color: rgba(255, 100, 100, 0.6);
 }
 div.thrown-outs .piece {
+	display: inline-block;
+	box-sizing: border-box;
+	height: 1.2em;
+	line-height: 1.35em;
 	background-color: rgba(223, 239, 239, 0.6);
 }
 div.thrown-outs .count {
