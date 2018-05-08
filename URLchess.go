@@ -148,8 +148,8 @@ type app struct {
 	squaresHandler map[square.Square]func(sq square.Square, event *js.Object)
 }
 
-// Draws chess board, game-status and next-move elements to document.
-// Also sets event listeners for grid and undo next move
+// Draws chess board, game-status, next-move and notification elements to document.
+// Also sets event listeners for grid & copy, make, undo next move and notification
 func (app *app) drawBoard() {
 	document := js.Global.Get("document")
 
@@ -297,7 +297,7 @@ func (app *app) drawBoard() {
 	{ // next move
 		copyOrHint := `<span class="hint">copy this link and send it to your oponent</span>`
 		if canExec {
-			copyOrHint = `<a href="" id="next-move-copy">copy to clipboard</a>`
+			copyOrHint = `<a href="" id="next-move-copy">Copy to clipboard</a>`
 		}
 
 		document.Call("write", `<div id="next-move" class="hidden">
@@ -307,8 +307,8 @@ func (app *app) drawBoard() {
 		`+copyOrHint+`
 	</p>
   <p class="actions">
-		<a id="next-move-link" href="">make move</a>
-		<a id="next-move-back" href="">undo move</a>
+		<a id="next-move-link" href="">Make move</a>
+		<a id="next-move-back" href="">Undo move</a>
 	</p>
 </div>`)
 		{ // listeners
@@ -330,7 +330,7 @@ func (app *app) drawBoard() {
 								if notificationOverlay := js.Global.Get("document").Call("getElementById", "notification-overlay"); notificationOverlay != nil {
 									// change message
 									if notificationMessage := js.Global.Get("document").Call("getElementById", "notification-message"); notificationMessage != nil {
-										notificationMessage.Set("innerHTML", "link has been copied to clipboard, send it to your oponent")
+										notificationMessage.Set("innerHTML", "Link has been copied to clipboard, send it to your oponent.")
 									}
 									// show notification
 									notificationOverlay.Get("classList").Call("remove", "hidden")
@@ -419,12 +419,12 @@ func (app *app) drawBoard() {
 				"addEventListener",
 				"click",
 				func(event *js.Object) {
-					event.Call("preventDefault")
+					notificationOverlay.Get("classList").Call("add", "hidden")
+
 					// reset message
 					if notificationMessage := js.Global.Get("document").Call("getElementById", "notification-message"); notificationMessage != nil {
-						notificationMessage.Set("innerHTML", "long live this notification")
+						notificationMessage.Set("innerHTML", ". . .")
 					}
-					notificationOverlay.Get("classList").Call("add", "hidden")
 				},
 				false,
 			)
@@ -920,6 +920,18 @@ func (app *app) updateBoard() error {
 	}
 
 	//js.Global.Call("alert", "end")
+
+	// notification if game not in progress (game ended)
+	if st := app.game.Status(); st != game.InProgress {
+		if notificationOverlay := js.Global.Get("document").Call("getElementById", "notification-overlay"); notificationOverlay != nil {
+			// change message
+			if notificationMessage := js.Global.Get("document").Call("getElementById", "notification-message"); notificationMessage != nil {
+				notificationMessage.Set("innerHTML", text+".<br />"+`<a href="/">New game</a>?`)
+			}
+			// show notification
+			notificationOverlay.Get("classList").Call("remove", "hidden")
+		}
+	}
 
 	return nil
 }
