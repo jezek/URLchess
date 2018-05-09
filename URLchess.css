@@ -44,7 +44,7 @@ input {
 	height: 100vmin;
 	font-size: 0.5em;
 	box-sizing: border-box;
-	background-color: rgba(14, 30, 30, 0.875);
+	background-color: rgba(14, 30, 30, 0.75);
 	display: flex;
 	justify-content: center;
 	flex-flow: column;
