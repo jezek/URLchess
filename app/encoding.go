@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"errors"
@@ -51,7 +51,7 @@ func encodeMove(m move.Move) (string, error) {
 	return res, nil
 }
 
-func decodeMoves(moves string) ([]move.Move, error) {
+func DecodeMoves(moves string) ([]move.Move, error) {
 	res := []move.Move{}
 	if moves == "" {
 		return res, nil
