@@ -10,6 +10,8 @@ import (
 )
 
 func main() {
+	//js.Global.Call("alert", "main")
+
 	document := js.Global.Get("document")
 	if document == js.Undefined {
 		return
@@ -23,30 +25,26 @@ func main() {
 </div>`)
 	}()
 
-	location := js.Global.Get("location")
-	movesString := ""
-	{
-		hash := location.Get("hash").String()
-		{ // in old times the url was like "host/?moves", now we use host/#moves so fix prviious url
-			search := strings.TrimPrefix(location.Get("search").String(), "?")
-			if len(search) > 0 && len(hash) == 0 {
-				js.Global.Call("alert", "URL is in format for URLchess version <=0.6, transforming...")
-				location.Set("href", strings.Replace(location.Get("href").String(), "?", "#", 1))
-				return
-			}
-		}
-		movesString = strings.TrimPrefix(hash, "#")
+	htmlApp := app.HtmlApp{
+		Element: document.Get("body"),
 	}
 
-	app, err := app.NewHtml(movesString)
-	if err != nil {
+	if err := htmlApp.UpdateDom(); err != nil {
 		document.Call("write", err.Error())
 	}
-	app.DrawBoard()
 
-	//js.Global.Call("alert", "calling update board from main")
-	if err := app.UpdateBoard(); err != nil {
-		document.Call("getElementById", "game-status").Set("innerHTML", err.Error())
-		return
+	movesString := strings.TrimPrefix(js.Global.Get("location").Get("hash").String(), "#")
+	if len(movesString) > 0 {
+		js.Global.Call("alert", movesString)
+		game, err := app.NewGame(movesString)
+		if err != nil {
+			document.Call("write", err.Error())
+		}
+
+		htmlApp.Game = game
+	}
+
+	if err := htmlApp.UpdateDom(); err != nil {
+		document.Call("write", err.Error())
 	}
 }

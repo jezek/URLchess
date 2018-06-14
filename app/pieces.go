@@ -4,11 +4,12 @@ import (
 	"strings"
 
 	"github.com/andrewbackes/chess/piece"
+	"github.com/gopherjs/gopherjs/js"
 )
 
 var playablePiecesType = []piece.Type{piece.Pawn, piece.Rook, piece.Knight, piece.Bishop, piece.Queen, piece.King}
 var promotablePiecesType = []piece.Type{piece.Rook, piece.Knight, piece.Bishop, piece.Queen}
-var thrownOutPiecesOrderType = []piece.Type{piece.Pawn, piece.Rook, piece.Knight, piece.Bishop, piece.Queen}
+var thrownOutPiecesOrderType = []piece.Type{piece.Pawn, piece.Knight, piece.Bishop, piece.Rook, piece.Queen}
 
 var pieceTypesToName = map[piece.Type]string{
 	piece.Pawn:   "pawn",
@@ -30,13 +31,11 @@ var pieceNamesToType map[string]piece.Type = func() map[string]piece.Type {
 	return res
 }()
 
-var piecesToString map[piece.Piece]string = func() map[piece.Piece]string {
-	res := make(map[piece.Piece]string, len(piece.Colors)*len(pieceTypesToName))
-	for _, pieceColor := range piece.Colors {
-		for pieceType, pieceName := range pieceTypesToName {
-			p := piece.New(pieceColor, pieceType)
-			res[p] = "<span class=\"piece " + strings.ToLower(pieceColor.String()) + " " + pieceName + "\">" + p.Figurine() + "</span>"
-		}
-	}
-	return res
-}()
+func pieceElement(p piece.Piece) *js.Object {
+	elm := js.Global.Get("document").Call("createElement", "span")
+	elm.Get("classList").Call("add", "piece")
+	elm.Get("classList").Call("add", strings.ToLower(p.Color.String()))
+	elm.Get("classList").Call("add", pieceTypesToName[p.Type])
+	elm.Set("textContent", p.Figurine())
+	return elm
+}
