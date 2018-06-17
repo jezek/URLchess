@@ -25,9 +25,8 @@ func main() {
 </div>`)
 	}()
 
-	htmlApp := app.HtmlApp{
-		Element: document.Get("body"),
-	}
+	htmlApp := app.HtmlApp{}
+	htmlApp.SetRootElement(document.Get("body"))
 
 	if err := htmlApp.UpdateDom(); err != nil {
 		document.Call("write", err.Error())
@@ -35,7 +34,7 @@ func main() {
 
 	movesString := strings.TrimPrefix(js.Global.Get("location").Get("hash").String(), "#")
 	if len(movesString) > 0 {
-		js.Global.Call("alert", movesString)
+		//js.Global.Call("alert", movesString)
 		game, err := app.NewGame(movesString)
 		if err != nil {
 			document.Call("write", err.Error())

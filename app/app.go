@@ -12,8 +12,12 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
+type Elementer interface {
+	Element() *js.Object
+}
+
 type Updater interface {
-	Update() (*js.Object, error)
+	Update(*AppEvents) (*js.Object, error)
 }
 
 type BoardEdging struct {
@@ -21,7 +25,7 @@ type BoardEdging struct {
 	Position string //top, bottom, left, right, top-left, top-right, bottom-left, bottom-right
 }
 
-func (e *BoardEdging) Update() (*js.Object, error) {
+func (e *BoardEdging) Update(_ *AppEvents) (*js.Object, error) {
 	var newElm *js.Object
 	if e.elm == nil {
 		newElm = js.Global.Get("document").Call("createElement", "div")
@@ -37,8 +41,8 @@ type EdgingHorizontal struct {
 	BoardEdging
 }
 
-func (e *EdgingHorizontal) Update() (*js.Object, error) {
-	newElm, err := e.BoardEdging.Update()
+func (e *EdgingHorizontal) Update(events *AppEvents) (*js.Object, error) {
+	newElm, err := e.BoardEdging.Update(events)
 	if newElm != nil {
 		newElm.Get("classList").Call("add", "horizontal")
 		for i := 0; i < 8; i++ {
@@ -54,8 +58,8 @@ type EdgingVertical struct {
 	BoardEdging
 }
 
-func (e *EdgingVertical) Update() (*js.Object, error) {
-	newElm, err := e.BoardEdging.Update()
+func (e *EdgingVertical) Update(events *AppEvents) (*js.Object, error) {
+	newElm, err := e.BoardEdging.Update(events)
 	if newElm != nil {
 		newElm.Get("classList").Call("add", "vertical")
 		for i := 8; i > 0; i-- {
@@ -71,8 +75,8 @@ type EdgingCorner struct {
 	BoardEdging
 }
 
-func (e *EdgingCorner) Update() (*js.Object, error) {
-	newElm, err := e.BoardEdging.Update()
+func (e *EdgingCorner) Update(events *AppEvents) (*js.Object, error) {
+	newElm, err := e.BoardEdging.Update(events)
 	if newElm != nil {
 		newElm.Get("classList").Call("add", "corner")
 	}
@@ -97,7 +101,9 @@ type GridSquare struct {
 	Piece piece.Piece
 }
 
-func (s *GridSquare) Update() (*js.Object, error) {
+func (s *GridSquare) Element() *js.Object { return s.elm }
+
+func (s *GridSquare) Update(events *AppEvents) (*js.Object, error) {
 	var newElm *js.Object
 	if s.elm == nil {
 		// create main board element
@@ -169,6 +175,15 @@ func (s *GridSquare) Update() (*js.Object, error) {
 
 	s.elm.Set("innerHTML", "")
 	s.elm.Call("appendChild", marker)
+
+	// events
+	if s.Piece.Type == piece.King {
+		events.Click(s, func(g ChessGame, m HtmlModel) (ChessGame, HtmlModel) {
+			js.Global.Call("alert", "kingclick")
+			return g, m
+		})
+	}
+
 	return newElm, nil
 }
 
@@ -179,7 +194,7 @@ type BoardGrid struct {
 
 var BoardGridSquareTones = []string{"light-square", "dark-square"}
 
-func (g *BoardGrid) Update() (*js.Object, error) {
+func (g *BoardGrid) Update(events *AppEvents) (*js.Object, error) {
 	var newElm *js.Object
 	if g.elm == nil {
 		// create main board element
@@ -190,7 +205,7 @@ func (g *BoardGrid) Update() (*js.Object, error) {
 	}
 
 	for i := int(63); i >= 0; i-- {
-		if created, err := g.Squares[i].Update(); err != nil {
+		if created, err := g.Squares[i].Update(events); err != nil {
 			return nil, err
 		} else if created != nil {
 			created.Set("id", square.Square(i).String())
@@ -207,7 +222,7 @@ type BoardPromotionOverlay struct {
 	Shown bool
 }
 
-func (p *BoardPromotionOverlay) Update() (*js.Object, error) {
+func (p *BoardPromotionOverlay) Update(events *AppEvents) (*js.Object, error) {
 	var newElm *js.Object
 	if p.elm == nil {
 		// create
@@ -236,7 +251,7 @@ type ModelBoard struct {
 	PromotionOverlay BoardPromotionOverlay
 }
 
-func (b *ModelBoard) Update() (*js.Object, error) {
+func (b *ModelBoard) Update(events *AppEvents) (*js.Object, error) {
 	var newElm *js.Object
 	if b.elm == nil {
 		// create main board element
@@ -269,7 +284,7 @@ func (b *ModelBoard) Update() (*js.Object, error) {
 	}
 
 	for _, updater := range updaters {
-		if created, err := updater.Update(); err != nil {
+		if created, err := updater.Update(events); err != nil {
 			return nil, err
 		} else if created != nil {
 			b.elm.Call("appendChild", created)
@@ -286,7 +301,7 @@ type ThrownOutsContainer struct {
 	LastMoveThrowOut piece.Type
 }
 
-func (c *ThrownOutsContainer) Update() (*js.Object, error) {
+func (c *ThrownOutsContainer) Update(events *AppEvents) (*js.Object, error) {
 	var newElm *js.Object
 	if c.elm == nil {
 		c.elm = js.Global.Get("document").Call("createElement", "div")
@@ -326,7 +341,7 @@ type ModelThrownouts struct {
 	White, Black  ThrownOutsContainer
 }
 
-func (t *ModelThrownouts) Update() (*js.Object, error) {
+func (t *ModelThrownouts) Update(events *AppEvents) (*js.Object, error) {
 	var newElm *js.Object
 	if t.elm == nil {
 		t.elm = js.Global.Get("document").Call("createElement", "div")
@@ -344,7 +359,7 @@ func (t *ModelThrownouts) Update() (*js.Object, error) {
 		t.elm.Get("classList").Call("remove", "rotated180deg")
 	}
 	for _, updater := range []Updater{&t.White, &t.Black} {
-		if created, err := updater.Update(); err != nil {
+		if created, err := updater.Update(events); err != nil {
 			return newElm, err
 		} else if created != nil {
 			t.elm.Call("appendChild", created)
@@ -378,7 +393,7 @@ type HtmlModel struct {
 	Notification ModelNotification
 }
 
-func (m *HtmlModel) Update() ([]*js.Object, error) {
+func (m *HtmlModel) Update(events *AppEvents) ([]*js.Object, error) {
 
 	newElms := []*js.Object{}
 
@@ -389,7 +404,7 @@ func (m *HtmlModel) Update() ([]*js.Object, error) {
 	}
 
 	for _, updater := range updaters {
-		if created, err := updater.Update(); err != nil {
+		if created, err := updater.Update(events); err != nil {
 			return newElms, err
 		} else if created != nil {
 			newElms = append(newElms, created)
@@ -485,18 +500,70 @@ func (ch ChessGame) UpdateModel(m HtmlModel) (HtmlModel, error) {
 	return m, nil
 }
 
-type AppModel struct {
+type EventFunc func(g ChessGame, m HtmlModel) (ChessGame, HtmlModel)
+type jsEventFunc func(*js.Object)
+
+type AppEvents struct {
+	app        *HtmlApp
+	registered map[string]map[Elementer]jsEventFunc
+}
+
+func (e *AppEvents) Click(elm Elementer, ef EventFunc) error {
+	if e.app == nil {
+		return errors.New("no app")
+	}
+	if elm == nil {
+		return errors.New("no element provided for click event")
+	}
+
+	jsEventName := "click"
+
+	if e.registered[jsEventName][elm] != nil {
+		elm.Element().Call("removeEventListener", jsEventName, e.registered[jsEventName][elm], false)
+	}
+
+	jsEventCallback := func(event *js.Object) {
+		e.app.Game, e.app.Model = ef(e.app.Game, e.app.Model)
+		if err := e.app.UpdateDom(); err != nil {
+			js.Global.Call("alert", "after "+jsEventName+" event app dom update error: "+err.Error())
+		}
+	}
+
+	elm.Element().Call("addEventListener", jsEventName, jsEventCallback, false)
+	if e.registered == nil {
+		e.registered = map[string]map[Elementer]jsEventFunc{}
+	}
+	if e.registered[jsEventName] == nil {
+		e.registered[jsEventName] = map[Elementer]jsEventFunc{}
+	}
+	e.registered[jsEventName][elm] = jsEventCallback
+	return nil
 }
 
 type HtmlApp struct {
-	Game    ChessGame
-	Model   HtmlModel
-	Element *js.Object
+	Game  ChessGame
+	Model HtmlModel
+
+	rootElement *js.Object
+	events      *AppEvents
+}
+
+func (app *HtmlApp) SetRootElement(elm *js.Object) {
+	//TODO if nil, delete??
+	app.rootElement = elm
 }
 
 func (app *HtmlApp) UpdateDom() error {
 	if app.Game.game.Positions == nil {
+		// initialize game
 		app.Game, _ = NewGame("")
+	}
+
+	if app.events == nil {
+		// initialize events
+		app.events = &AppEvents{
+			app: app,
+		}
 	}
 
 	{ // update html model from game
@@ -508,15 +575,15 @@ func (app *HtmlApp) UpdateDom() error {
 	}
 
 	{ // update html dom from html model
-		created, err := app.Model.Update()
+		created, err := app.Model.Update(app.events)
 		if err != nil {
 			return err
 		} else if len(created) > 0 {
-			if app.Element == nil {
+			if app.rootElement == nil {
 				return errors.New("no application element")
 			}
 			for _, ce := range created {
-				app.Element.Call("appendChild", ce)
+				app.rootElement.Call("appendChild", ce)
 			}
 		}
 	}
