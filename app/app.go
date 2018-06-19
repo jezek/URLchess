@@ -83,6 +83,26 @@ func (e *EdgingCorner) Update(events *AppEvents) (*js.Object, error) {
 	return newElm, err
 }
 
+type EdgingCornerRotating struct {
+	EdgingCorner
+}
+
+func (e *EdgingCornerRotating) Update(events *AppEvents) (*js.Object, error) {
+	newElm, err := e.EdgingCorner.Update(events)
+	if newElm != nil {
+		newElm.Set("innerHTML", "↻")
+
+		events.Click(newElm, e.Click)
+	}
+	return newElm, err
+}
+
+func (_ *EdgingCornerRotating) Click(g ChessGame, m HtmlModel) (ChessGame, HtmlModel) {
+	m.Board.Rotated180deg = !m.Board.Rotated180deg
+	m.ThrownOuts.Rotated180deg = m.Board.Rotated180deg
+	return g, m
+}
+
 type GridSquare struct {
 	elm     *js.Object
 	Markers struct {
@@ -100,8 +120,6 @@ type GridSquare struct {
 	}
 	Piece piece.Piece
 }
-
-func (s *GridSquare) Element() *js.Object { return s.elm }
 
 func (s *GridSquare) Update(events *AppEvents) (*js.Object, error) {
 	var newElm *js.Object
@@ -177,12 +195,12 @@ func (s *GridSquare) Update(events *AppEvents) (*js.Object, error) {
 	s.elm.Call("appendChild", marker)
 
 	// events
-	if s.Piece.Type == piece.King {
-		events.Click(s, func(g ChessGame, m HtmlModel) (ChessGame, HtmlModel) {
-			js.Global.Call("alert", "kingclick")
-			return g, m
-		})
-	}
+	//if s.Piece.Type == piece.King {
+	//	events.Click(s.elm, func(g ChessGame, m HtmlModel) (ChessGame, HtmlModel) {
+	//		js.Global.Call("alert", "kingclick")
+	//		return g, m
+	//	})
+	//}
 
 	return newElm, nil
 }
@@ -243,9 +261,10 @@ type ModelBoard struct {
 	elm           *js.Object
 	Rotated180deg bool
 	Edgings       struct {
-		Top, Bottom                                EdgingHorizontal
-		Left, Right                                EdgingVertical
-		TopLeft, TopRight, BottomLeft, BottomRight EdgingCorner
+		Top, Bottom          EdgingHorizontal
+		Left, Right          EdgingVertical
+		TopRight, BottomLeft EdgingCornerRotating
+		TopLeft, BottomRight EdgingCorner
 	}
 	Grid             BoardGrid
 	PromotionOverlay BoardPromotionOverlay
@@ -508,7 +527,7 @@ type AppEvents struct {
 	registered map[string]map[Elementer]jsEventFunc
 }
 
-func (e *AppEvents) Click(elm Elementer, ef EventFunc) error {
+func (e *AppEvents) Click(elm *js.Object, ef EventFunc) error {
 	if e.app == nil {
 		return errors.New("no app")
 	}
@@ -518,9 +537,9 @@ func (e *AppEvents) Click(elm Elementer, ef EventFunc) error {
 
 	jsEventName := "click"
 
-	if e.registered[jsEventName][elm] != nil {
-		elm.Element().Call("removeEventListener", jsEventName, e.registered[jsEventName][elm], false)
-	}
+	//if e.registered[jsEventName][elm] != nil {
+	//	elm.Element().Call("removeEventListener", jsEventName, e.registered[jsEventName][elm], false)
+	//}
 
 	jsEventCallback := func(event *js.Object) {
 		e.app.Game, e.app.Model = ef(e.app.Game, e.app.Model)
@@ -529,14 +548,15 @@ func (e *AppEvents) Click(elm Elementer, ef EventFunc) error {
 		}
 	}
 
-	elm.Element().Call("addEventListener", jsEventName, jsEventCallback, false)
-	if e.registered == nil {
-		e.registered = map[string]map[Elementer]jsEventFunc{}
-	}
-	if e.registered[jsEventName] == nil {
-		e.registered[jsEventName] = map[Elementer]jsEventFunc{}
-	}
-	e.registered[jsEventName][elm] = jsEventCallback
+	elm.Call("addEventListener", jsEventName, jsEventCallback, false)
+	js.Global.Call("alert", "registered event: "+elm.String()+":"+elm.Get("id").String())
+	//if e.registered == nil {
+	//	e.registered = map[string]map[Elementer]jsEventFunc{}
+	//}
+	//if e.registered[jsEventName] == nil {
+	//	e.registered[jsEventName] = map[Elementer]jsEventFunc{}
+	//}
+	//e.registered[jsEventName][elm] = jsEventCallback
 	return nil
 }
 
