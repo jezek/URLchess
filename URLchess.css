@@ -125,7 +125,7 @@ input {
 	height: calc(100vmin * 2 / 28);
 	line-height: calc(100vmin * 2 / 28);
 }
-#edging-bottom-left, #edging-top-right {
+#edging-bottom-left.enabled, #edging-top-right.enabled {
 	cursor: pointer;
 }
 #edging-top-right {

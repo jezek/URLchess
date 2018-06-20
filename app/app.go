@@ -85,22 +85,22 @@ func (e *EdgingCorner) Update(events *AppEvents) (*js.Object, error) {
 
 type EdgingCornerRotating struct {
 	EdgingCorner
+	Disabled bool
 }
 
 func (e *EdgingCornerRotating) Update(events *AppEvents) (*js.Object, error) {
 	newElm, err := e.EdgingCorner.Update(events)
-	if newElm != nil {
+	if newElm != nil && !e.Disabled {
 		newElm.Set("innerHTML", "↻")
-
+		newElm.Get("classList").Call("add", "enabled")
 		events.Click(newElm, e.Click)
 	}
 	return newElm, err
 }
 
-func (_ *EdgingCornerRotating) Click(g ChessGame, m HtmlModel) (ChessGame, HtmlModel) {
-	m.Board.Rotated180deg = !m.Board.Rotated180deg
-	m.ThrownOuts.Rotated180deg = m.Board.Rotated180deg
-	return g, m
+func (_ *EdgingCornerRotating) Click(g *ChessGame, m *HtmlModel) error {
+	m.Rotated180deg = !m.Rotated180deg
+	return nil
 }
 
 type GridSquare struct {
@@ -242,10 +242,20 @@ type BoardPromotionOverlay struct {
 
 func (p *BoardPromotionOverlay) Update(events *AppEvents) (*js.Object, error) {
 	var newElm *js.Object
+
 	if p.elm == nil {
 		// create
 		newElm = js.Global.Get("document").Call("createElement", "div")
 		newElm.Set("id", "promotion-overlay")
+
+		for _, pieceType := range promotablePiecesType {
+			span := js.Global.Get("document").Call("createElement", "span")
+			span.Set("id", "promote-to-"+pieceTypesToName[pieceType])
+			span.Get("classList").Call("add", "piece")
+			span.Set("piece", pieceTypesToName[pieceType])
+
+			newElm.Call("appendChild", span)
+		}
 		p.elm = newElm
 	}
 
@@ -254,13 +264,13 @@ func (p *BoardPromotionOverlay) Update(events *AppEvents) (*js.Object, error) {
 	} else {
 		p.elm.Get("classList").Call("remove", "show")
 	}
+
 	return newElm, nil
 }
 
 type ModelBoard struct {
-	elm           *js.Object
-	Rotated180deg bool
-	Edgings       struct {
+	elm     *js.Object
+	Edgings struct {
 		Top, Bottom          EdgingHorizontal
 		Left, Right          EdgingVertical
 		TopRight, BottomLeft EdgingCornerRotating
@@ -289,11 +299,6 @@ func (b *ModelBoard) Update(events *AppEvents) (*js.Object, error) {
 		b.elm = newElm
 	}
 	// update main board element
-	if b.Rotated180deg {
-		b.elm.Get("classList").Call("add", "rotated180deg")
-	} else {
-		b.elm.Get("classList").Call("remove", "rotated180deg")
-	}
 
 	updaters := []Updater{
 		&b.Edgings.TopLeft, &b.Edgings.Top, &b.Edgings.TopRight,
@@ -355,9 +360,8 @@ func (c *ThrownOutsContainer) Update(events *AppEvents) (*js.Object, error) {
 }
 
 type ModelThrownouts struct {
-	elm           *js.Object
-	Rotated180deg bool
-	White, Black  ThrownOutsContainer
+	elm          *js.Object
+	White, Black ThrownOutsContainer
 }
 
 func (t *ModelThrownouts) Update(events *AppEvents) (*js.Object, error) {
@@ -372,11 +376,6 @@ func (t *ModelThrownouts) Update(events *AppEvents) (*js.Object, error) {
 		newElm = t.elm
 	}
 
-	if t.Rotated180deg {
-		t.elm.Get("classList").Call("add", "rotated180deg")
-	} else {
-		t.elm.Get("classList").Call("remove", "rotated180deg")
-	}
 	for _, updater := range []Updater{&t.White, &t.Black} {
 		if created, err := updater.Update(events); err != nil {
 			return newElm, err
@@ -393,10 +392,86 @@ type ModelNextMove struct {
 	NextMoveHash string
 }
 
+func (nm *ModelNextMove) Update(events *AppEvents) (*js.Object, error) {
+	var newElm *js.Object
+
+	if nm.elm == nil {
+
+	}
+
+	return newElm, nil
+}
+
+type StatusText struct {
+	elm  *js.Object
+	Text string
+}
+
+func (st *StatusText) Update(events *AppEvents) (*js.Object, error) {
+	var newElm *js.Object
+
+	if st.elm == nil {
+		st.elm = js.Global.Get("document").Call("createElement", "p")
+		st.elm.Set("id", "game-status-text")
+
+		newElm = st.elm
+	}
+
+	st.elm.Set("textContent", st.Text)
+
+	return newElm, nil
+}
+
+type StatusIcon struct {
+	elm          *js.Object
+	White, Black bool
+}
+
+func (si *StatusIcon) Update(events *AppEvents) (*js.Object, error) {
+	var newElm *js.Object
+
+	if si.elm == nil {
+		si.elm = js.Global.Get("document").Call("createElement", "p")
+		si.elm.Set("id", "game-status-player")
+
+		newElm = si.elm
+	}
+
+	si.elm.Set("innerHTML", "")
+	if si.White {
+		si.elm.Call("appendChild", pieceElement(piece.New(piece.White, piece.King)))
+	}
+	if si.Black {
+		si.elm.Call("appendChild", pieceElement(piece.New(piece.Black, piece.King)))
+	}
+
+	return newElm, nil
+}
+
 type ModelGameStatus struct {
-	elm        *js.Object
-	StatusText string
-	StatusIcon string
+	elm     *js.Object
+	Message StatusText
+	Icons   StatusIcon
+}
+
+func (gs *ModelGameStatus) Update(events *AppEvents) (*js.Object, error) {
+	var newElm *js.Object
+
+	if gs.elm == nil {
+		gs.elm = js.Global.Get("document").Call("createElement", "div")
+		gs.elm.Set("id", "game-status")
+
+		newElm = gs.elm
+	}
+
+	for _, updater := range []Updater{&gs.Message, &gs.Icons} {
+		if created, err := updater.Update(events); err != nil {
+			return newElm, err
+		} else if created != nil {
+			gs.elm.Call("appendChild", created)
+		}
+	}
+	return newElm, nil
 }
 
 type ModelNotification struct {
@@ -405,6 +480,8 @@ type ModelNotification struct {
 	Text  string
 }
 type HtmlModel struct {
+	Rotated180deg bool
+
 	Board        ModelBoard
 	ThrownOuts   ModelThrownouts
 	NextMove     ModelNextMove
@@ -418,7 +495,8 @@ func (m *HtmlModel) Update(events *AppEvents) ([]*js.Object, error) {
 
 	updaters := []Updater{
 		&m.Board, &m.ThrownOuts,
-		//m.NextMove, m.GameStatus,
+		//m.NextMove,
+		&m.GameStatus,
 		//m.Notification,
 	}
 
@@ -429,6 +507,15 @@ func (m *HtmlModel) Update(events *AppEvents) ([]*js.Object, error) {
 			newElms = append(newElms, created)
 		}
 	}
+
+	if m.Rotated180deg {
+		m.Board.elm.Get("classList").Call("add", "rotated180deg")
+		m.ThrownOuts.elm.Get("classList").Call("add", "rotated180deg")
+	} else {
+		m.Board.elm.Get("classList").Call("remove", "rotated180deg")
+		m.ThrownOuts.elm.Get("classList").Call("remove", "rotated180deg")
+	}
+
 	return newElms, nil
 }
 
@@ -502,10 +589,10 @@ func NewGame(movesString string) (ChessGame, error) {
 	return ChessGame{g, gtos, len(gtos) - 1, move.Null}, nil
 }
 
-func (ch ChessGame) UpdateModel(m HtmlModel) (HtmlModel, error) {
+func (ch ChessGame) UpdateModel(m *HtmlModel) error {
 
 	if ch.currMoveNo < 0 || ch.currMoveNo >= len(ch.game.Positions) {
-		return m, errors.New("curren move number is out of bounds")
+		return errors.New("curren move number is out of bounds")
 	}
 
 	position := ch.game.Positions[ch.currMoveNo]
@@ -516,10 +603,41 @@ func (ch ChessGame) UpdateModel(m HtmlModel) (HtmlModel, error) {
 		}
 	}
 
-	return m, nil
+	{ // update status
+
+		m.GameStatus.Icons.White = false
+		m.GameStatus.Icons.Black = false
+		if st := ch.game.Status(); st != game.InProgress {
+			// game ended
+			m.GameStatus.Message.Text = st.String()
+			if st&game.Draw != 0 {
+				// game ended in draw
+				m.GameStatus.Icons.White = true
+				m.GameStatus.Icons.Black = true
+			} else if st&game.WhiteWon != 0 {
+				// white wins
+				m.GameStatus.Icons.White = true
+			} else if st&game.BlackWon != 0 {
+				// black wins
+				m.GameStatus.Icons.Black = true
+			}
+		} else {
+			// game in progress
+			m.GameStatus.Message.Text = "Moving player"
+			if position.ActiveColor == piece.White {
+				// white moves
+				m.GameStatus.Icons.White = true
+			} else {
+				// black moves
+				m.GameStatus.Icons.Black = true
+			}
+		}
+	}
+
+	return nil
 }
 
-type EventFunc func(g ChessGame, m HtmlModel) (ChessGame, HtmlModel)
+type EventFunc func(g *ChessGame, m *HtmlModel) error
 type jsEventFunc func(*js.Object)
 
 type AppEvents struct {
@@ -542,7 +660,7 @@ func (e *AppEvents) Click(elm *js.Object, ef EventFunc) error {
 	//}
 
 	jsEventCallback := func(event *js.Object) {
-		e.app.Game, e.app.Model = ef(e.app.Game, e.app.Model)
+		ef(&e.app.Game, &e.app.Model)
 		if err := e.app.UpdateDom(); err != nil {
 			js.Global.Call("alert", "after "+jsEventName+" event app dom update error: "+err.Error())
 		}
@@ -564,8 +682,10 @@ type HtmlApp struct {
 	Game  ChessGame
 	Model HtmlModel
 
-	rootElement *js.Object
-	events      *AppEvents
+	initialized       bool
+	rootElement       *js.Object
+	events            *AppEvents
+	rotationSupported bool
 }
 
 func (app *HtmlApp) SetRootElement(elm *js.Object) {
@@ -573,25 +693,47 @@ func (app *HtmlApp) SetRootElement(elm *js.Object) {
 	app.rootElement = elm
 }
 
-func (app *HtmlApp) UpdateDom() error {
-	if app.Game.game.Positions == nil {
-		// initialize game
-		app.Game, _ = NewGame("")
+func (app *HtmlApp) Init() error {
+	{ // initialize game
+		game, err := NewGame("")
+		if err != nil {
+			return err
+		}
+		app.Game = game
 	}
 
-	if app.events == nil {
-		// initialize events
-		app.events = &AppEvents{
-			app: app,
+	app.events = &AppEvents{app: app}
+
+	// is rotation supported?
+	if div := js.Global.Get("document").Call("createElement", "div"); div != js.Undefined {
+		if div.Get("style").Get("transform") != js.Undefined {
+			app.rotationSupported = true
+		}
+		div.Call("remove")
+	}
+
+	app.initialized = true
+	return nil
+}
+
+func (app *HtmlApp) UpdateDom() error {
+	if !app.initialized {
+		if err := app.Init(); err != nil {
+			return err
 		}
 	}
 
 	{ // update html model from game
-		model, err := app.Game.UpdateModel(app.Model)
+		err := app.Game.UpdateModel(&app.Model)
 		if err != nil {
 			return err
 		}
-		app.Model = model
+	}
+
+	if !app.rotationSupported {
+		app.Model.Rotated180deg = false
+		app.Model.Board.Edgings.BottomLeft.Disabled = true
+		app.Model.Board.Edgings.TopRight.Disabled = true
 	}
 
 	{ // update html dom from html model
@@ -610,22 +752,22 @@ func (app *HtmlApp) UpdateDom() error {
 	return nil
 }
 
+func (app *HtmlApp) RotateBoardForPlayer() {
+	if !app.rotationSupported {
+		return
+	}
+	app.Model.Rotated180deg = false
+	if app.Game.game.ActiveColor() == piece.Black {
+		app.Model.Rotated180deg = true
+	}
+}
+
 /*
 // Draws chess board, game-status, next-move and notification elements to document.
 // Also sets event listeners for grid & copy, make, undo next move and notification
 func (app *HtmlApp) DrawBoard() {
 	document := js.Global.Get("document")
 
-	// is rotation supported?
-	rotationSupported := false
-	if div := document.Call("createElement", "div"); div != js.Undefined {
-		if div.Get("style").Get("transform") != js.Undefined {
-			rotationSupported = true
-		}
-		div.Call("remove")
-	}
-
-	rotateBoard180deg := rotationSupported && app.game.ActiveColor() == piece.Black
 
 	// is execCommand supported?
 	canExec := false
@@ -633,129 +775,7 @@ func (app *HtmlApp) DrawBoard() {
 		canExec = true
 	}
 
-	rotateBoard180degFunc := func(event *js.Object) {
-		for _, elmId := range []string{"board", "thrown-outs-container"} {
-			if elm := document.Call("getElementById", elmId); elm != nil {
-				if elm.Get("classList").Call("contains", "rotated180deg").Bool() {
-					elm.Get("classList").Call("remove", "rotated180deg")
-				} else {
-					elm.Get("classList").Call("add", "rotated180deg")
-				}
-			}
-		}
-	}
 
-	{ // board
-		class := ""
-		if rotateBoard180deg {
-			class = " class=\"rotated180deg\""
-		}
-		document.Call("write", "<div id=\"board\""+class+">")
-	}
-
-	{ // edging-top-left
-		document.Call("write", "<div id=\"edging-top-left\" class=\"edging corner\">")
-		document.Call("write", "</div>")
-	}
-
-	{ // edging-top
-		document.Call("write", "<div id=\"edging-top\" class=\"edging horizontal\">")
-		for i := 0; i < 8; i++ {
-			document.Call("write", "<div>"+string(rune('a'+i))+"</div>")
-		}
-		document.Call("write", "</div>")
-	}
-
-	{ // edging-top-right
-		document.Call("write", "<div id=\"edging-top-right\" class=\"edging corner\">")
-		document.Call("write", "</div>")
-
-		if edging := document.Call("getElementById", "edging-top-right"); edging != nil && rotationSupported {
-			edging.Set("innerHTML", "↻")
-			edging.Call(
-				"addEventListener",
-				"click",
-				rotateBoard180degFunc,
-			)
-		}
-	}
-
-	{ // edging-left
-		document.Call("write", "<div id=\"edging-left\" class=\"edging vertical\">")
-		for i := 8; i > 0; i-- {
-			document.Call("write", "<div>"+strconv.Itoa(i)+"</div>")
-		}
-		document.Call("write", "</div>")
-	}
-
-	{ // grid
-		document.Call("write", "<div class=\"grid\">")
-		squareTones := []string{"light-square", "dark-square"}
-		for i := int(63); i >= 0; i-- {
-			document.Call("write", "<div id=\""+square.Square(i).String()+"\" class=\""+squareTones[(i%8+i/8)%2]+"\"></div>")
-		}
-		document.Call("write", "</div>")
-	}
-
-	{ // edging-right
-		document.Call("write", "<div id=\"edging-right\" class=\"edging vertical\">")
-		for i := 8; i > 0; i-- {
-			document.Call("write", "<div>"+strconv.Itoa(i)+"</div>")
-		}
-		document.Call("write", "</div>")
-	}
-
-	{ // edging-bottom-left
-		document.Call("write", "<div id=\"edging-bottom-left\" class=\"edging corner\">")
-		document.Call("write", "</div>")
-
-		if edging := document.Call("getElementById", "edging-bottom-left"); edging != nil && rotationSupported {
-			edging.Set("innerHTML", "↻")
-			edging.Call(
-				"addEventListener",
-				"click",
-				rotateBoard180degFunc,
-			)
-		}
-
-	}
-
-	{ // edging-bottom
-		document.Call("write", "<div id=\"edging-bottom\" class=\"edging horizontal\">")
-		for i := 0; i < 8; i++ {
-			document.Call("write", "<div>"+string(rune('a'+i))+"</div>")
-		}
-		document.Call("write", "</div>")
-	}
-
-	{ // edging-bottom-right
-		document.Call("write", "<div id=\"edging-bottom-right\" class=\"edging corner\">")
-		document.Call("write", "</div>")
-	}
-
-	{ // promotion overlay
-		document.Call("write", "<div id=\"promotion-overlay\">")
-		for _, pieceType := range promotablePiecesType {
-			document.Call("write", "<span id=\"promote-to-"+pieceTypesToName[pieceType]+"\" class=\"piece\" piece=\""+pieceTypesToName[pieceType]+"\"></span>")
-		}
-		document.Call("write", "</div>")
-	}
-
-	{ // board
-		document.Call("write", "</div>")
-	}
-
-	{ // thrown out pieces
-		class := ""
-		if rotateBoard180deg {
-			class = " class=\"rotated180deg\""
-		}
-		document.Call("write", "<div id=\"thrown-outs-container\""+class+">")
-		for _, c := range piece.Colors {
-			document.Call("write", "<div id=\"thrown-outs-"+strings.ToLower(c.String())+"\" class=\"thrown-outs\"></div>")
-		}
-		document.Call("write", "</div>")
-	}
 
 	{ // next move
 		copyOrHint := `<span class="hint">copy this link and send it to your oponent</span>`
@@ -862,12 +882,6 @@ func (app *HtmlApp) DrawBoard() {
 		}
 	}
 
-	{ // game status
-		document.Call("write", `<div id="game-status">
-	<p id="game-status-text">... loading ...</p>
-	<p id="game-status-player">`+piecesToString[piece.New(piece.White, piece.King)]+piecesToString[piece.New(piece.Black, piece.King)]+`</p>
-</div>`)
-	}
 
 	{ // notification overlay
 		document.Call("write", `<div id="notification-overlay" class="hidden">
@@ -957,48 +971,6 @@ func (app *HtmlApp) DrawBoard() {
 // assign handler functions to grid squares
 func (app *HtmlApp) UpdateBoard() error {
 	//js.Global.Call("alert", "update: nextMove: "+app.nextMove.String())
-	{ // clear playground
-
-		//TODO clear board
-
-		// clear thrown out pieces
-		for _, c := range piece.Colors {
-			if tos := js.Global.Get("document").Call("getElementById", "thrown-outs-"+strings.ToLower(c.String())); tos != nil {
-				tos.Set("innerHTML", "")
-			}
-		}
-
-		// clear status
-		if gameStatusText := js.Global.Get("document").Call("getElementById", "game-status-text"); gameStatusText != nil {
-			gameStatusText.Set("innerHTML", "")
-		}
-		if gameStatusPlayer := js.Global.Get("document").Call("getElementById", "game-status-player"); gameStatusPlayer != nil {
-			gameStatusPlayer.Set("innerHTML", "")
-		}
-
-		// hide promotion overlay
-		if promotionOverlay := js.Global.Get("document").Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
-			promotionOverlay.Get("classList").Call("remove", "show")
-
-			//TODO clear promotion pieces elements
-		}
-
-		// clear next-move
-		if nextMoveLink := js.Global.Get("document").Call("getElementById", "next-move-link"); nextMoveLink != nil {
-			nextMoveLink.Set("href", "")
-		}
-		if nextMoveInput := js.Global.Get("document").Call("getElementById", "next-move-input"); nextMoveInput != nil {
-			nextMoveInput.Set("value", "")
-		}
-		if nextMove := js.Global.Get("document").Call("getElementById", "next-move"); nextMove != nil {
-			nextMove.Get("classList").Call("add", "hidden")
-		}
-
-		// clear grid squares handler, ...
-		for i := int(63); i >= 0; i-- {
-			delete(app.squaresHandler, square.Square(i))
-		}
-	}
 
 	drawPosition := app.game.Position()
 	drawThrownOuts := ThrownOuts{}
@@ -1359,28 +1331,6 @@ func (app *HtmlApp) UpdateBoard() error {
 		}
 	}
 
-	// fill game status
-	text := "Moving player"
-	player := ""
-	if st := app.game.Status(); st != game.InProgress {
-		text = st.String()
-		if st&game.Draw != 0 {
-			player = piecesToString[piece.New(piece.White, piece.King)] + piecesToString[piece.New(piece.Black, piece.King)]
-		} else if st&game.WhiteWon != 0 {
-			player = piecesToString[piece.New(piece.White, piece.King)]
-		} else if st&game.BlackWon != 0 {
-			player = piecesToString[piece.New(piece.Black, piece.King)]
-		}
-	} else {
-		player = piecesToString[piece.New(app.game.ActiveColor(), piece.King)]
-	}
-
-	if gameStatusText := js.Global.Get("document").Call("getElementById", "game-status-text"); gameStatusText != nil {
-		gameStatusText.Set("innerHTML", text)
-	}
-	if gameStatusPlayer := js.Global.Get("document").Call("getElementById", "game-status-player"); gameStatusPlayer != nil {
-		gameStatusPlayer.Set("innerHTML", player)
-	}
 
 	//js.Global.Call("alert", "end")
 

@@ -43,6 +43,8 @@ func main() {
 		htmlApp.Game = game
 	}
 
+	htmlApp.RotateBoardForPlayer()
+
 	if err := htmlApp.UpdateDom(); err != nil {
 		document.Call("write", err.Error())
 	}
