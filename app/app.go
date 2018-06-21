@@ -387,21 +387,6 @@ func (t *ModelThrownouts) Update(events *AppEvents) (*js.Object, error) {
 	return newElm, nil
 }
 
-type ModelNextMove struct {
-	elm          *js.Object
-	NextMoveHash string
-}
-
-func (nm *ModelNextMove) Update(events *AppEvents) (*js.Object, error) {
-	var newElm *js.Object
-
-	if nm.elm == nil {
-
-	}
-
-	return newElm, nil
-}
-
 type StatusText struct {
 	elm  *js.Object
 	Text string
@@ -474,6 +459,88 @@ func (gs *ModelGameStatus) Update(events *AppEvents) (*js.Object, error) {
 	return newElm, nil
 }
 
+type ModelMoveStatus struct {
+	elm      *js.Object
+	Shown    bool
+	NextMove bool
+	MoveHash string
+	MoveCopy bool
+}
+
+func (ms *ModelMoveStatus) Update(events *AppEvents) (*js.Object, error) {
+	var newElm *js.Object
+
+	if ms.elm == nil {
+		ms.Shown = true
+		//TODO show/hide somewhere
+		ms.elm = js.Global.Get("document").Call("createElement", "div")
+		ms.elm.Set("id", "next-move")
+
+		newElm = ms.elm
+	}
+
+	if ms.Shown {
+		// update only if shown
+		ms.elm.Set("innerHTML", "")
+
+		{ // link paragraph
+			link := js.Global.Get("document").Call("createElement", "p")
+			link.Get("classList").Call("add", "link")
+
+			{ // link text
+				text := "Last move "
+				if ms.NextMove {
+					text = "NextMove "
+				}
+				text += "URL"
+				link.Call("appendChild", js.Global.Get("document").Call("createTextNode", text))
+			}
+			{ // link input
+				input := js.Global.Get("document").Call("createElement", "input")
+				input.Set("id", "next-move-input")
+				input.Set("readonly", "readonly")
+				input.Set("value", ms.MoveHash)
+
+				link.Call("appendChild", input)
+				if ms.MoveCopy { // copy link
+					copy := js.Global.Get("document").Call("createElement", "a")
+					copy.Set("href", "")
+					copy.Set("textContent", "Copy to clipboard")
+
+					events.Click(copy, func(_ *ChessGame, _ *HtmlModel) error {
+						input.Call("focus")
+						input.Call("setSelectionRange", 0, input.Get("value").Get("length"))
+						js.Global.Get("document").Call("execCommand", "Copy")
+						input.Call("blur")
+
+						//TODO notification
+						return nil
+					})
+					link.Call("appendChild", copy)
+				}
+			}
+			if ms.NextMove { // hint
+				hint := js.Global.Get("document").Call("createElement", "span")
+				hint.Get("classList").Call("add", "hint")
+				hint.Set("textContent", "copy this link and send it to your oponent")
+
+				link.Call("appendChild", hint)
+			}
+
+			ms.elm.Call("appendChild", link)
+		}
+
+	}
+
+	if ms.Shown {
+		ms.elm.Get("classList").Call("remove", "hidden")
+	} else {
+		ms.elm.Get("classList").Call("add", "hidden")
+	}
+
+	return newElm, nil
+}
+
 type ModelNotification struct {
 	elm   *js.Object
 	Shown bool
@@ -484,8 +551,8 @@ type HtmlModel struct {
 
 	Board        ModelBoard
 	ThrownOuts   ModelThrownouts
-	NextMove     ModelNextMove
 	GameStatus   ModelGameStatus
+	MoveStatus   ModelMoveStatus
 	Notification ModelNotification
 }
 
@@ -495,8 +562,8 @@ func (m *HtmlModel) Update(events *AppEvents) ([]*js.Object, error) {
 
 	updaters := []Updater{
 		&m.Board, &m.ThrownOuts,
-		//m.NextMove,
 		&m.GameStatus,
+		&m.MoveStatus,
 		//m.Notification,
 	}
 
