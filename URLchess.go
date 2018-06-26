@@ -3,7 +3,7 @@
 package main
 
 import (
-	"URLchess/app"
+	"URLchess/shf"
 	"strings"
 
 	"github.com/gopherjs/gopherjs/js"
@@ -25,27 +25,49 @@ func main() {
 </div>`)
 	}()
 
-	htmlApp := app.HtmlApp{}
-	htmlApp.SetRootElement(document.Get("body"))
+	model := &Model{}
 
-	if err := htmlApp.UpdateDom(); err != nil {
-		document.Call("write", err.Error())
+	// is rotation supported?
+	if div := js.Global.Get("document").Call("createElement", "div"); div != js.Undefined {
+		if div.Get("style").Get("transform") != js.Undefined {
+			model.rotationSupported = true
+		}
+		div.Call("remove")
 	}
+
+	app, err := shf.Create(model)
+	if err != nil {
+		document.Call("write", "<div id=\"board\" class=\"error\">"+err.Error()+"</div>")
+		return
+	}
+
+	body := document.Get("body")
+	body.Call("appendChild", model.Html.Board.Element)
+	body.Call("appendChild", model.Html.ThrownOuts.Element)
+	body.Call("appendChild", model.Html.GameStatus.Element)
+	body.Call("appendChild", model.Html.MoveStatus.Element)
+	body.Call("appendChild", model.Html.Notification.Element)
 
 	movesString := strings.TrimPrefix(js.Global.Get("location").Get("hash").String(), "#")
 	if len(movesString) > 0 {
-		//js.Global.Call("alert", movesString)
-		game, err := app.NewGame(movesString)
+		game, err := NewGame(movesString)
 		if err != nil {
-			document.Call("write", err.Error())
+			//TODO use app to write error
+			document.Call("write", "<div class=\"error\">"+err.Error()+"</div>")
+			return
 		}
 
-		htmlApp.Game = game
+		model.Game = game
 	}
 
-	htmlApp.RotateBoardForPlayer()
-
-	if err := htmlApp.UpdateDom(); err != nil {
-		document.Call("write", err.Error())
+	model.RotateBoardForPlayer()
+	if err := app.Update(); err != nil {
+		if model.Html.Board.Element != nil {
+			model.Html.Board.Element.Set("innerHTML", err.Error())
+			model.Html.Board.Element.Get("classList").Call("add", "error")
+		} else {
+			document.Call("write", "<div id=\"board\" class=\"error\">"+err.Error()+"</div>")
+		}
+		return
 	}
 }

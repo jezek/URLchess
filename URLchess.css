@@ -87,6 +87,13 @@ input {
 /*********/
 /* board */
 /*********/
+#board.error {
+	background: initial;
+	color: red;
+	display: flex;
+	justify-content: center;
+	align-items: center; 
+}
 #board div.edging, #board div.grid {
 	box-sizing: border-box;
 	float: left;

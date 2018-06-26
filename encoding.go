@@ -1,4 +1,5 @@
-package app
+// +build js
+package main
 
 import (
 	"errors"
