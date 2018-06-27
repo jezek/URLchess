@@ -12,7 +12,8 @@ type Updater interface {
 }
 
 type Tools struct {
-	app *App
+	app     *App
+	created []*js.Object
 }
 
 func (t *Tools) Update(updaters ...Updater) error {
@@ -25,6 +26,23 @@ func (t *Tools) Update(updaters ...Updater) error {
 }
 func (t *Tools) Click(target *js.Object, function func(*js.Object)) error {
 	return t.app.Click(target, function)
+}
+func (t *Tools) CreateElement(etype string) *js.Object {
+	elm := js.Global.Get("document").Call("createElement", etype)
+	t.created = append(t.created, elm)
+	return elm
+}
+func (t *Tools) Created(elm *js.Object) bool {
+	if elm == nil {
+		return false
+	}
+
+	for _, createdElm := range t.created {
+		if elm.Call("isSameNode", createdElm).Bool() {
+			return true
+		}
+	}
+	return false
 }
 
 func Create(model Updater) (*App, error) {
@@ -49,7 +67,7 @@ type App struct {
 }
 
 func (app *App) Update() error {
-	if err := app.model.Update(&Tools{app}); err != nil {
+	if err := app.model.Update(&Tools{app, []*js.Object{}}); err != nil {
 		return err
 	}
 	return nil

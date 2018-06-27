@@ -302,6 +302,12 @@ input {
 	text-align: center;
 	padding-top: 0.1em;
 }
+#thrown-outs-black .piececount {
+	float: right;
+}
+#thrown-outs-container .piececount.hidden {
+	display: none;
+}
 #thrown-outs-container .piececount.last-move .piece {
 	background-color: rgba(255, 100, 100, 0.6);
 }

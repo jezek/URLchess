@@ -42,11 +42,11 @@ func main() {
 	}
 
 	body := document.Get("body")
-	body.Call("appendChild", model.Html.Board.Element)
-	body.Call("appendChild", model.Html.ThrownOuts.Element)
-	body.Call("appendChild", model.Html.GameStatus.Element)
-	body.Call("appendChild", model.Html.MoveStatus.Element)
-	body.Call("appendChild", model.Html.Notification.Element)
+	body.Call("appendChild", model.Html.Board.Object)
+	body.Call("appendChild", model.Html.ThrownOuts.Object)
+	body.Call("appendChild", model.Html.GameStatus.Object)
+	body.Call("appendChild", model.Html.MoveStatus.Object)
+	body.Call("appendChild", model.Html.Notification.Object)
 
 	movesString := strings.TrimPrefix(js.Global.Get("location").Get("hash").String(), "#")
 	if len(movesString) > 0 {
@@ -62,9 +62,9 @@ func main() {
 
 	model.RotateBoardForPlayer()
 	if err := app.Update(); err != nil {
-		if model.Html.Board.Element != nil {
-			model.Html.Board.Element.Set("innerHTML", err.Error())
-			model.Html.Board.Element.Get("classList").Call("add", "error")
+		if model.Html.Board.Object != nil {
+			model.Html.Board.Object.Set("innerHTML", err.Error())
+			model.Html.Board.Object.Get("classList").Call("add", "error")
 		} else {
 			document.Call("write", "<div id=\"board\" class=\"error\">"+err.Error()+"</div>")
 		}
