@@ -184,18 +184,18 @@ func (this *EdgingCornerRotating) Update(tools *shf.Tools) error {
 	return tools.Update(this.EdgingCorner)
 }
 
-type SquareMarkers struct {
+type MarkersByColor struct {
 	LastMove struct {
-		White, Black struct {
-			From, To bool
-		}
+		From, To bool
 	}
 	NextMove struct {
-		White, Black struct {
-			From, To, PossibleTo bool
-		}
+		From, To, PossibleTo bool
 	}
-	Check bool
+}
+
+type SquareMarkers struct {
+	ByColor [2]MarkersByColor
+	Check   bool
 }
 type GridSquare struct {
 	*shf.Element
@@ -205,6 +205,7 @@ type GridSquare struct {
 }
 
 func (s *GridSquare) Init(tools *shf.Tools) error {
+
 	if s.Element == nil {
 		boardGridSquareTones := []string{"light-square", "dark-square"}
 		s.Element = tools.CreateElement("div")
@@ -213,6 +214,7 @@ func (s *GridSquare) Init(tools *shf.Tools) error {
 	}
 	return nil
 }
+
 func (s *GridSquare) Update(tools *shf.Tools) error {
 	if s == nil {
 		return errors.New("GridSquare is nil")
@@ -222,55 +224,34 @@ func (s *GridSquare) Update(tools *shf.Tools) error {
 	marker := tools.CreateElement("span")
 
 	marker.Get("classList").Call("add", "marker")
-	if s.Markers.LastMove.White.From {
-		marker.Get("classList").Call("add", "last-move")
-		marker.Get("classList").Call("add", "last-move-white")
-		marker.Get("classList").Call("add", "last-move-from")
-	}
-	if s.Markers.LastMove.White.To {
-		marker.Get("classList").Call("add", "last-move")
-		marker.Get("classList").Call("add", "last-move-white")
-		marker.Get("classList").Call("add", "last-move-to")
-	}
-	if s.Markers.LastMove.Black.From {
-		marker.Get("classList").Call("add", "last-move")
-		marker.Get("classList").Call("add", "last-move-black")
-		marker.Get("classList").Call("add", "last-move-from")
-	}
-	if s.Markers.LastMove.Black.To {
-		marker.Get("classList").Call("add", "last-move")
-		marker.Get("classList").Call("add", "last-move-black")
-		marker.Get("classList").Call("add", "last-move-to")
-	}
-	if s.Markers.NextMove.White.From {
-		marker.Get("classList").Call("add", "next-move")
-		marker.Get("classList").Call("add", "next-move-white")
-		marker.Get("classList").Call("add", "next-move-from")
-	}
-	if s.Markers.NextMove.White.To {
-		marker.Get("classList").Call("add", "next-move")
-		marker.Get("classList").Call("add", "next-move-white")
-		marker.Get("classList").Call("add", "next-move-to")
-	}
-	if s.Markers.NextMove.White.PossibleTo {
-		marker.Get("classList").Call("add", "next-move")
-		marker.Get("classList").Call("add", "next-move-white")
-		marker.Get("classList").Call("add", "next-move-possible-to")
-	}
-	if s.Markers.NextMove.Black.From {
-		marker.Get("classList").Call("add", "next-move")
-		marker.Get("classList").Call("add", "next-move-black")
-		marker.Get("classList").Call("add", "next-move-from")
-	}
-	if s.Markers.NextMove.Black.To {
-		marker.Get("classList").Call("add", "next-move")
-		marker.Get("classList").Call("add", "next-move-black")
-		marker.Get("classList").Call("add", "next-move-to")
-	}
-	if s.Markers.NextMove.Black.PossibleTo {
-		marker.Get("classList").Call("add", "next-move")
-		marker.Get("classList").Call("add", "next-move-black")
-		marker.Get("classList").Call("add", "next-move-possible-to")
+	for _, color := range piece.Colors {
+		colorString := strings.ToLower(color.String())
+
+		if s.Markers.ByColor[color].LastMove.From {
+			marker.Get("classList").Call("add", "last-move")
+			marker.Get("classList").Call("add", "last-move-"+colorString)
+			marker.Get("classList").Call("add", "last-move-from")
+		}
+		if s.Markers.ByColor[color].LastMove.To {
+			marker.Get("classList").Call("add", "last-move")
+			marker.Get("classList").Call("add", "last-move-"+colorString)
+			marker.Get("classList").Call("add", "last-move-to")
+		}
+		if s.Markers.ByColor[color].NextMove.From {
+			marker.Get("classList").Call("add", "next-move")
+			marker.Get("classList").Call("add", "next-move-"+colorString)
+			marker.Get("classList").Call("add", "next-move-from")
+		}
+		if s.Markers.ByColor[color].NextMove.To {
+			marker.Get("classList").Call("add", "next-move")
+			marker.Get("classList").Call("add", "next-move-"+colorString)
+			marker.Get("classList").Call("add", "next-move-to")
+		}
+		if s.Markers.ByColor[color].NextMove.PossibleTo {
+			marker.Get("classList").Call("add", "next-move")
+			marker.Get("classList").Call("add", "next-move-"+colorString)
+			marker.Get("classList").Call("add", "next-move-possible-to")
+		}
 	}
 	if s.Markers.Check {
 		marker.Get("classList").Call("add", "check")
@@ -930,7 +911,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 	thrownOutPieces := ch.gameGc[ch.currMoveNo]
 
 	{ // validate next move
-		if err := nextMoveError(position, ch.nextMove); err != nil {
+		if _, err := nextMoveState(position, ch.nextMove); err != nil {
 			// this should not happen
 			return err
 		}
@@ -957,28 +938,15 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 		}
 
 		if position.LastMove != move.Null { // last move marker
-			if position.ActiveColor == piece.Black {
-				m.Board.Grid.Squares[int(position.LastMove.From())].Markers.LastMove.White.From = true
-				m.Board.Grid.Squares[int(position.LastMove.To())].Markers.LastMove.White.To = true
-			} else {
-				m.Board.Grid.Squares[int(position.LastMove.From())].Markers.LastMove.Black.From = true
-				m.Board.Grid.Squares[int(position.LastMove.To())].Markers.LastMove.Black.To = true
-			}
+			m.Board.Grid.Squares[int(position.LastMove.From())].Markers.ByColor[complementColor(position.ActiveColor)].LastMove.From = true
+			m.Board.Grid.Squares[int(position.LastMove.To())].Markers.ByColor[complementColor(position.ActiveColor)].LastMove.To = true
 		}
 
 		if ch.nextMove.From() != square.NoSquare { // next move from marker
-			if position.ActiveColor == piece.White {
-				m.Board.Grid.Squares[int(ch.nextMove.From())].Markers.NextMove.White.From = true
-			} else {
-				m.Board.Grid.Squares[int(ch.nextMove.From())].Markers.NextMove.Black.From = true
-			}
+			m.Board.Grid.Squares[int(ch.nextMove.From())].Markers.ByColor[position.ActiveColor].NextMove.From = true
 		}
 		if ch.nextMove.To() != square.NoSquare { // next move to marker
-			if position.ActiveColor == piece.White {
-				m.Board.Grid.Squares[int(ch.nextMove.To())].Markers.NextMove.White.To = true
-			} else {
-				m.Board.Grid.Squares[int(ch.nextMove.To())].Markers.NextMove.Black.To = true
-			}
+			m.Board.Grid.Squares[int(ch.nextMove.To())].Markers.ByColor[position.ActiveColor].NextMove.To = true
 		}
 
 		if ch.nextMove.From() != square.NoSquare && ch.nextMove.To() == square.NoSquare {
@@ -988,11 +956,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 				if move.From() != ch.nextMove.From() {
 					continue
 				}
-				if position.ActiveColor == piece.White {
-					m.Board.Grid.Squares[int(move.To())].Markers.NextMove.White.PossibleTo = true
-				} else {
-					m.Board.Grid.Squares[int(move.To())].Markers.NextMove.Black.PossibleTo = true
-				}
+				m.Board.Grid.Squares[int(move.To())].Markers.ByColor[position.ActiveColor].NextMove.PossibleTo = true
 			}
 		}
 	}
@@ -1046,6 +1010,13 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 						return err
 					}
 				}
+
+				if sq.Markers.ByColor[position.ActiveColor].NextMove.PossibleTo {
+					// every moving player possible to move gets event
+					if err := tools.Click(sq.Element, ch.NextMoveTo(sq.Id)); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}
@@ -1055,6 +1026,15 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 func (ch *ChessGame) NextMoveFrom(sq square.Square) func(_ *shf.Event) error {
 	return func(_ *shf.Event) error {
 		ch.nextMove.Source = sq
+		ch.nextMove.Destination = square.NoSquare
+		ch.nextMove.Promote = piece.None
+		return nil
+	}
+}
+
+func (ch *ChessGame) NextMoveTo(sq square.Square) func(_ *shf.Event) error {
+	return func(_ *shf.Event) error {
+		ch.nextMove.Destination = sq
 		return nil
 	}
 }
@@ -1554,28 +1534,41 @@ func isLegalMoveFromTo(p *position.Position, f, t square.Square) bool {
 	}
 	return false
 }
-func nextMoveError(p *position.Position, m move.Move) error {
+
+const (
+	NMError = iota
+	NMLegalMove
+	NMWaitFrom
+	NMWaitTo
+	NMWaitPromote
+)
+
+func nextMoveState(p *position.Position, m move.Move) (int, error) {
 	if m == move.Null {
 		// no next move
-		return nil
+		return NMWaitFrom, nil
 	}
 	// some move, legal or illegal or incomplete
 
 	if isLegalMove(p, m) {
 		// legal move
-		return nil
+		return NMLegalMove, nil
 	}
 	// illegal od incomplete move
 
 	if m.Source == square.NoSquare {
 		// from not filled
-		return errors.New("next move is not null, but has no from square filled")
+		return NMError, errors.New("next move is not null, but has no from square filled")
 	}
 	// from filled
 
 	if !isLegalMoveFrom(p, m.From()) {
 		// from is illegal
-		return errors.New("next move from square is illegal! from: " + m.From().String())
+		if p.OnSquare(m.From()).Color == p.ActiveColor && m.To() == square.NoSquare && m.Promote == piece.None {
+			// but if only from is filled & piece on from square is an ctive piece, so let it be valid
+			return NMWaitTo, nil
+		}
+		return NMError, errors.New("next move from square is illegal! from: " + m.From().String())
 	}
 	// from is legal
 
@@ -1583,26 +1576,26 @@ func nextMoveError(p *position.Position, m move.Move) error {
 		// to not filled
 		if m.Promote != piece.None {
 			// fault move, from filled, to not, but promotion yes
-			return errors.New("next move from and promotion is filled, but to not! from: " + m.From().String() + ", to: " + m.To().String() + ", promote: " + m.Promote.String())
+			return NMError, errors.New("next move from and promotion is filled, but to not! from: " + m.From().String() + ", to: " + m.To().String() + ", promote: " + m.Promote.String())
 		}
 		// incomplete move, needs destination, but valid
-		return nil
+		return NMWaitTo, nil
 	}
 	//to filled
 
 	if !isLegalMoveFromTo(p, m.From(), m.To()) {
 		// from, to pair is illegal
-		return errors.New("next move to square is illegal! from: " + m.From().String() + ", to: " + m.To().String())
+		return NMError, errors.New("next move to square is illegal! from: " + m.From().String() + ", to: " + m.To().String())
 	}
 	// from and to is a legal pair, but whole move not, so promotion is missing or illegal
 
 	if m.Promote != piece.None {
 		// from, to & promotion filled, frtom & to are valid, but whole move illegal. So promotion is invalid
-		return errors.New("promotion is invalid! from: " + m.From().String() + ", to: " + m.To().String() + ", promote: " + m.Promote.String())
+		return NMError, errors.New("promotion is invalid! from: " + m.From().String() + ", to: " + m.To().String() + ", promote: " + m.Promote.String())
 	}
 
 	// from, to filled & valid, promotion is missing
-	return nil
+	return NMWaitPromote, nil
 }
 
 /*

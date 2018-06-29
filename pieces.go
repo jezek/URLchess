@@ -40,3 +40,10 @@ func pieceElement(p piece.Piece) *js.Object {
 	elm.Set("textContent", p.Figurine())
 	return elm
 }
+
+func complementColor(c piece.Color) piece.Color {
+	if c == piece.White || c == piece.Black {
+		return piece.Colors[(int(c)+1)%2]
+	}
+	return piece.NoColor
+}
