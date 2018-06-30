@@ -44,8 +44,7 @@ func main() {
 	body := document.Get("body")
 	body.Call("appendChild", model.Html.Board.Element.Object())
 	body.Call("appendChild", model.Html.ThrownOuts.Element.Object())
-	body.Call("appendChild", model.Html.GameStatus.Element.Object())
-	body.Call("appendChild", model.Html.MoveStatus.Element.Object())
+	body.Call("appendChild", model.Html.Cover.Element.Object())
 	body.Call("appendChild", model.Html.Notification.Element.Object())
 
 	movesString := strings.TrimPrefix(js.Global.Get("location").Get("hash").String(), "#")

@@ -36,19 +36,6 @@ input {
 	user-select: none;
 	overflow: hidden;
 }
-#next-move {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100vmin;
-	height: 100vmin;
-	font-size: 0.5em;
-	box-sizing: border-box;
-	background-color: rgba(14, 30, 30, 0.75);
-	display: flex;
-	justify-content: center;
-	flex-flow: column;
-}
 #thrown-outs-container {
 	position: relative;
 	margin: 0;
@@ -58,14 +45,30 @@ input {
 	font-size: 0.5em;
 	overflow: visible;
 }
-#game-status {
+#cover {
 	position: relative;
-	padding-top: 0.1em;
+	top: 0.1em;
 	margin: 0;
 	width: 100vmin;
-	min-height: 100vmin;
+	height: 100vmin;
 	overflow: hidden;
 	box-sizing: border-box;
+}
+#game-status, #move-status {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	box-sizing: border-box;
+}
+#move-status {
+	font-size: 0.5em;
+	background-color: rgba(14, 30, 30, 0.75);
+	display: flex;
+	justify-content: center;
+	flex-flow: column;
 }
 #notification-overlay {
 	position: absolute;
@@ -263,7 +266,7 @@ input {
 	background-color: rgba(0, 255, 255, 0.6);
 }
 /* board rotation */
-#board, #promotion-overlay, #next-move, #header, #board .edging, #board .grid {
+#board, #promotion-overlay, #header, #board .edging, #board .grid {
 	transition-duration: 0.8s;
 	transition-property: top, left, margin, width, height, transform;
 }
@@ -339,44 +342,6 @@ div.thrown-outs .count {
 	transform: rotate(-180deg);
 }
 
-/*************/
-/* next move */
-/*************/
-#next-move p {
-	box-sizing: border-box;
-	margin:0;
-	padding: 1em 0.5em;
-}
-#next-move p.link {
-	text-align: center;
-}
-#next-move p.link input, #next-move p.link span.hint, #next-move p.link a {
-	display: block;
-}
-#next-move p.link input {
-	margin: 0 auto;
-	width: 90%;
-	background-color: transparent;
-	height: 2em;
-	text-align: center;
-}
-#next-move p.link span.hint {
-	font-size: 0.7em;
-}
-#next-move p.actions {
-	width: 100%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-#next-move p.actions a {
-	display: block;
-	margin: 0 1em;
-}
-#next-move.hidden {
-	display: none;
-}
-
 /***************/
 /* game status */
 /***************/
@@ -395,6 +360,44 @@ div.thrown-outs .count {
 #game-status-text {
 	font-size: 0.6em;
 }
+/*************/
+/* move status */
+/*************/
+#move-status p {
+	box-sizing: border-box;
+	margin:0;
+	padding: 1em 0.5em;
+}
+#move-status p.link {
+	text-align: center;
+}
+#move-status p.link input, #move-status p.link span.hint, #move-status p.link a {
+	display: block;
+}
+#move-status p.link input {
+	margin: 0 auto;
+	width: 90%;
+	background-color: transparent;
+	height: 2em;
+	text-align: center;
+}
+#move-status p.link span.hint {
+	font-size: 0.7em;
+}
+#move-status p.actions {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+#move-status p.actions a {
+	display: block;
+	margin: 0 1em;
+}
+#move-status.hidden {
+	display: none;
+}
+
 
 /************************/
 /* notification overlay */
@@ -444,7 +447,7 @@ div.thrown-outs .count {
 		font-size: calc(8.4cm * 3 / 28);
 	}
 
-	#header, #board, #game-status, #thrown-outs-container {
+	#header, #board, #cover, #thrown-outs-container {
 		margin-left: calc((100vw - 8.4cm) / 2);
 		width: 8.4cm;
 	}
@@ -456,14 +459,8 @@ div.thrown-outs .count {
 		margin-top: calc((100vw - 8.4cm) / 2);
 		height: 8.4cm;
 	}
-	#next-move {
-		top: calc((100vw - 8.4cm) / 2);
-		left: calc((100vw - 8.4cm) / 2);
-		width: 8.4cm;
+	#cover {
 		height: 8.4cm;
-	}
-	#game-status {
-		min-height: 8.4cm;
 	}
 	#thrown-outs-container {
 		height: calc((8.4cm * 2) / 28);
@@ -523,7 +520,7 @@ div.thrown-outs .count {
 	#thrown-outs-container.rotated180deg #thrown-outs-black .piececount {
 		padding-top: 0.7em
 	}
-	#game-status {
+	#cover {
 		top: calc((-8.4cm * 3) / 28);
 	}
 }
@@ -533,7 +530,7 @@ div.thrown-outs .count {
 		font-size: calc(70vmin * 3 / 28);
 	}
 
-	#header, #board, #game-status {
+	#header, #board, #cover {
 		margin-left: calc((100vw - 70vmin) / 2);
 		width: 70vmin;
 	}
@@ -545,14 +542,8 @@ div.thrown-outs .count {
 		margin-top: calc((100vw - 70vmin) / 2);
 		height: 70vmin;
 	}
-	#next-move {
-		top: calc((100vw - 70vmin) / 2);
-		left: calc((100vw - 70vmin) / 2);
-		width: 70vmin;
+	#cover {
 		height: 70vmin;
-	}
-	#game-status {
-		min-height: 70vmin;
 	}
 	#thrown-outs-container {
 		margin-left: calc((100vw - 70vmin) / 2);
@@ -595,7 +586,7 @@ div.thrown-outs .count {
 }
 
 @media (orientation: landscape) {
-	#board, #thrown-outs-container, #game-status {
+	#board, #thrown-outs-container, #cover {
 		margin-left: calc((100vw - 100vh) / 2);
 	}
 	#header {
@@ -607,9 +598,6 @@ div.thrown-outs .count {
 		top: calc((100vh - 100vmin) / 2);
 		writing-mode: vertical-rl;
 		text-orientation: upright;
-	}
-	#next-move {
-		left: calc((100vw - 100vh) / 2);
 	}
 }
 @media (orientation: landscape) and (min-aspect-ratio: 34/28) {
@@ -642,10 +630,7 @@ div.thrown-outs .count {
 	#board, #thrown-outs-container {
 		margin-left: 0;
 	}
-	#next-move {
-		left: 0;
-	}
-	#game-status {
+	#cover {
 		position: absolute;
 		top: 0;
 		right: 0;
@@ -663,10 +648,7 @@ div.thrown-outs .count {
 	#board, #thrown-outs-container {
 		margin-left: calc((100vw - ((100vmin / 28) * 59)) / 2);
 	}
-	#next-move {
-		left: calc((100vw - ((100vmin / 28) * 59)) / 2);
-	}
-	#game-status {
+	#cover {
 		right: calc((100vw - ((100vmin / 28) * 59)) / 2);
 		width: 100vmin;
 	}
@@ -682,7 +664,7 @@ div.thrown-outs .count {
 		font-size: calc(8.4cm * 3 / 28);
 	}
 
-	#header, #board, #game-status, #thrown-outs-container {
+	#header, #board, #cover, #thrown-outs-container {
 		margin-left: calc((100vw - 8.4cm) / 2);
 		width: 8.4cm;
 	}
@@ -698,12 +680,6 @@ div.thrown-outs .count {
 	}
 	#board {
 		margin-top: calc((100vh - 8.4cm) / 2);
-		height: 8.4cm;
-	}
-	#next-move {
-		top: calc((100vh - 8.4cm) / 2);
-		left: calc((100vw - 8.4cm) / 2);
-		width: 8.4cm;
 		height: 8.4cm;
 	}
 	#thrown-outs-container {
@@ -747,11 +723,8 @@ div.thrown-outs .count {
 	#header {
 		font-size: calc((8.4cm * 2) / 28);
 	}
-	#board, #game-status, #thrown-outs-container {
+	#board, #cover, #thrown-outs-container {
 		margin-left: calc((100vw - 8.4cm) / 2);
-	}
-	#next-move {
-		left: calc((100vw - 8.4cm) / 2);
 	}
 	#thrown-outs-container {
 		height: calc(8.4cm * 3 / 28);
@@ -785,10 +758,7 @@ div.thrown-outs .count {
 	#board, #thrown-outs-container {
 		margin-left: 0;
 	}
-	#next-move {
-		left: 0;
-	}
-	#game-status {
+	#cover {
 		position: absolute;
 		top: calc((100vh - 8.4cm) / 2);
 		left: 9.3cm;
@@ -802,10 +772,7 @@ div.thrown-outs .count {
 	#board, #thrown-outs-container {
 		margin-left: calc((100vw - ((8.4cm / 28) * 59)) / 2);
 	}
-	#next-move {
-		left: calc((100vw - ((8.4cm / 28) * 59)) / 2);
-	}
-	#game-status {
+	#cover {
 		left: calc(((100vw - ((8.4cm / 28) * 59)) / 2) + 9.3cm);
 		width: 8.4cm;
 	}
@@ -833,7 +800,7 @@ div.thrown-outs .count {
 		font-size: calc(70vmin * 3 / 28);
 	}
 
-	#board, #game-status, #thrown-outs-container {
+	#board, #cover, #thrown-outs-container {
 		margin-left: calc((100vw - 70vmin) / 2);
 		width: 70vmin;
 	}
@@ -855,13 +822,7 @@ div.thrown-outs .count {
 		height: calc(70vmin * 3 / 28);
 		transform-origin: center -35vmin;
 	}
-	#next-move {
-		top: calc((100vh - 70vmin) / 2);
-		left: calc((100vw - 70vmin) / 2);
-		width: 70vmin;
-		height: 70vmin;
-	}
-	#game-status {
+	#cover {
 		position: relative;
 		top: 0;
 		left: 0;
@@ -906,16 +867,15 @@ div.thrown-outs .count {
 	#board, #thrown-outs-container {
 		margin-left: 0;
 	}
-	#next-move {
+	#move-status {
 		left: 0;
 	}
-	#game-status {
+	#cover {
 		position: absolute;
 		top: calc((100vh - 70vmin) / 2);
 		left: calc((70vmin * 31) / 28);
 		width: calc(100vw - ((70vmin * 31) / 28));
 		height: 70vmin;
-		min-height: 70vmin;
 		margin: 0;
 	}
 }
@@ -926,10 +886,10 @@ div.thrown-outs .count {
 	#board, #thrown-outs-container {
 		margin-left: calc((100vw - ((70vmin * 59) / 28)) / 2);
 	}
-	#next-move {
+	#move-status {
 		left: calc((100vw - ((70vmin * 59) / 28)) / 2);
 	}
-	#game-status {
+	#cover {
 		left: calc(((100vw - ((70vmin *59) / 28)) / 2) + ((70vmin * 31) / 28));
 		width: 70vmin;
 	}

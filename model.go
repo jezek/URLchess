@@ -659,7 +659,7 @@ type ModelMoveStatus struct {
 func (ms *ModelMoveStatus) Init(tools *shf.Tools) error {
 	if ms.Element == nil {
 		ms.Element = tools.CreateElement("div")
-		ms.Set("id", "next-move")
+		ms.Set("id", "move-status")
 	}
 	return nil
 }
@@ -731,6 +731,38 @@ func (ms *ModelMoveStatus) Update(tools *shf.Tools) error {
 	return nil
 }
 
+type ModelCover struct {
+	*shf.Element
+	GameStatus *ModelGameStatus
+	MoveStatus *ModelMoveStatus
+}
+
+func (this *ModelCover) Init(tools *shf.Tools) error {
+	if this.GameStatus == nil {
+		this.GameStatus = &ModelGameStatus{}
+		if err := tools.Update(this.GameStatus); err != nil {
+			return err
+		}
+	}
+	if this.MoveStatus == nil {
+		this.MoveStatus = &ModelMoveStatus{}
+		if err := tools.Update(this.MoveStatus); err != nil {
+			return err
+		}
+	}
+	if this.Element == nil {
+		this.Element = tools.CreateElement("div")
+		this.Set("id", "cover")
+
+		this.Call("appendChild", this.GameStatus.Element.Object())
+		this.Call("appendChild", this.MoveStatus.Element.Object())
+	}
+	return nil
+}
+func (this *ModelCover) Update(tools *shf.Tools) error {
+	return tools.Update(this.GameStatus, this.MoveStatus)
+}
+
 type ModelNotification struct {
 	*shf.Element
 	Shown bool
@@ -738,6 +770,7 @@ type ModelNotification struct {
 }
 
 func (n *ModelNotification) Init(tools *shf.Tools) error {
+
 	if n.Element == nil {
 		n.Element = tools.CreateElement("div")
 		n.Set("id", "notification-overlay")
@@ -762,8 +795,7 @@ type HtmlModel struct {
 
 	Board        *ModelBoard
 	ThrownOuts   *ModelThrownouts
-	GameStatus   *ModelGameStatus
-	MoveStatus   *ModelMoveStatus
+	Cover        *ModelCover
 	Notification *ModelNotification
 }
 
@@ -780,15 +812,9 @@ func (h *HtmlModel) Init(tools *shf.Tools) error {
 			return err
 		}
 	}
-	if h.GameStatus == nil {
-		h.GameStatus = &ModelGameStatus{}
-		if err := tools.Update(h.GameStatus); err != nil {
-			return err
-		}
-	}
-	if h.MoveStatus == nil {
-		h.MoveStatus = &ModelMoveStatus{}
-		if err := tools.Update(h.MoveStatus); err != nil {
+	if h.Cover == nil {
+		h.Cover = &ModelCover{}
+		if err := tools.Update(h.Cover); err != nil {
 			return err
 		}
 	}
@@ -814,7 +840,7 @@ func (h *HtmlModel) Update(tools *shf.Tools) error {
 		h.ThrownOuts.Get("classList").Call("remove", "rotated180deg")
 	}
 
-	return tools.Update(h.Board, h.ThrownOuts, h.GameStatus, h.MoveStatus, h.Notification)
+	return tools.Update(h.Board, h.ThrownOuts, h.Cover, h.Notification)
 }
 
 func (h *HtmlModel) RotateBoard() func(*shf.Event) error {
@@ -895,43 +921,93 @@ func NewGame(movesString string) (*ChessGame, error) {
 
 	return &ChessGame{g, gtos, len(gtos) - 1, move.Null}, nil
 }
-func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
+
+func (ch *ChessGame) Validate() error {
 	if ch == nil {
 		return errors.New("ChessGame is nil")
 	}
-
 	if ch.currMoveNo < 0 || ch.currMoveNo >= len(ch.game.Positions) {
-		return errors.New("curren move number is out of bounds")
+		return errors.New("current move number is out of bounds")
 	}
 	if len(ch.game.Positions) != len(ch.gameGc) {
 		return errors.New("count of game moves and throuwn outs does not match")
 	}
+	if _, err := getNextMoveState(ch.game.Positions[ch.currMoveNo], ch.nextMove); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ch *ChessGame) MakeNextMove() error {
+	if err := ch.Validate(); err != nil {
+		return err
+	}
+
+	gameMoves, err := EncodeGame(ch.game)
+	if err != nil {
+		return err
+	}
+
+	nextMove, err := encodeMove(ch.nextMove)
+	if err != nil {
+		return err
+	}
+
+	nextGameMoves := gameMoves + nextMove
+
+	nextGame, err := NewGame(nextGameMoves)
+	if err != nil {
+		return err
+	}
+
+	ch.game = nextGame.game
+	ch.gameGc = nextGame.gameGc
+	ch.currMoveNo = nextGame.currMoveNo
+	ch.nextMove = nextGame.nextMove
+
+	js.Global.Get("location").Set("hash", nextGameMoves)
+
+	return nil
+}
+
+func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
+	if err := ch.Validate(); err != nil {
+		return err
+	}
 
 	position := ch.game.Positions[ch.currMoveNo]
 	thrownOutPieces := ch.gameGc[ch.currMoveNo]
+	nextMoveState := NMError
 
 	{ // validate next move
-		if _, err := nextMoveState(position, ch.nextMove); err != nil {
+		nms, err := getNextMoveState(position, ch.nextMove)
+		if err != nil {
 			// this should not happen
 			return err
 		}
-		// next move is valid (a valid move, or waiting to fill some params)
+		nextMoveState = nms
 	}
+	// next move is valid (a valid move, or waiting to fill some params)
 
 	{ // if next move is a legal move, update drawing position
 		//TODO
 	}
 
 	{ // update board pieces
+		drawPosition := position
+		if nextMoveState == NMLegalMove {
+			drawPosition = position.MakeMove(ch.nextMove)
+		}
+
 		for i := int(63); i >= 0; i-- {
-			m.Board.Grid.Squares[i].Piece = position.OnSquare(square.Square(i))
+			m.Board.Grid.Squares[i].Piece = drawPosition.OnSquare(square.Square(i))
 
 			// reset all square markers
 			m.Board.Grid.Squares[i].Markers = SquareMarkers{}
 
 			if m.Board.Grid.Squares[i].Piece.Type == piece.King {
 				// piece is a king ... is he in check?
-				if position.Check(m.Board.Grid.Squares[i].Piece.Color) {
+				if drawPosition.Check(m.Board.Grid.Squares[i].Piece.Color) {
 					m.Board.Grid.Squares[i].Markers.Check = true
 				}
 			}
@@ -972,31 +1048,31 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 	}
 
 	{ // update status
-		m.GameStatus.Icons.White = false
-		m.GameStatus.Icons.Black = false
+		m.Cover.GameStatus.Icons.White = false
+		m.Cover.GameStatus.Icons.Black = false
 		if st := ch.game.Status(); st != game.InProgress {
 			// game ended
-			m.GameStatus.Message.Text = st.String()
+			m.Cover.GameStatus.Message.Text = st.String()
 			if st&game.Draw != 0 {
 				// game ended in draw
-				m.GameStatus.Icons.White = true
-				m.GameStatus.Icons.Black = true
+				m.Cover.GameStatus.Icons.White = true
+				m.Cover.GameStatus.Icons.Black = true
 			} else if st&game.WhiteWon != 0 {
 				// white wins
-				m.GameStatus.Icons.White = true
+				m.Cover.GameStatus.Icons.White = true
 			} else if st&game.BlackWon != 0 {
 				// black wins
-				m.GameStatus.Icons.Black = true
+				m.Cover.GameStatus.Icons.Black = true
 			}
 		} else {
 			// game in progress
-			m.GameStatus.Message.Text = "Moving player"
+			m.Cover.GameStatus.Message.Text = "Moving player"
 			if position.ActiveColor == piece.White {
 				// white moves
-				m.GameStatus.Icons.White = true
+				m.Cover.GameStatus.Icons.White = true
 			} else {
 				// black moves
-				m.GameStatus.Icons.Black = true
+				m.Cover.GameStatus.Icons.Black = true
 			}
 		}
 	}
@@ -1004,39 +1080,118 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 	{ // update handlers
 		{ // board grid squares
 			for _, sq := range m.Board.Grid.Squares {
-				if position.ActiveColor == sq.Piece.Color {
-					// every moving player figure gets event
-					if err := tools.Click(sq.Element, ch.NextMoveFrom(sq.Id)); err != nil {
+				// square hack to be able to use 'sq' in anonymous functions
+				sq := sq
+
+				// remove square event for sure
+				tools.Click(sq.Element, nil)
+
+				// every empty square resets next move
+				if sq.Piece.Type == piece.None {
+					if err := tools.Click(sq.Element, func(_ *shf.Event) error {
+						ch.nextMove = move.Null
+						m.Cover.MoveStatus.Shown = false
+						return nil
+					}); err != nil {
 						return err
 					}
 				}
 
-				if sq.Markers.ByColor[position.ActiveColor].NextMove.PossibleTo {
-					// every moving player possible to move gets event
-					if err := tools.Click(sq.Element, ch.NextMoveTo(sq.Id)); err != nil {
+				// every oponent piece...
+				if sq.Piece.Color == complementColor(position.ActiveColor) {
+					if nextMoveState == NMLegalMove {
+						// makes a move if next move is a legal move
+						if err := tools.Click(sq.Element, func(_ *shf.Event) error {
+							// make move
+							if err := ch.MakeNextMove(); err != nil {
+								return err
+							}
+							// set next from
+							ch.nextMove.Source = sq.Id
+
+							// hide game status
+							m.Cover.MoveStatus.Shown = false
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						// resets next move otherwise
+						if err := tools.Click(sq.Element, func(_ *shf.Event) error {
+							ch.nextMove = move.Null
+							m.Cover.MoveStatus.Shown = false
+							return nil
+						}); err != nil {
+							return err
+						}
+					}
+				}
+
+				// every moving player figure gets unique event
+				if position.ActiveColor == sq.Piece.Color {
+					if err := tools.Click(sq.Element, func(event *shf.Event) error {
+						// set next move from
+						ch.nextMove.Source = sq.Id
+						ch.nextMove.Destination = square.NoSquare
+						ch.nextMove.Promote = piece.None
+
+						// hide move status
+						m.Cover.MoveStatus.Shown = false
+						return nil
+					}); err != nil {
 						return err
 					}
+				}
+
+				// square marked as possible to gets unique event
+				if sq.Markers.ByColor[position.ActiveColor].NextMove.PossibleTo {
+					// inspect next move state
+					squareNextMove := ch.nextMove
+					squareNextMove.Destination = sq.Id
+					squareNextMoveState, _ := getNextMoveState(position, squareNextMove)
+					if squareNextMoveState != NMLegalMove && squareNextMoveState != NMWaitPromote {
+						// should not happen
+						return errors.New("square " + sq.Id.String() + " is marked as possible to, but the next move here is not legal move or waiting to promoion")
+					}
+					// every moving player possible to move gets event
+					if err := tools.Click(sq.Element, func(_ *shf.Event) error {
+						// set next move to
+						ch.nextMove.Destination = sq.Id
+						if squareNextMoveState == NMLegalMove {
+							// if next move is a legal move, show move status
+							m.Cover.MoveStatus.Shown = true
+						} else if squareNextMoveState == NMWaitPromote {
+							// if next move is a legal move, show move status
+							m.Board.PromotionOverlay.Shown = true
+						}
+						return nil
+					}); err != nil {
+						return err
+					}
+				}
+
+			}
+
+			// if there is a legal next move
+			if nextMoveState == NMLegalMove {
+				// next move to square gets copy to clipboard
+				//TODO copy to clipboard
+				if err := tools.Click(m.Board.Grid.Squares[int(ch.nextMove.To())].Element, nil); err != nil {
+					return err
+				}
+
+				// next move from square resets next move
+				if err := tools.Click(m.Board.Grid.Squares[int(ch.nextMove.From())].Element, func(_ *shf.Event) error {
+					ch.nextMove = move.Null
+					m.Cover.MoveStatus.Shown = false
+					return nil
+				}); err != nil {
+					return err
 				}
 			}
 		}
 	}
 	return nil
-}
-
-func (ch *ChessGame) NextMoveFrom(sq square.Square) func(_ *shf.Event) error {
-	return func(_ *shf.Event) error {
-		ch.nextMove.Source = sq
-		ch.nextMove.Destination = square.NoSquare
-		ch.nextMove.Promote = piece.None
-		return nil
-	}
-}
-
-func (ch *ChessGame) NextMoveTo(sq square.Square) func(_ *shf.Event) error {
-	return func(_ *shf.Event) error {
-		ch.nextMove.Destination = sq
-		return nil
-	}
 }
 
 type Model struct {
@@ -1543,7 +1698,7 @@ const (
 	NMWaitPromote
 )
 
-func nextMoveState(p *position.Position, m move.Move) (int, error) {
+func getNextMoveState(p *position.Position, m move.Move) (int, error) {
 	if m == move.Null {
 		// no next move
 		return NMWaitFrom, nil
