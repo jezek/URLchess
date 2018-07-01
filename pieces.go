@@ -35,7 +35,9 @@ var pieceNamesToType map[string]piece.Type = func() map[string]piece.Type {
 func pieceElement(p piece.Piece) *js.Object {
 	elm := js.Global.Get("document").Call("createElement", "span")
 	elm.Get("classList").Call("add", "piece")
-	elm.Get("classList").Call("add", strings.ToLower(p.Color.String()))
+	if p.Color != piece.NoColor {
+		elm.Get("classList").Call("add", strings.ToLower(p.Color.String()))
+	}
 	elm.Get("classList").Call("add", pieceTypesToName[p.Type])
 	elm.Set("textContent", p.Figurine())
 	return elm

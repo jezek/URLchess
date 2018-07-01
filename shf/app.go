@@ -11,6 +11,8 @@ type Element struct {
 	object interface{}
 }
 
+var Window = &Element{js.Global}
+
 func (e *Element) Object() *js.Object {
 	if e == nil || e.object == nil {
 		return js.Undefined
@@ -84,6 +86,9 @@ func (t *Tools) Update(updaters ...Updater) error {
 func (t *Tools) Click(target *Element, function func(*Event) error) error {
 	return t.app.Click(target, function)
 }
+func (t *Tools) HashChange(function func(*Event) error) error {
+	return t.app.HashChange(function)
+}
 
 func (t *Tools) CreateElement(etype string) *Element {
 	elm := &Element{js.Global.Get("document").Call("createElement", etype)}
@@ -127,26 +132,35 @@ func (app *App) Update() error {
 	}
 	return nil
 }
+func (app *App) HashChange(function func(*Event) error) error {
+	return app.elventListener("hashchange", Window, function)
+}
 func (app *App) Click(target *Element, function func(*Event) error) error {
+	return app.elventListener("click", target, function)
+}
+func (app *App) elventListener(eventName string, target *Element, function func(*Event) error) error {
 	if app == nil {
 		return errors.New("App is nil")
 	}
-	if target == nil {
-		return errors.New("no target provided for click event")
+	if eventName == "" {
+		return errors.New("no event name")
 	}
+	if target == nil {
+		return errors.New("no target")
+	}
+
 	if app.events == nil {
 		app.events = map[string]map[*Element]func(*js.Object){}
 	}
 
-	jsEventName := "click"
-	_, ok := app.events[jsEventName]
+	_, ok := app.events[eventName]
 	if !ok {
-		app.events[jsEventName] = map[*Element]func(*js.Object){}
+		app.events[eventName] = map[*Element]func(*js.Object){}
 	}
 
-	if registeredFunc, ok := app.events[jsEventName][target]; ok {
-		target.Call("removeEventListener", jsEventName, registeredFunc, false)
-		delete(app.events[jsEventName], target)
+	if registeredFunc, ok := app.events[eventName][target]; ok {
+		target.Call("removeEventListener", eventName, registeredFunc, false)
+		delete(app.events[eventName], target)
 		//js.Global.Call("alert", "unregistered event: "+e.target.String()+":"+e.target.Get("id").String())
 	}
 
@@ -157,17 +171,17 @@ func (app *App) Click(target *Element, function func(*Event) error) error {
 	jsEventCallback := func(event *js.Object) {
 		//TODO handle errors via app.ErrorCallback
 		if err := function(&Event{event}); err != nil {
-			js.Global.Call("alert", jsEventName+" event function returned error: "+err.Error())
+			js.Global.Call("alert", eventName+" event function returned error: "+err.Error())
 			return
 		}
 		if err := app.Update(); err != nil {
-			js.Global.Call("alert", "after "+jsEventName+" event app dom update error: "+err.Error())
+			js.Global.Call("alert", "after "+eventName+" event app dom update error: "+err.Error())
 			return
 		}
 	}
 
-	target.Call("addEventListener", jsEventName, jsEventCallback, false)
-	app.events[jsEventName][target] = jsEventCallback
+	target.Call("addEventListener", eventName, jsEventCallback, false)
+	app.events[eventName][target] = jsEventCallback
 	//js.Global.Call("alert", "registered event: "+target.String()+":"+target.Get("id").String())
 	return nil
 }

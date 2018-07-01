@@ -264,14 +264,6 @@ func (s *GridSquare) Update(tools *shf.Tools) error {
 	s.Set("innerHTML", "")
 	s.Call("appendChild", marker.Object())
 
-	// events
-	//if s.Piece.Type == piece.King {
-	//	events.Click(s.Element, func(g ChessGame, m HtmlModel) (ChessGame, HtmlModel) {
-	//		js.Global.Call("alert", "kingclick")
-	//		return g, m
-	//	})
-	//}
-
 	return nil
 }
 
@@ -318,23 +310,63 @@ func (g *BoardGrid) Update(tools *shf.Tools) error {
 	return nil
 }
 
+type PromotionPiece struct {
+	*shf.Element
+	Piece piece.Piece
+}
+
+func (p *PromotionPiece) RedrawElement() {
+	if p.Element == nil {
+		return
+	}
+
+	p.Element.Set("innerHTML", "")
+	p.Element.Call("appendChild", pieceElement(p.Piece))
+}
+func (p *PromotionPiece) Init(tools *shf.Tools) error {
+	if p.Element == nil {
+		p.Element = tools.CreateElement("span")
+		p.Element.Set("id", "promote-to-"+pieceTypesToName[p.Piece.Type])
+
+		p.RedrawElement()
+	}
+	return nil
+}
+func (p *PromotionPiece) Update(tools *shf.Tools) error {
+	if p == nil {
+		return errors.New("PromotionPiece is nil")
+	}
+	p.RedrawElement()
+	return nil
+}
+
 type BoardPromotionOverlay struct {
 	*shf.Element
-	Shown bool
+	Shown  bool
+	Color  piece.Color
+	Pieces []*PromotionPiece
 }
 
 func (p *BoardPromotionOverlay) Init(tools *shf.Tools) error {
+	p.Color = piece.NoColor
+
+	if p.Pieces == nil {
+		p.Pieces = []*PromotionPiece{}
+		for _, pieceType := range promotablePiecesType {
+			pp := &PromotionPiece{Piece: piece.New(p.Color, pieceType)}
+			if err := tools.Update(pp); err != nil {
+				return err
+			}
+			p.Pieces = append(p.Pieces, pp)
+		}
+	}
+
 	if p.Element == nil {
 		p.Element = tools.CreateElement("div")
 		p.Set("id", "promotion-overlay")
 
-		for _, pieceType := range promotablePiecesType {
-			span := tools.CreateElement("span")
-			span.Set("id", "promote-to-"+pieceTypesToName[pieceType])
-			span.Get("classList").Call("add", "piece")
-			span.Set("piece", pieceTypesToName[pieceType])
-
-			p.Call("appendChild", span.Object())
+		for _, piece := range p.Pieces {
+			p.Element.Call("appendChild", piece.Object())
 		}
 	}
 	return nil
@@ -345,6 +377,13 @@ func (p *BoardPromotionOverlay) Update(tools *shf.Tools) error {
 	}
 
 	if p.Shown {
+		for _, piece := range p.Pieces {
+			piece.Piece.Color = p.Color
+
+			if err := tools.Update(piece); err != nil {
+				return err
+			}
+		}
 		p.Get("classList").Call("add", "show")
 	} else {
 		p.Get("classList").Call("remove", "show")
@@ -853,6 +892,8 @@ func (h *HtmlModel) RotateBoard() func(*shf.Event) error {
 type ThrownOuts map[piece.Piece]uint8
 type GameThrownOuts []ThrownOuts
 type ChessGame struct {
+	SubStep bool
+
 	game       *game.Game
 	gameGc     GameThrownOuts
 	currMoveNo int
@@ -919,7 +960,12 @@ func NewGame(movesString string) (*ChessGame, error) {
 		gtos = append(GameThrownOuts{ThrownOuts{}}, gtos...)
 	}
 
-	return &ChessGame{g, gtos, len(gtos) - 1, move.Null}, nil
+	return &ChessGame{
+		game:       g,
+		gameGc:     gtos,
+		currMoveNo: len(gtos) - 1,
+		nextMove:   move.Null,
+	}, nil
 }
 
 func (ch *ChessGame) Validate() error {
@@ -989,8 +1035,21 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 	}
 	// next move is valid (a valid move, or waiting to fill some params)
 
-	{ // if next move is a legal move, update drawing position
-		//TODO
+	if !ch.SubStep && nextMoveState == NMLegalMove {
+		// if there is no intermidiate step and
+		// next move is a legal move, do it
+		if err := ch.MakeNextMove(); err != nil {
+			return err
+		}
+		position = ch.game.Positions[ch.currMoveNo]
+		thrownOutPieces = ch.gameGc[ch.currMoveNo]
+		nextMoveState = NMWaitFrom
+	}
+
+	if nextMoveState == NMWaitPromote {
+		m.Board.PromotionOverlay.Shown = true
+	} else {
+		m.Board.PromotionOverlay.Shown = false
 	}
 
 	{ // update board pieces
@@ -1035,6 +1094,9 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 				m.Board.Grid.Squares[int(move.To())].Markers.ByColor[position.ActiveColor].NextMove.PossibleTo = true
 			}
 		}
+
+		// update color in promotion overlay
+		m.Board.PromotionOverlay.Color = position.ActiveColor
 	}
 
 	{ // update thrown out pieces
@@ -1047,11 +1109,14 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 		}
 	}
 
-	{ // update status
+	{ // update status & notification
 		m.Cover.GameStatus.Icons.White = false
 		m.Cover.GameStatus.Icons.Black = false
-		if st := ch.game.Status(); st != game.InProgress {
-			// game ended
+		if st := ch.game.Status(); st != game.InProgress { // game ended
+			// update notification
+			m.Notification.Text = st.String() + ".<br />" + `<a href="/">New game</a>?`
+			m.Notification.Shown = true
+
 			m.Cover.GameStatus.Message.Text = st.String()
 			if st&game.Draw != 0 {
 				// game ended in draw
@@ -1191,6 +1256,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -1204,6 +1270,13 @@ type Model struct {
 func (m *Model) Init(tools *shf.Tools) error {
 	if m.Game == nil {
 		m.Game, _ = NewGame("")
+	}
+
+	if err := tools.HashChange(func(_ *shf.Event) error {
+		js.Global.Call("alert", js.Global.Get("location").Get("hash"))
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	if m.Html == nil {
@@ -1225,6 +1298,24 @@ func (m *Model) Init(tools *shf.Tools) error {
 				return err
 			}
 			m.Html.Board.Edgings.TopRight.Enable()
+		}
+	}
+
+	{ // add promotion events to promotion overlay
+		tools.Click(m.Html.Board.PromotionOverlay.Element, func(_ *shf.Event) error {
+			m.Game.nextMove.Promote = piece.None
+			m.Game.nextMove.Destination = square.NoSquare
+			m.Html.Board.PromotionOverlay.Shown = false
+			return nil
+		})
+
+		for _, p := range m.Html.Board.PromotionOverlay.Pieces {
+			promotionPiece := p
+			tools.Click(p.Element, func(_ *shf.Event) error {
+				m.Game.nextMove.Promote = promotionPiece.Piece.Type
+				m.Html.Board.PromotionOverlay.Shown = false
+				return nil
+			})
 		}
 	}
 	return nil
@@ -1376,88 +1467,6 @@ func (app *Model) DrawBoard() {
 	}
 
 
-	{ // notification overlay
-		document.Call("write", `<div id="notification-overlay" class="hidden">
-		<p id="notification-message" class="message">long live this notification</p>
-		<p class="hint">Click or tap anywhere to close</p>
-</div>`)
-
-		// listeners
-		if notificationOverlay := document.Call("getElementById", "notification-overlay"); notificationOverlay != nil { // notification overlay
-			notificationOverlay.Set("hidden", true)
-			notificationOverlay.Call(
-				"addEventListener",
-				"click",
-				func(event *js.Element) {
-					notificationOverlay.Get("classList").Call("add", "hidden")
-
-					// reset message
-					if notificationMessage := js.Global.Get("document").Call("getElementById", "notification-message"); notificationMessage != nil {
-						notificationMessage.Set("innerHTML", ". . .")
-					}
-				},
-				false,
-			)
-		}
-	}
-
-	{ // event listeners
-
-		for i := int(63); i >= 0; i-- { // map click events to grid squares
-			sq := square.Square(i)
-			if sqElm := document.Call("getElementById", sq.String()); sqElm != nil {
-				sqElm.Call(
-					"addEventListener",
-					"click",
-					app.squareHandler,
-					false,
-				)
-			}
-		}
-
-		if promotionOverlay := document.Call("getElementById", "promotion-overlay"); promotionOverlay != nil { // promotion overlay
-			promotionOverlay.Call(
-				"addEventListener",
-				"click",
-				func(event *js.Element) {
-					event.Call("preventDefault")
-					app.nextMove = move.Null
-					//js.Global.Call("alert", "calling update board from promotion-overlay listener")
-					if err := app.UpdateBoard(); err != nil {
-						document.Call("getElementById", "game-status").Set("innerHTML", err.Error())
-						return
-					}
-				},
-				false,
-			)
-			// add handlers for promotion pieces
-			for _, pt := range promotablePiecesType {
-				if promotionPiece := js.Global.Get("document").Call("getElementById", "promote-to-"+pieceTypesToName[pt]); promotionPiece != nil {
-					promotionPiece.Call(
-						"addEventListener",
-						"click",
-						func(event *js.Element) {
-							event.Call("stopPropagation")
-							if elm := event.Get("currentTarget"); elm != nil {
-								pieceName := elm.Call("getAttribute", "piece").String()
-								if pt, ok := pieceNamesToType[pieceName]; ok {
-									app.nextMove.Promote = piece.Type(pt)
-									//js.Global.Call("alert", "promote to: "+app.nextMove.Promote.String())
-									//js.Global.Call("alert", "calling update board from promotion-piece "+pieceName+" listener")
-									if err := app.UpdateBoard(); err != nil {
-										js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
-										return
-									}
-								}
-							}
-						},
-						false,
-					)
-				}
-			}
-		}
-
-	}
 }
 
 // Fills board grid with markers and pieces, updates status and next-move elements,
@@ -1473,21 +1482,6 @@ func (app *Model) UpdateBoard() error {
 	if app.nextMove == move.Null {
 		//js.Global.Call("alert", "no next move")
 
-		// set handlers for moving player pieces
-		for i := int(63); i >= 0; i-- {
-			sq := square.Square(i)
-			pc := drawPosition.OnSquare(sq)
-			if pc.Color == app.game.Position().ActiveColor {
-				app.squaresHandler[sq] = func(sq square.Square, _ *js.Element) {
-					app.nextMove.Source = sq
-					//js.Global.Call("alert", "calling update board from square handler moving piece")
-					if err := app.UpdateBoard(); err != nil {
-						js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
-						return
-					}
-				}
-			}
-		}
 	} else {
 		//js.Global.Call("alert", "some move, legal or illegal or incomplete")
 
@@ -1519,43 +1513,6 @@ func (app *Model) UpdateBoard() error {
 				}
 			}
 		} else {
-			//js.Global.Call("alert", "illegal move")
-
-			// set handlers for moving player pieces
-			for i := int(63); i >= 0; i-- {
-				sq := square.Square(i)
-				pc := drawPosition.OnSquare(sq)
-				if pc.Color == app.game.Position().ActiveColor {
-					app.squaresHandler[sq] = func(sq square.Square, _ *js.Element) {
-						app.nextMove.Source = sq
-						//js.Global.Call("alert", "calling update board from square handler moving piece illegal move")
-						if err := app.UpdateBoard(); err != nil {
-							js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
-							return
-						}
-					}
-				}
-			}
-
-			if app.nextMove.Source == square.NoSquare {
-			} else {
-				//js.Global.Call("alert", "from filled")
-
-				// from filled. is it legal?
-				legalFromMoves := map[move.Move]struct{}{}
-				for move, _ := range app.game.Position().LegalMoves() {
-					if move.Source == app.nextMove.Source {
-						legalFromMoves[move] = struct{}{}
-					}
-				}
-				if len(legalFromMoves) > 0 {
-					// from is legal
-					//js.Global.Call("alert", "from is legal")
-
-					// from is legal, what about others?
-					if app.nextMove.Destination == square.NoSquare {
-						// to not filled
-						//js.Global.Call("alert", "to not filled")
 
 
 						for move, _ := range legalFromMoves {
@@ -1569,104 +1526,16 @@ func (app *Model) UpdateBoard() error {
 								}
 							}
 						}
-
-						// add handlers to possible next move
-						for move, _ := range legalFromMoves {
-							app.squaresHandler[move.Destination] = func(sq square.Square, _ *js.Element) {
-								app.nextMove.Destination = sq
-								//js.Global.Call("alert", "calling update board from square handler possible next move")
-								if err := app.UpdateBoard(); err != nil {
-									js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
-									return
-								}
-							}
-						}
-					} else {
-						// to filled. is it legal?
-						legalFromToMoves := map[move.Move]struct{}{}
-						for move, _ := range legalFromMoves {
-							if move.Destination == app.nextMove.Destination {
-								legalFromToMoves[move] = struct{}{}
-							}
-						}
-						if len(legalFromToMoves) > 0 {
-							// to is also legal
-							//js.Global.Call("alert", "to is also legal")
-
-							// mark from square
-							nextMoveMarkerClasses[app.nextMove.Destination] = []string{"next-move", "next-move-" + color, "next-move-to"}
-
-							// to is also legal. but the whole move is illegal. there have to be a promotion behind it
-							if app.nextMove.Promote == piece.None {
-								// promote not filled, do something about it
-								//js.Global.Call("alert", "promote not filled, do something about it")
-								if promotionOverlay := js.Global.Get("document").Call("getElementById", "promotion-overlay"); promotionOverlay != nil {
-
-									// fill piece figure to promotable pieces elements
-									for _, pt := range promotablePiecesType {
-										if _, ok := legalFromToMoves[move.Move{
-											Source:      app.nextMove.Source,
-											Destination: app.nextMove.Destination,
-											Promote:     pt,
-										}]; ok {
-											if promotionPiece := js.Global.Get("document").Call("getElementById", "promote-to-"+pieceTypesToName[pt]); promotionPiece != nil {
-												promotionPiece.Set("innerHTML", piece.New(app.game.Position().ActiveColor, pt).Figurine())
-											} else {
-												//TODO return error
-											}
-										}
-									}
-									promotionOverlay.Get("classList").Call("add", "show")
-								}
 				}
 			}
 		}
 	}
 
 
-	// notification if game not in progress (game ended)
-	if st := app.game.Status(); st != game.InProgress {
-		if notificationOverlay := js.Global.Get("document").Call("getElementById", "notification-overlay"); notificationOverlay != nil {
-			// change message
-			if notificationMessage := js.Global.Get("document").Call("getElementById", "notification-message"); notificationMessage != nil {
-				notificationMessage.Set("innerHTML", text+".<br />"+`<a href="/">New game</a>?`)
-			}
-			// show notification
-			notificationOverlay.Get("classList").Call("remove", "hidden")
-		}
-	}
 
 	return nil
 }
 
-func (app *Model) squareHandler(event *js.Element) {
-	elm := event.Get("currentTarget")
-	if elm == nil || elm == js.Undefined {
-		//js.Global.Call("alert", "no current target element")
-		return
-	}
-	elmId := elm.Call("getAttribute", "id").String()
-	if strings.TrimSpace(elmId) == "" {
-		//js.Global.Call("alert", "no id attribute in target")
-		return
-	}
-
-	sq := square.Parse(elmId)
-	handler, ok := app.squaresHandler[sq]
-	if !ok {
-		//js.Global.Call("alert", "no "+elmId+" square handler")
-		app.nextMove = move.Null
-		//js.Global.Call("alert", "calling update board from square handler no handler")
-		if err := app.UpdateBoard(); err != nil {
-			js.Global.Get("document").Call("getElementById", "game-status").Set("innerHTML", err.Error())
-			return
-		}
-		return
-	}
-
-	//js.Global.Call("alert", "handle "+elmId+" square")
-	handler(sq, event)
-}
 */
 
 func isLegalMove(p *position.Position, m move.Move) bool {
