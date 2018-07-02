@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/andrewbackes/chess/game"
 	"github.com/andrewbackes/chess/piece"
 	"github.com/andrewbackes/chess/position/move"
 	"github.com/andrewbackes/chess/position/square"
@@ -53,9 +52,9 @@ func encodeMove(m move.Move) (string, error) {
 	return res, nil
 }
 
-func EncodeGame(g *game.Game) (string, error) {
+func EncodeGame(g *ChessGame) (string, error) {
 	res := ""
-	for _, position := range g.Positions {
+	for _, position := range g.game.Positions {
 		if position.LastMove != move.Null {
 			if m, err := encodeMove(position.LastMove); err != nil {
 				return "", err

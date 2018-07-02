@@ -4,7 +4,6 @@ package main
 
 import (
 	"URLchess/shf"
-	"strings"
 
 	"github.com/gopherjs/gopherjs/js"
 )
@@ -47,9 +46,8 @@ func main() {
 	body.Call("appendChild", model.Html.Cover.Element.Object())
 	body.Call("appendChild", model.Html.Notification.Element.Object())
 
-	movesString := strings.TrimPrefix(js.Global.Get("location").Get("hash").String(), "#")
-	if len(movesString) > 0 {
-		game, err := NewGame(movesString)
+	if hash := js.Global.Get("location").Get("hash").String(); len(hash) > 0 {
+		game, err := NewGame(hash)
 		if err != nil {
 			//TODO use app to write error
 			document.Call("write", "<div class=\"error\">"+err.Error()+"</div>")

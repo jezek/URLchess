@@ -16,7 +16,7 @@ import (
 )
 
 type BoardEdging struct {
-	*shf.Element
+	shf.Element
 	Position string //top, bottom, left, right, top-left, top-right, bottom-left, bottom-right
 }
 
@@ -198,7 +198,7 @@ type SquareMarkers struct {
 	Check   bool
 }
 type GridSquare struct {
-	*shf.Element
+	shf.Element
 	Id      square.Square
 	Piece   piece.Piece
 	Markers SquareMarkers
@@ -268,7 +268,7 @@ func (s *GridSquare) Update(tools *shf.Tools) error {
 }
 
 type BoardGrid struct {
-	*shf.Element
+	shf.Element
 	Squares [64]*GridSquare
 }
 
@@ -311,7 +311,7 @@ func (g *BoardGrid) Update(tools *shf.Tools) error {
 }
 
 type PromotionPiece struct {
-	*shf.Element
+	shf.Element
 	Piece piece.Piece
 }
 
@@ -341,7 +341,7 @@ func (p *PromotionPiece) Update(tools *shf.Tools) error {
 }
 
 type BoardPromotionOverlay struct {
-	*shf.Element
+	shf.Element
 	Shown  bool
 	Color  piece.Color
 	Pieces []*PromotionPiece
@@ -393,7 +393,7 @@ func (p *BoardPromotionOverlay) Update(tools *shf.Tools) error {
 }
 
 type ModelBoard struct {
-	*shf.Element
+	shf.Element
 	Edgings struct {
 		Top, Bottom          *EdgingHorizontal
 		Left, Right          *EdgingVertical
@@ -517,7 +517,7 @@ func (b *ModelBoard) Update(tools *shf.Tools) error {
 }
 
 type ThrownOutsContainer struct {
-	*shf.Element
+	shf.Element
 	Color            piece.Color
 	PieceCount       map[piece.Type]int
 	LastMoveThrowOut piece.Type
@@ -564,7 +564,7 @@ func (c *ThrownOutsContainer) Update(tools *shf.Tools) error {
 }
 
 type ModelThrownouts struct {
-	*shf.Element
+	shf.Element
 	White, Black *ThrownOutsContainer
 }
 
@@ -601,7 +601,7 @@ func (t *ModelThrownouts) Update(tools *shf.Tools) error {
 }
 
 type StatusText struct {
-	*shf.Element
+	shf.Element
 	Text string
 }
 
@@ -624,7 +624,7 @@ func (st *StatusText) Update(tools *shf.Tools) error {
 }
 
 type StatusIcon struct {
-	*shf.Element
+	shf.Element
 	White, Black bool
 }
 
@@ -652,7 +652,7 @@ func (si *StatusIcon) Update(tools *shf.Tools) error {
 }
 
 type ModelGameStatus struct {
-	*shf.Element
+	shf.Element
 	Message *StatusText
 	Icons   *StatusIcon
 }
@@ -688,7 +688,7 @@ func (gs *ModelGameStatus) Update(tools *shf.Tools) error {
 }
 
 type ModelMoveStatus struct {
-	*shf.Element
+	shf.Element
 	Shown    bool
 	NextMove bool
 	MoveHash string
@@ -771,7 +771,7 @@ func (ms *ModelMoveStatus) Update(tools *shf.Tools) error {
 }
 
 type ModelCover struct {
-	*shf.Element
+	shf.Element
 	GameStatus *ModelGameStatus
 	MoveStatus *ModelMoveStatus
 }
@@ -803,7 +803,7 @@ func (this *ModelCover) Update(tools *shf.Tools) error {
 }
 
 type ModelNotification struct {
-	*shf.Element
+	shf.Element
 	Shown bool
 	Text  string
 }
@@ -882,8 +882,8 @@ func (h *HtmlModel) Update(tools *shf.Tools) error {
 	return tools.Update(h.Board, h.ThrownOuts, h.Cover, h.Notification)
 }
 
-func (h *HtmlModel) RotateBoard() func(*shf.Event) error {
-	return func(_ *shf.Event) error {
+func (h *HtmlModel) RotateBoard() func(shf.Event) error {
+	return func(_ shf.Event) error {
 		h.Rotated180deg = !h.Rotated180deg
 		return nil
 	}
@@ -900,9 +900,43 @@ type ChessGame struct {
 	nextMove   move.Move
 }
 
+func addedThrownOuts(prev, next ThrownOuts) ThrownOuts {
+	added := ThrownOuts{}
+	for p, c := range prev {
+		if next[p] > c {
+			added[p] = added[p] + (next[p] - c)
+		}
+	}
+	for p, c := range next {
+		if _, ok := prev[p]; !ok {
+			added[p] = added[p] + c
+		}
+	}
+	return added
+}
+
+func pMakeMove(p *position.Position, m move.Move) (*position.Position, piece.Piece) {
+	newPos := p.MakeMove(m)
+
+	// was a piece thrown out regulary? = move destination contains some piece
+	if pce := p.OnSquare(m.To()); pce.Type != piece.None {
+		return newPos, pce
+	}
+
+	// was en passant throw out? = moved piece is pawn and move destination is an en passan square in previous move
+	if mp := p.OnSquare(m.From()); mp.Type == piece.Pawn && m.To() == p.EnPassant {
+		return newPos, piece.New(piece.Colors[(p.ActiveColor+1)%2], piece.Pawn)
+	}
+
+	return newPos, piece.New(piece.NoColor, piece.None)
+}
+
 // Creates new chess game from moves string.
 // The moves string is basicaly move coordinates from & to (0...63) encoded in base64 (with some improvements for promotions, etc...). See encoding.go
-func NewGame(movesString string) (*ChessGame, error) {
+func NewGame(hash string) (*ChessGame, error) {
+	// trim movesString from leading #
+	movesString := strings.TrimPrefix(hash, "#")
+
 	moves, err := DecodeMoves(movesString) // encoding.go
 	if err != nil {
 		return nil, errors.New("decoding moves error: " + err.Error())
@@ -936,21 +970,9 @@ func NewGame(movesString string) (*ChessGame, error) {
 				}
 			}
 
-			// was a piece thrown out regulary? = move destination contains some piece
-			if p := pbm.OnSquare(move.To()); p.Type != piece.None {
-				if _, ok := tos[p]; !ok {
-					tos[p] = 0
-				}
-				tos[p]++
-			}
-
-			// was en passant throw out? = moved piece is pawn and move destination is an en passan square in previous move
-			if mp := pbm.OnSquare(move.From()); mp.Type == piece.Pawn && move.To() == pbm.EnPassant {
-				p := piece.New(piece.Colors[(pbm.ActiveColor+1)%2], piece.Pawn)
-				if _, ok := tos[p]; !ok {
-					tos[p] = 0
-				}
-				tos[p]++
+			_, top := pMakeMove(pbm, move)
+			if top.Type != piece.None {
+				tos[top] = tos[top] + 1
 			}
 
 			gtos[i] = tos
@@ -989,7 +1011,7 @@ func (ch *ChessGame) MakeNextMove() error {
 		return err
 	}
 
-	gameMoves, err := EncodeGame(ch.game)
+	gameMoves, err := EncodeGame(ch)
 	if err != nil {
 		return err
 	}
@@ -1022,7 +1044,6 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 	}
 
 	position := ch.game.Positions[ch.currMoveNo]
-	thrownOutPieces := ch.gameGc[ch.currMoveNo]
 	nextMoveState := NMError
 
 	{ // validate next move
@@ -1042,7 +1063,6 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 			return err
 		}
 		position = ch.game.Positions[ch.currMoveNo]
-		thrownOutPieces = ch.gameGc[ch.currMoveNo]
 		nextMoveState = NMWaitFrom
 	}
 
@@ -1052,12 +1072,37 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 		m.Board.PromotionOverlay.Shown = false
 	}
 
-	{ // update board pieces
-		drawPosition := position
-		if nextMoveState == NMLegalMove {
-			drawPosition = position.MakeMove(ch.nextMove)
-		}
+	// if substep, then drawposition is sometimes ahead of position
+	drawPosition := position
 
+	thrownOutPieces := ch.gameGc[ch.currMoveNo]
+	lastMoveThrowOutPiece := piece.New(piece.NoColor, piece.None)
+	if ch.currMoveNo > 0 {
+		// derive last move throw out piece from curren and previous move throwouts
+		if added := addedThrownOuts(ch.gameGc[ch.currMoveNo-1], thrownOutPieces); len(added) > 1 {
+			// should not happen
+			return errors.New("more thrownouts added between previous and curren move")
+		} else if len(added) == 1 {
+			for p, c := range added {
+				if c > 1 {
+					// should not happen
+					return errors.New("more thrownouts added between previous and curren move")
+				}
+				lastMoveThrowOutPiece = p
+			}
+		}
+	}
+
+	if nextMoveState == NMLegalMove {
+		// advance move to position
+		drawPosition, lastMoveThrowOutPiece = pMakeMove(position, ch.nextMove)
+		// append thrown out pieces
+		if lastMoveThrowOutPiece.Type != piece.None {
+			thrownOutPieces[lastMoveThrowOutPiece] = thrownOutPieces[lastMoveThrowOutPiece] + 1
+		}
+	}
+
+	{ // update board pieces
 		for i := int(63); i >= 0; i-- {
 			m.Board.Grid.Squares[i].Piece = drawPosition.OnSquare(square.Square(i))
 
@@ -1100,12 +1145,19 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 	}
 
 	{ // update thrown out pieces
-		for p, count := range thrownOutPieces {
-			container := m.ThrownOuts.White
-			if p.Color == piece.Black {
-				container = m.ThrownOuts.Black
+		// first clear all previous html thrownouts
+		containers := map[piece.Color]*ThrownOutsContainer{piece.White: m.ThrownOuts.White, piece.Black: m.ThrownOuts.Black}
+		for color, container := range containers {
+			for _, pt := range thrownOutPiecesOrderType {
+				pce := piece.New(color, pt)
+
+				// update html thrown out pieces count
+				container.PieceCount[pt] = int(thrownOutPieces[pce])
 			}
-			container.PieceCount[p.Type] = int(count)
+			container.LastMoveThrowOut = piece.None
+			if lastMoveThrowOutPiece.Color == color {
+				container.LastMoveThrowOut = lastMoveThrowOutPiece.Type
+			}
 		}
 	}
 
@@ -1153,7 +1205,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 
 				// every empty square resets next move
 				if sq.Piece.Type == piece.None {
-					if err := tools.Click(sq.Element, func(_ *shf.Event) error {
+					if err := tools.Click(sq.Element, func(_ shf.Event) error {
 						ch.nextMove = move.Null
 						m.Cover.MoveStatus.Shown = false
 						return nil
@@ -1166,7 +1218,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 				if sq.Piece.Color == complementColor(position.ActiveColor) {
 					if nextMoveState == NMLegalMove {
 						// makes a move if next move is a legal move
-						if err := tools.Click(sq.Element, func(_ *shf.Event) error {
+						if err := tools.Click(sq.Element, func(_ shf.Event) error {
 							// make move
 							if err := ch.MakeNextMove(); err != nil {
 								return err
@@ -1182,7 +1234,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 						}
 					} else {
 						// resets next move otherwise
-						if err := tools.Click(sq.Element, func(_ *shf.Event) error {
+						if err := tools.Click(sq.Element, func(_ shf.Event) error {
 							ch.nextMove = move.Null
 							m.Cover.MoveStatus.Shown = false
 							return nil
@@ -1194,7 +1246,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 
 				// every moving player figure gets unique event
 				if position.ActiveColor == sq.Piece.Color {
-					if err := tools.Click(sq.Element, func(event *shf.Event) error {
+					if err := tools.Click(sq.Element, func(event shf.Event) error {
 						// set next move from
 						ch.nextMove.Source = sq.Id
 						ch.nextMove.Destination = square.NoSquare
@@ -1219,7 +1271,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 						return errors.New("square " + sq.Id.String() + " is marked as possible to, but the next move here is not legal move or waiting to promoion")
 					}
 					// every moving player possible to move gets event
-					if err := tools.Click(sq.Element, func(_ *shf.Event) error {
+					if err := tools.Click(sq.Element, func(_ shf.Event) error {
 						// set next move to
 						ch.nextMove.Destination = sq.Id
 						if squareNextMoveState == NMLegalMove {
@@ -1246,7 +1298,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 				}
 
 				// next move from square resets next move
-				if err := tools.Click(m.Board.Grid.Squares[int(ch.nextMove.From())].Element, func(_ *shf.Event) error {
+				if err := tools.Click(m.Board.Grid.Squares[int(ch.nextMove.From())].Element, func(_ shf.Event) error {
 					ch.nextMove = move.Null
 					m.Cover.MoveStatus.Shown = false
 					return nil
@@ -1272,8 +1324,35 @@ func (m *Model) Init(tools *shf.Tools) error {
 		m.Game, _ = NewGame("")
 	}
 
-	if err := tools.HashChange(func(_ *shf.Event) error {
-		js.Global.Call("alert", js.Global.Get("location").Get("hash"))
+	if err := tools.HashChange(func(e shf.HashChangeEvent) error {
+		// get game hash
+		gameMoves, err := EncodeGame(m.Game)
+		if err != nil {
+			return err
+		}
+		gameHash := "#" + gameMoves
+		// get location hash
+		locationHash := js.Global.Get("location").Get("hash").String()
+		if gameHash == locationHash {
+			// equal, do nothing
+			return nil
+		}
+		// not equal game & location hash
+
+		// create game grom location hash
+		newGame, err := NewGame(locationHash)
+		if err != nil {
+			// location hash is bad, revert document location hash to game hash
+			//TODO proper error showing throug notification
+			js.Global.Call("alert", err.Error())
+			js.Global.Get("location").Set("hash", gameMoves)
+			return nil
+		}
+
+		// set game to location hash game
+		m.Game = newGame
+		m.Html.Cover.MoveStatus.Shown = false
+
 		return nil
 	}); err != nil {
 		return err
@@ -1302,7 +1381,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 	}
 
 	{ // add promotion events to promotion overlay
-		tools.Click(m.Html.Board.PromotionOverlay.Element, func(_ *shf.Event) error {
+		tools.Click(m.Html.Board.PromotionOverlay.Element, func(_ shf.Event) error {
 			m.Game.nextMove.Promote = piece.None
 			m.Game.nextMove.Destination = square.NoSquare
 			m.Html.Board.PromotionOverlay.Shown = false
@@ -1311,7 +1390,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 		for _, p := range m.Html.Board.PromotionOverlay.Pieces {
 			promotionPiece := p
-			tools.Click(p.Element, func(_ *shf.Event) error {
+			tools.Click(p.Element, func(_ shf.Event) error {
 				m.Game.nextMove.Promote = promotionPiece.Piece.Type
 				m.Html.Board.PromotionOverlay.Shown = false
 				return nil
@@ -1624,7 +1703,7 @@ func getNextMoveState(p *position.Position, m move.Move) (int, error) {
 
 /*
 type Model struct {
-	*shf.Element
+	shf.Element
 	Child   *Child
 }
 func (this *Model) Init(tools *app.Tools) error {

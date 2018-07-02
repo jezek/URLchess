@@ -867,9 +867,6 @@ div.thrown-outs .count {
 	#board, #thrown-outs-container {
 		margin-left: 0;
 	}
-	#move-status {
-		left: 0;
-	}
 	#cover {
 		position: absolute;
 		top: calc((100vh - 70vmin) / 2);
@@ -885,9 +882,6 @@ div.thrown-outs .count {
 	}
 	#board, #thrown-outs-container {
 		margin-left: calc((100vw - ((70vmin * 59) / 28)) / 2);
-	}
-	#move-status {
-		left: calc((100vw - ((70vmin * 59) / 28)) / 2);
 	}
 	#cover {
 		left: calc(((100vw - ((70vmin *59) / 28)) / 2) + ((70vmin * 31) / 28));
