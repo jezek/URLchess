@@ -600,6 +600,34 @@ func (t *ModelThrownouts) Update(tools *shf.Tools) error {
 	return tools.Update(t.White, t.Black)
 }
 
+type StatusIcons struct {
+	shf.Element
+	White, Black bool
+}
+
+func (sm *StatusIcons) Init(tools *shf.Tools) error {
+	if sm.Element == nil {
+		sm.Element = tools.CreateElement("p")
+		sm.Set("id", "game-status-icon")
+	}
+	return nil
+}
+func (sm *StatusIcons) Update(tools *shf.Tools) error {
+	if sm == nil {
+		return errors.New("StatusIcons is nil")
+	}
+
+	sm.Set("innerHTML", "")
+	if sm.White {
+		sm.Call("appendChild", pieceElement(piece.New(piece.White, piece.King)))
+	}
+	if sm.Black {
+		sm.Call("appendChild", pieceElement(piece.New(piece.Black, piece.King)))
+	}
+
+	return nil
+}
+
 type StatusText struct {
 	shf.Element
 	Text string
@@ -623,29 +651,72 @@ func (st *StatusText) Update(tools *shf.Tools) error {
 	return nil
 }
 
-type StatusIcon struct {
+type StatusHeader struct {
 	shf.Element
-	White, Black bool
+	Icons   *StatusIcons
+	Message *StatusText
 }
 
-func (si *StatusIcon) Init(tools *shf.Tools) error {
-	if si.Element == nil {
-		si.Element = tools.CreateElement("p")
-		si.Set("id", "game-status-player")
+func (gs *StatusHeader) Init(tools *shf.Tools) error {
+	if gs.Icons == nil {
+		gs.Icons = &StatusIcons{}
+		if err := tools.Update(gs.Icons); err != nil {
+			return err
+		}
+	}
+	if gs.Message == nil {
+		gs.Message = &StatusText{}
+		if err := tools.Update(gs.Message); err != nil {
+			return err
+		}
+	}
+
+	if gs.Element == nil {
+		gs.Element = tools.CreateElement("div")
+		gs.Set("id", "game-status-header")
+		gs.Call("appendChild", gs.Icons.Element.Object())
+		gs.Call("appendChild", gs.Message.Element.Object())
 	}
 	return nil
 }
-func (si *StatusIcon) Update(tools *shf.Tools) error {
+func (gs *StatusHeader) Update(tools *shf.Tools) error {
+	if gs == nil {
+		return errors.New("StatusHeader is nil")
+	}
+
+	return tools.Update(gs.Message, gs.Icons)
+}
+
+type StatusMoves struct {
+	shf.Element
+	GameMovesCount, GameMoveNo uint
+}
+
+func (si *StatusMoves) Init(tools *shf.Tools) error {
+	if si.Element == nil {
+		si.Element = tools.CreateElement("div")
+		si.Set("id", "game-status-moves")
+	}
+	return nil
+}
+func (si *StatusMoves) Update(tools *shf.Tools) error {
 	if si == nil {
-		return errors.New("StatusIcon is nil")
+		return errors.New("StatusMoves is nil")
 	}
 
 	si.Set("innerHTML", "")
-	if si.White {
-		si.Call("appendChild", pieceElement(piece.New(piece.White, piece.King)))
-	}
-	if si.Black {
-		si.Call("appendChild", pieceElement(piece.New(piece.Black, piece.King)))
+	{ // game moves count
+		gmc := tools.CreateElement("div")
+		gmc.Get("classList").Call("add", "moves-count")
+		gmc.Set("textContent", "game moves")
+
+		{ // inner span
+			span := tools.CreateElement("span")
+			span.Get("classList").Call("add", "moves-count")
+			span.Set("textContent", strconv.Itoa(int(si.GameMovesCount)))
+			gmc.Call("appendChild", span.Object())
+		}
+		si.Call("appendChild", gmc.Object())
 	}
 
 	return nil
@@ -653,20 +724,20 @@ func (si *StatusIcon) Update(tools *shf.Tools) error {
 
 type ModelGameStatus struct {
 	shf.Element
-	Message *StatusText
-	Icons   *StatusIcon
+	Header *StatusHeader
+	Moves  *StatusMoves
 }
 
 func (gs *ModelGameStatus) Init(tools *shf.Tools) error {
-	if gs.Message == nil {
-		gs.Message = &StatusText{}
-		if err := tools.Update(gs.Message); err != nil {
+	if gs.Header == nil {
+		gs.Header = &StatusHeader{}
+		if err := tools.Update(gs.Header); err != nil {
 			return err
 		}
 	}
-	if gs.Icons == nil {
-		gs.Icons = &StatusIcon{}
-		if err := tools.Update(gs.Icons); err != nil {
+	if gs.Moves == nil {
+		gs.Moves = &StatusMoves{}
+		if err := tools.Update(gs.Moves); err != nil {
 			return err
 		}
 	}
@@ -674,8 +745,8 @@ func (gs *ModelGameStatus) Init(tools *shf.Tools) error {
 	if gs.Element == nil {
 		gs.Element = tools.CreateElement("div")
 		gs.Set("id", "game-status")
-		gs.Call("appendChild", gs.Message.Element.Object())
-		gs.Call("appendChild", gs.Icons.Element.Object())
+		gs.Call("appendChild", gs.Header.Element.Object())
+		gs.Call("appendChild", gs.Moves.Element.Object())
 	}
 	return nil
 }
@@ -684,7 +755,7 @@ func (gs *ModelGameStatus) Update(tools *shf.Tools) error {
 		return errors.New("ModelGameStatus is nil")
 	}
 
-	return tools.Update(gs.Message, gs.Icons)
+	return tools.Update(gs.Header, gs.Moves)
 }
 
 type ModelMoveStatus struct {
@@ -1162,34 +1233,34 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 	}
 
 	{ // update status & notification
-		m.Cover.GameStatus.Icons.White = false
-		m.Cover.GameStatus.Icons.Black = false
+		m.Cover.GameStatus.Header.Icons.White = false
+		m.Cover.GameStatus.Header.Icons.Black = false
 		if st := ch.game.Status(); st != game.InProgress { // game ended
 			// update notification
 			m.Notification.Text = st.String() + ".<br />" + `<a href="/">New game</a>?`
 			m.Notification.Shown = true
 
-			m.Cover.GameStatus.Message.Text = st.String()
+			m.Cover.GameStatus.Header.Message.Text = st.String()
 			if st&game.Draw != 0 {
 				// game ended in draw
-				m.Cover.GameStatus.Icons.White = true
-				m.Cover.GameStatus.Icons.Black = true
+				m.Cover.GameStatus.Header.Icons.White = true
+				m.Cover.GameStatus.Header.Icons.Black = true
 			} else if st&game.WhiteWon != 0 {
 				// white wins
-				m.Cover.GameStatus.Icons.White = true
+				m.Cover.GameStatus.Header.Icons.White = true
 			} else if st&game.BlackWon != 0 {
 				// black wins
-				m.Cover.GameStatus.Icons.Black = true
+				m.Cover.GameStatus.Header.Icons.Black = true
 			}
 		} else {
 			// game in progress
-			m.Cover.GameStatus.Message.Text = "Moving player"
+			m.Cover.GameStatus.Header.Message.Text = position.ActiveColor.String() + " player is on the move"
 			if position.ActiveColor == piece.White {
 				// white moves
-				m.Cover.GameStatus.Icons.White = true
+				m.Cover.GameStatus.Header.Icons.White = true
 			} else {
 				// black moves
-				m.Cover.GameStatus.Icons.Black = true
+				m.Cover.GameStatus.Header.Icons.Black = true
 			}
 		}
 	}

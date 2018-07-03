@@ -345,20 +345,39 @@ div.thrown-outs .count {
 /***************/
 /* game status */
 /***************/
-#game-status p {
-	margin: 0;
-	text-align: center;
+#game-status-header {
+	margin-top: calc(100% * 1 / 28);
+	height: calc(100% * 4 / 28);
+	font-size: calc(1em * 4 / 3);
+	display: flex;
+	justify-content: center;
 }
-#game-status span.piece {
-	margin-top: 0.25em;
-	display: inline-block;
-	background-color: rgba(223, 239, 239, 0.6);
-	width: calc(100vmin * 3 / 28);
-	height: calc(100vmin * 3 / 28);
+#game-status-header p {
+	margin: 0;
+}
+#game-status-icon {
 	font-size: calc(1em * 5 / 6);
 }
+#game-status-icon span.piece {
+	display: inline-block;
+	background-color: rgba(223, 239, 239, 0.6);
+	width: calc(1em * 6 / 5);
+	height: calc(1em * 6 / 5);
+	text-align: center;
+}
 #game-status-text {
-	font-size: 0.6em;
+	font-size: calc(0.5em * 5 / 6);
+	padding-top: 0.1em;
+	padding-left: 0.5em;
+	display: flex;
+	align-items: center;
+}
+#game-status-moves {
+	visibility: hidden;
+  box-sizing: border-box;
+	width: 100%;
+	height: calc(100% * 23 / 28);
+	border: 1px solid black;
 }
 /*************/
 /* move status */
@@ -493,11 +512,6 @@ div.thrown-outs .count {
 		height: calc(8.4cm * 3 / 28);
 		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
 	}
-	#game-status span.piece {
-		width: calc(8.4cm * 3 / 28);
-		height: calc(8.4cm * 3 / 28);
-		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
-	}
 
 }
 @media (orientation: portrait) and (min-width: 10.2cm) {
@@ -573,11 +587,6 @@ div.thrown-outs .count {
 	}
 	#promotion-overlay span.piece {
 		margin: 0 calc((70vmin * 3 / 28) / 4);
-		width: calc(70vmin * 3 / 28);
-		height: calc(70vmin * 3 / 28);
-		font-size: calc((70vmin * 3 / 28) * 5 / 6);
-	}
-	#game-status span.piece {
 		width: calc(70vmin * 3 / 28);
 		height: calc(70vmin * 3 / 28);
 		font-size: calc((70vmin * 3 / 28) * 5 / 6);
@@ -709,11 +718,6 @@ div.thrown-outs .count {
 	}
 	#promotion-overlay span.piece {
 		margin: 0 calc((8.4cm * 3 / 28) / 4);
-		width: calc(8.4cm * 3 / 28);
-		height: calc(8.4cm * 3 / 28);
-		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
-	}
-	#game-status span.piece {
 		width: calc(8.4cm * 3 / 28);
 		height: calc(8.4cm * 3 / 28);
 		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
@@ -850,11 +854,6 @@ div.thrown-outs .count {
 	}
 	#promotion-overlay span.piece {
 		margin: 0 calc((70vmin * 3 / 28) / 4);
-		width: calc(70vmin * 3 / 28);
-		height: calc(70vmin * 3 / 28);
-		font-size: calc((70vmin * 3 / 28) * 5 / 6);
-	}
-	#game-status span.piece {
 		width: calc(70vmin * 3 / 28);
 		height: calc(70vmin * 3 / 28);
 		font-size: calc((70vmin * 3 / 28) * 5 / 6);
