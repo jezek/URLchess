@@ -33,6 +33,10 @@ func main() {
 		}
 		div.Call("remove")
 	}
+	// is execCommand supported?
+	if exec := js.Global.Get("document").Get("execCommand"); exec != nil && exec != js.Undefined {
+		model.execSupported = true
+	}
 
 	app, err := shf.Create(model)
 	if err != nil {

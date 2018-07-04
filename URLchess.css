@@ -1,19 +1,31 @@
-body {
+body, button, input {
 	margin: 0;
 	background-color: #0e1e1e;
 	color: #dfefef;
 	/* font-size: width (or height) of 1 #board .grid square; */
 	font-size: calc(100vmin * 3 / 28);
+	font-family: serif;
 }
 a {
 	color: #dfefef;
 }
 input {
-	background-color: #0e1e1e;
-	color: #dfefef;
+	padding-top: 0.3em;
 }
 .piece {
 	color: black;
+}
+button {
+	display: block;
+	border: 2px solid #dfefef;
+	border-radius: 0.5em;
+	padding: 0.4em 0.8em 0.2em 0.8em;
+	margin: 0.5em auto;
+	cursor: pointer;
+}
+button:active {
+	background-color: #dfefef;
+	color: #0e1e1e;
 }
 
 /* basic layout */
@@ -65,9 +77,8 @@ input {
 }
 #move-status {
 	font-size: 0.5em;
-	background-color: rgba(14, 30, 30, 0.75);
+	background-color: #0e1e1e;
 	display: flex;
-	justify-content: center;
 	flex-flow: column;
 }
 #notification-overlay {
@@ -345,12 +356,15 @@ div.thrown-outs .count {
 /***************/
 /* game status */
 /***************/
+#game-status div:first-child {
+	margin-top: calc(100% * 0.7 / 28);
+}
 #game-status-header {
-	margin-top: calc(100% * 1 / 28);
 	height: calc(100% * 4 / 28);
 	font-size: calc(1em * 4 / 3);
 	display: flex;
 	justify-content: center;
+	cursor: pointer;
 }
 #game-status-header p {
 	margin: 0;
@@ -382,34 +396,32 @@ div.thrown-outs .count {
 /*************/
 /* move status */
 /*************/
-#move-status p {
-	box-sizing: border-box;
-	margin:0;
-	padding: 1em 0.5em;
+#move-status button, #move-status input {
+	padding-top: 0.3em;
+	font-size: 1em;
 }
-#move-status p.link {
+#move-status div:first-child {
+	margin-top: calc(100% * 0.7 / 28);
+}
+#move-status div.link {
 	text-align: center;
 }
-#move-status p.link input, #move-status p.link span.hint, #move-status p.link a {
+#move-status div.link input {
 	display: block;
-}
-#move-status p.link input {
 	margin: 0 auto;
-	width: 90%;
+}
+#move-status div.link input {
+	width: 100%;
 	background-color: transparent;
-	height: 2em;
 	text-align: center;
 }
-#move-status p.link span.hint {
-	font-size: 0.7em;
-}
-#move-status p.actions {
+#move-status div.actions {
 	width: 100%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 }
-#move-status p.actions a {
+#move-status div.actions a {
 	display: block;
 	margin: 0 1em;
 }
@@ -462,7 +474,7 @@ div.thrown-outs .count {
 /*********************/
 @media (orientation: portrait) and (min-width: 8.4cm) {
 
-	body {
+	body, button, input {
 		font-size: calc(8.4cm * 3 / 28);
 	}
 
@@ -540,7 +552,7 @@ div.thrown-outs .count {
 }
 @media (orientation: portrait) and (min-width: 12cm) {
 
-	body {
+	body, button, input {
 		font-size: calc(70vmin * 3 / 28);
 	}
 
@@ -558,6 +570,7 @@ div.thrown-outs .count {
 	}
 	#cover {
 		height: 70vmin;
+		top: calc((-70vmin * 3) / 28);
 	}
 	#thrown-outs-container {
 		margin-left: calc((100vw - 70vmin) / 2);
@@ -669,7 +682,7 @@ div.thrown-outs .count {
 }
 
 @media (orientation: landscape) and (min-height: 8.4cm) {
-	body {
+	body, button, input {
 		font-size: calc(8.4cm * 3 / 28);
 	}
 
@@ -800,7 +813,7 @@ div.thrown-outs .count {
 }
 
 @media (orientation: landscape) and (min-height: 12cm) {
-	body {
+	body, button, input {
 		font-size: calc(70vmin * 3 / 28);
 	}
 

@@ -54,6 +54,10 @@ func (t *Tools) CreateElement(etype string) Element {
 	t.created[elm] = true
 	return elm
 }
+func (t *Tools) CreateTextNode(text string) *js.Object {
+	return js.Global.Get("document").Call("createTextNode", text)
+}
+
 func (t *Tools) Created(elm Element) bool {
 	if elm == nil {
 		return false

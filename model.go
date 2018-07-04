@@ -758,87 +758,118 @@ func (gs *ModelGameStatus) Update(tools *shf.Tools) error {
 	return tools.Update(gs.Header, gs.Moves)
 }
 
-type ModelMoveStatus struct {
+type LinkCopy struct {
 	shf.Element
-	Shown    bool
-	NextMove bool
-	MoveHash string
-	MoveCopy bool
+	Shown bool
 }
 
-func (ms *ModelMoveStatus) Init(tools *shf.Tools) error {
-	if ms.Element == nil {
-		ms.Element = tools.CreateElement("div")
-		ms.Set("id", "move-status")
+func (this *LinkCopy) Init(tools *shf.Tools) error {
+	if this.Element == nil {
+		this.Element = tools.CreateElement("button")
+		this.Set("textContent", "Copy to clipboard")
+
+	}
+	return nil
+}
+func (this *LinkCopy) Update(tools *shf.Tools) error {
+	if this == nil {
+		return errors.New("LinkCopy is nil")
+	}
+	if this.Shown {
+		this.Get("classList").Call("remove", "hidden")
+	} else {
+		this.Get("classList").Call("add", "hidden")
 	}
 	return nil
 }
 
-func (ms *ModelMoveStatus) Update(tools *shf.Tools) error {
-	if ms == nil {
+type MoveStatusLink struct {
+	shf.Element
+	MoveHash string
+
+	input shf.Element
+	Copy  *LinkCopy
+}
+
+func (this *MoveStatusLink) GetURL() string {
+	hash := ""
+	if strings.TrimPrefix(this.MoveHash, "#") != "" {
+		hash = "#" + strings.TrimPrefix(this.MoveHash, "#")
+	}
+	return strings.Split(js.Global.Get("location").String(), "#")[0] + hash
+}
+func (this *MoveStatusLink) Init(tools *shf.Tools) error {
+	if this.input == nil {
+		this.input = tools.CreateElement("input")
+		this.input.Set("type", "text")
+		this.input.Call("setAttribute", "readonly", "readonly")
+	}
+
+	if this.Copy == nil {
+		this.Copy = &LinkCopy{}
+		if err := tools.Update(this.Copy); err != nil {
+			return err
+		}
+	}
+
+	if this.Element == nil {
+		this.Element = tools.CreateElement("div")
+		this.Get("classList").Call("add", "link")
+
+		this.Call("appendChild", this.input.Object())
+		this.Call("appendChild", this.Copy.Object())
+		this.Call("appendChild", tools.CreateTextNode("This URL link represents the state of current chess game. You can copy it and store it or send it."))
+
+	}
+	return nil
+}
+func (this *MoveStatusLink) Update(tools *shf.Tools) error {
+	if this == nil {
+		return errors.New("MoveStatusLink is nil")
+	}
+
+	this.input.Set("value", this.GetURL())
+
+	return tools.Update(this.Copy)
+}
+
+type ModelMoveStatus struct {
+	shf.Element
+	Shown bool
+
+	Link *MoveStatusLink
+	//Navigation *MoveStatusNavigation
+}
+
+func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
+	if this.Link == nil {
+		this.Link = &MoveStatusLink{}
+		if err := tools.Update(this.Link); err != nil {
+			return err
+		}
+	}
+
+	if this.Element == nil {
+		this.Element = tools.CreateElement("div")
+		this.Set("id", "move-status")
+
+		this.Call("appendChild", this.Link.Object())
+	}
+	return nil
+}
+
+func (this *ModelMoveStatus) Update(tools *shf.Tools) error {
+	if this == nil {
 		return errors.New("ModelMoveStatus is nil")
 	}
 
-	if ms.Shown {
-		// update only if shown
-		ms.Set("innerHTML", "")
-
-		{ // link paragraph
-			link := tools.CreateElement("p")
-			link.Get("classList").Call("add", "link")
-
-			{ // link text
-				text := "Last move "
-				if ms.NextMove {
-					text = "NextMove "
-				}
-				text += "URL"
-				link.Call("appendChild", js.Global.Get("document").Call("createTextNode", text))
-			}
-			{ // link input
-				input := tools.CreateElement("input")
-				input.Set("id", "next-move-input")
-				input.Set("readonly", "readonly")
-				input.Set("value", ms.MoveHash)
-
-				link.Call("appendChild", input.Object())
-				if ms.MoveCopy { // copy link
-					copy := tools.CreateElement("a")
-					copy.Set("href", "")
-					copy.Set("textContent", "Copy to clipboard")
-
-					//events.Click(copy, func(_ *ChessGame, _ *HtmlModel) error {
-					//	input.Call("focus")
-					//	input.Call("setSelectionRange", 0, input.Get("value").Get("length"))
-					//	js.Global.Get("document").Call("execCommand", "Copy")
-					//	input.Call("blur")
-
-					//	//TODO notification
-					//	return nil
-					//})
-					link.Call("appendChild", copy.Object())
-				}
-			}
-			if ms.NextMove { // hint
-				hint := tools.CreateElement("span")
-				hint.Get("classList").Call("add", "hint")
-				hint.Set("textContent", "copy this link and send it to your oponent")
-
-				link.Call("appendChild", hint.Object())
-			}
-
-			ms.Call("appendChild", link.Object())
-		}
-
-	}
-
-	if ms.Shown {
-		ms.Get("classList").Call("remove", "hidden")
+	if this.Shown {
+		this.Get("classList").Call("remove", "hidden")
 	} else {
-		ms.Get("classList").Call("add", "hidden")
+		this.Get("classList").Call("add", "hidden")
 	}
 
-	return nil
+	return tools.Update(this.Link)
 }
 
 type ModelCover struct {
@@ -860,6 +891,11 @@ func (this *ModelCover) Init(tools *shf.Tools) error {
 			return err
 		}
 	}
+
+	tools.Click(this.GameStatus.Header.Element, func(_ shf.Event) error {
+		this.MoveStatus.Shown = true
+		return nil
+	})
 	if this.Element == nil {
 		this.Element = tools.CreateElement("div")
 		this.Set("id", "cover")
@@ -959,12 +995,32 @@ func (h *HtmlModel) RotateBoard() func(shf.Event) error {
 		return nil
 	}
 }
+func (h *HtmlModel) CopyGameURLToClipboard() func(shf.Event) error {
+	return func(_ shf.Event) error {
+
+		temporaryShow := false
+		if !h.Cover.MoveStatus.Shown {
+			temporaryShow = true
+		}
+		if temporaryShow {
+			h.Cover.MoveStatus.Element.Get("classList").Call("remove", "hidden")
+		}
+		h.Cover.MoveStatus.Link.input.Call("focus")
+		h.Cover.MoveStatus.Link.input.Call("setSelectionRange", 0, h.Cover.MoveStatus.Link.input.Get("value").Get("length"))
+		js.Global.Get("document").Call("execCommand", "Copy")
+		h.Cover.MoveStatus.Link.input.Call("blur")
+		if temporaryShow {
+			h.Cover.MoveStatus.Element.Get("classList").Call("add", "hidden")
+		}
+
+		js.Global.Call("alert", "TODO copied notification")
+		return nil
+	}
+}
 
 type ThrownOuts map[piece.Piece]uint8
 type GameThrownOuts []ThrownOuts
 type ChessGame struct {
-	SubStep bool
-
 	game       *game.Game
 	gameGc     GameThrownOuts
 	currMoveNo int
@@ -1116,26 +1172,28 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 
 	position := ch.game.Positions[ch.currMoveNo]
 	nextMoveState := NMError
+	{ // set next move state & update game if next move is legal
 
-	{ // validate next move
+		// validate next move
 		nms, err := getNextMoveState(position, ch.nextMove)
 		if err != nil {
 			// this should not happen
 			return err
 		}
-		nextMoveState = nms
-	}
-	// next move is valid (a valid move, or waiting to fill some params)
 
-	if !ch.SubStep && nextMoveState == NMLegalMove {
-		// if there is no intermidiate step and
-		// next move is a legal move, do it
-		if err := ch.MakeNextMove(); err != nil {
-			return err
+		// next move is valid (a valid move, or waiting to fill some params)
+		nextMoveState = nms
+
+		if nextMoveState == NMLegalMove {
+			// next move is a legal move, do it
+			if err := ch.MakeNextMove(); err != nil {
+				return err
+			}
+			position = ch.game.Positions[ch.currMoveNo]
+			nextMoveState = NMWaitFrom
 		}
-		position = ch.game.Positions[ch.currMoveNo]
-		nextMoveState = NMWaitFrom
 	}
+	// from now on, nextMoveState != NMLegalMove
 
 	if nextMoveState == NMWaitPromote {
 		m.Board.PromotionOverlay.Shown = true
@@ -1143,46 +1201,37 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 		m.Board.PromotionOverlay.Shown = false
 	}
 
-	// if substep, then drawposition is sometimes ahead of position
-	drawPosition := position
-
 	thrownOutPieces := ch.gameGc[ch.currMoveNo]
 	lastMoveThrowOutPiece := piece.New(piece.NoColor, piece.None)
-	if ch.currMoveNo > 0 {
-		// derive last move throw out piece from curren and previous move throwouts
-		if added := addedThrownOuts(ch.gameGc[ch.currMoveNo-1], thrownOutPieces); len(added) > 1 {
-			// should not happen
-			return errors.New("more thrownouts added between previous and curren move")
-		} else if len(added) == 1 {
-			for p, c := range added {
-				if c > 1 {
-					// should not happen
-					return errors.New("more thrownouts added between previous and curren move")
-				}
-				lastMoveThrowOutPiece = p
-			}
-		}
-	}
 
-	if nextMoveState == NMLegalMove {
-		// advance move to position
-		drawPosition, lastMoveThrowOutPiece = pMakeMove(position, ch.nextMove)
-		// append thrown out pieces
-		if lastMoveThrowOutPiece.Type != piece.None {
-			thrownOutPieces[lastMoveThrowOutPiece] = thrownOutPieces[lastMoveThrowOutPiece] + 1
+	{ // update last move thorwn out piece
+		if ch.currMoveNo > 0 {
+			// derive last move throw out piece from curren and previous move throwouts
+			if added := addedThrownOuts(ch.gameGc[ch.currMoveNo-1], thrownOutPieces); len(added) > 1 {
+				// should not happen
+				return errors.New("more thrownouts added between previous and curren move")
+			} else if len(added) == 1 {
+				for p, c := range added {
+					if c > 1 {
+						// should not happen
+						return errors.New("more thrownouts added between previous and curren move")
+					}
+					lastMoveThrowOutPiece = p
+				}
+			}
 		}
 	}
 
 	{ // update board pieces
 		for i := int(63); i >= 0; i-- {
-			m.Board.Grid.Squares[i].Piece = drawPosition.OnSquare(square.Square(i))
+			m.Board.Grid.Squares[i].Piece = position.OnSquare(square.Square(i))
 
 			// reset all square markers
 			m.Board.Grid.Squares[i].Markers = SquareMarkers{}
 
 			if m.Board.Grid.Squares[i].Piece.Type == piece.King {
 				// piece is a king ... is he in check?
-				if drawPosition.Check(m.Board.Grid.Squares[i].Piece.Color) {
+				if position.Check(m.Board.Grid.Squares[i].Piece.Color) {
 					m.Board.Grid.Squares[i].Markers.Check = true
 				}
 			}
@@ -1265,6 +1314,14 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 		}
 	}
 
+	{ // update move status
+		hash, err := EncodeGame(ch)
+		if err != nil {
+			return err
+		}
+		m.Cover.MoveStatus.Link.MoveHash = hash
+	}
+
 	{ // update handlers
 		{ // board grid squares
 			for _, sq := range m.Board.Grid.Squares {
@@ -1274,44 +1331,14 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 				// remove square event for sure
 				tools.Click(sq.Element, nil)
 
-				// every empty square resets next move
-				if sq.Piece.Type == piece.None {
+				// every empty square or every oponent piece resets next move
+				if sq.Piece.Type == piece.None || sq.Piece.Color == complementColor(position.ActiveColor) {
 					if err := tools.Click(sq.Element, func(_ shf.Event) error {
 						ch.nextMove = move.Null
 						m.Cover.MoveStatus.Shown = false
 						return nil
 					}); err != nil {
 						return err
-					}
-				}
-
-				// every oponent piece...
-				if sq.Piece.Color == complementColor(position.ActiveColor) {
-					if nextMoveState == NMLegalMove {
-						// makes a move if next move is a legal move
-						if err := tools.Click(sq.Element, func(_ shf.Event) error {
-							// make move
-							if err := ch.MakeNextMove(); err != nil {
-								return err
-							}
-							// set next from
-							ch.nextMove.Source = sq.Id
-
-							// hide game status
-							m.Cover.MoveStatus.Shown = false
-							return nil
-						}); err != nil {
-							return err
-						}
-					} else {
-						// resets next move otherwise
-						if err := tools.Click(sq.Element, func(_ shf.Event) error {
-							ch.nextMove = move.Null
-							m.Cover.MoveStatus.Shown = false
-							return nil
-						}); err != nil {
-							return err
-						}
 					}
 				}
 
@@ -1360,22 +1387,15 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 
 			}
 
-			// if there is a legal next move
-			if nextMoveState == NMLegalMove {
-				// next move to square gets copy to clipboard
-				//TODO copy to clipboard
-				if err := tools.Click(m.Board.Grid.Squares[int(ch.nextMove.To())].Element, nil); err != nil {
-					return err
+			if position.LastMove != move.Null {
+				if nextMoveState == NMWaitFrom {
+					// last move to square gets copy to clipboard
+					if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.To())].Element, m.CopyGameURLToClipboard()); err != nil {
+						return err
+					}
 				}
-
-				// next move from square resets next move
-				if err := tools.Click(m.Board.Grid.Squares[int(ch.nextMove.From())].Element, func(_ shf.Event) error {
-					ch.nextMove = move.Null
-					m.Cover.MoveStatus.Shown = false
-					return nil
-				}); err != nil {
-					return err
-				}
+			} else {
+				//TODO where to put copy to clipboard?
 			}
 		}
 	}
@@ -1388,6 +1408,7 @@ type Model struct {
 	Html *HtmlModel
 
 	rotationSupported bool
+	execSupported     bool
 }
 
 func (m *Model) Init(tools *shf.Tools) error {
@@ -1449,6 +1470,15 @@ func (m *Model) Init(tools *shf.Tools) error {
 			}
 			m.Html.Board.Edgings.TopRight.Enable()
 		}
+
+		if !m.execSupported {
+			m.Html.Cover.MoveStatus.Link.Copy.Shown = false
+		} else {
+			m.Html.Cover.MoveStatus.Link.Copy.Shown = true
+			if err := tools.Click(m.Html.Cover.MoveStatus.Link.Copy.Element, m.Html.CopyGameURLToClipboard()); err != nil {
+				return err
+			}
+		}
 	}
 
 	{ // add promotion events to promotion overlay
@@ -1503,31 +1533,9 @@ func (app *Model) DrawBoard() {
 	document := js.Global.Get("document")
 
 
-	// is execCommand supported?
-	canExec := false
-	if exec := js.Global.Get("document").Get("execCommand"); exec != nil && exec != js.Undefined {
-		canExec = true
-	}
-
 
 
 	{ // next move
-		copyOrHint := `<span class="hint">copy this link and send it to your oponent</span>`
-		if canExec {
-			copyOrHint = `<a href="" id="next-move-copy">Copy to clipboard</a>`
-		}
-
-		document.Call("write", `<div id="next-move" class="hidden">
-	<p class="link">
-		Next move URL link:
-		<input id="next-move-input" readonly="readonly" value=""/>
-		`+copyOrHint+`
-	</p>
-  <p class="actions">
-		<a id="next-move-link" href="">Make move</a>
-		<a id="next-move-back" href="">Undo move</a>
-	</p>
-</div>`)
 		{ // listeners
 			if canExec {
 				if copy := document.Call("getElementById", "next-move-copy"); copy != nil { // next move copy
@@ -1624,7 +1632,7 @@ func (app *Model) DrawBoard() {
 func (app *Model) UpdateBoard() error {
 	//js.Global.Call("alert", "update: nextMove: "+app.nextMove.String())
 
-	drawPosition := app.game.Position()
+	position := app.game.Position()
 
 	// precalculate next move markers and stuff
 	var nextMoveError error
@@ -1639,7 +1647,7 @@ func (app *Model) UpdateBoard() error {
 		if _, ok := app.game.Position().LegalMoves()[app.nextMove]; ok {
 			//js.Global.Call("alert", "legal move")
 
-			drawPosition = app.game.Position().MakeMove(app.nextMove)
+			position = app.game.Position().MakeMove(app.nextMove)
 
 
 			// update next-move properties
