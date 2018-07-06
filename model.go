@@ -792,10 +792,7 @@ type MoveStatusLink struct {
 }
 
 func (this *MoveStatusLink) GetURL() string {
-	hash := ""
-	if strings.TrimPrefix(this.MoveHash, "#") != "" {
-		hash = "#" + strings.TrimPrefix(this.MoveHash, "#")
-	}
+	hash := "#" + strings.TrimPrefix(this.MoveHash, "#")
 	return strings.Split(js.Global.Get("location").String(), "#")[0] + hash
 }
 func (this *MoveStatusLink) Init(tools *shf.Tools) error {
@@ -925,10 +922,6 @@ func (this *ModelCover) Init(tools *shf.Tools) error {
 		}
 	}
 
-	tools.Click(this.GameStatus.Header.Element, func(_ shf.Event) error {
-		this.MoveStatus.Shown = true
-		return nil
-	})
 	if this.Element == nil {
 		this.Element = tools.CreateElement("div")
 		this.Set("id", "cover")
@@ -944,9 +937,35 @@ func (this *ModelCover) Update(tools *shf.Tools) error {
 
 type ModelNotification struct {
 	shf.Element
-	Shown      bool
-	Type       string
-	Text, Hint string
+	Shown bool
+}
+
+func (n *ModelNotification) Message(text, hint string, elements ...shf.Element) {
+	n.Set("innerHTML", "")
+
+	notification := shf.CreateElement("div")
+	notification.Get("classList").Call("add", "notification")
+	{ // message
+		msg := shf.CreateElement("p")
+		msg.Get("classList").Call("add", "message")
+		msg.Set("textContent", text)
+		notification.Call("appendChild", msg.Object())
+	}
+
+	for _, e := range elements {
+		if e == nil || e.Object() == nil {
+			continue
+		}
+		notification.Call("appendChild", e.Object())
+	}
+	if hint != "" { // hint
+		hintElm := shf.CreateElement("p")
+		hintElm.Get("classList").Call("add", "hint")
+		hintElm.Set("textContent", hint)
+		notification.Call("appendChild", hintElm.Object())
+	}
+	n.Call("appendChild", notification.Object())
+	n.Shown = true
 }
 
 func (n *ModelNotification) Init(tools *shf.Tools) error {
@@ -966,28 +985,6 @@ func (n *ModelNotification) Init(tools *shf.Tools) error {
 func (n *ModelNotification) Update(tools *shf.Tools) error {
 	if n == nil {
 		return errors.New("ModelNotification is nil")
-	}
-
-	if n.Shown {
-		n.Set("innerHTML", "")
-		n.Set("className", n.Type)
-
-		notification := tools.CreateElement("div")
-		notification.Get("classList").Call("add", "notification")
-		{ // message
-			msg := tools.CreateElement("p")
-			msg.Get("classList").Call("add", "message")
-			msg.Set("textContent", n.Text)
-			notification.Call("appendChild", msg.Object())
-		}
-
-		if n.Hint != "" { // hint
-			hint := tools.CreateElement("p")
-			hint.Get("classList").Call("add", "hint")
-			hint.Set("textContent", n.Hint)
-			notification.Call("appendChild", hint.Object())
-		}
-		n.Call("appendChild", notification.Object())
 	}
 
 	if n.Shown {
@@ -1386,10 +1383,6 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 		m.Cover.GameStatus.Header.Icons.White = false
 		m.Cover.GameStatus.Header.Icons.Black = false
 		if st := ch.game.Status(); st != game.InProgress { // game ended
-			// update notification
-			m.Notification.Text = st.String() + ".<br />" + `<a href="/">New game</a>?`
-			m.Notification.Hint = ""
-			m.Notification.Shown = true
 
 			m.Cover.GameStatus.Header.Message.Text = st.String()
 			if st&game.Draw != 0 {
@@ -1437,7 +1430,9 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 				sq := sq
 
 				// remove square event for sure
-				tools.Click(sq.Element, nil)
+				if err := tools.Click(sq.Element, nil); err != nil {
+					return err
+				}
 
 				// every empty square or every oponent piece resets next move
 				if sq.Piece.Type == piece.None || sq.Piece.Color == complementColor(position.ActiveColor) {
@@ -1495,24 +1490,48 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 
 			}
 
-			if position.LastMove != move.Null {
-				if nextMoveState == NMWaitFrom {
+			if nextMoveState == NMWaitFrom {
+
+				// every empty square toggles move status
+				for _, sq := range m.Board.Grid.Squares {
+					if sq.Piece.Type == piece.None {
+						if err := tools.Click(sq.Element, func(_ shf.Event) error {
+							m.Cover.MoveStatus.Shown = !m.Cover.MoveStatus.Shown
+							return nil
+						}); err != nil {
+							return err
+						}
+					}
+				}
+
+				// last move gets some events
+				if position.LastMove != move.Null {
 					// last move to square gets copy to clipboard
 					if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.To())].Element, func(_ shf.Event) error {
 						if err := m.CopyGameURLToClipboard(); err != nil {
 							return err
 						}
-						m.Notification.Type = "copy"
-						m.Notification.Text = "Game URL was copied to clipboard"
-						m.Notification.Hint = ""
-						m.Notification.Shown = true
+						m.Notification.Message(
+							"Game URL was copied to clipboard",
+							"",
+						)
 						return nil
 					}); err != nil {
 						return err
 					}
+
+					// last move from square gets back one move
+					if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.From())].Element, func(_ shf.Event) error {
+						if err := ch.BackToPreviousMove(); err != nil {
+							return err
+						}
+						return nil
+					}); err != nil {
+						return err
+					}
+				} else {
+					//TODO where to put copy to clipboard?
 				}
-			} else {
-				//TODO where to put copy to clipboard?
 			}
 		}
 	}
@@ -1578,6 +1597,12 @@ func (m *Model) Init(tools *shf.Tools) error {
 			m.Html.Board.Edgings.BottomLeft.Disable()
 			m.Html.Board.Edgings.TopRight.Disable()
 		} else {
+			if err := tools.Click(m.Html.Cover.GameStatus.Header.Element, func(_ shf.Event) error {
+				m.RotateBoardForPlayer()
+				return nil
+			}); err != nil {
+				return err
+			}
 			if err := tools.Click(m.Html.Board.Edgings.BottomLeft.Element, m.Html.RotateBoard()); err != nil {
 				return err
 			}
@@ -1596,10 +1621,10 @@ func (m *Model) Init(tools *shf.Tools) error {
 				if err := m.Html.CopyGameURLToClipboard(); err != nil {
 					return err
 				}
-				m.Html.Notification.Type = "copy"
-				m.Html.Notification.Text = "game URL was copied to clipboard"
-				m.Html.Notification.Hint = "try to click on last move piece ;)"
-				m.Html.Notification.Shown = true
+				m.Html.Notification.Message(
+					"game URL was copied to clipboard",
+					"try to click on last move piece ;)",
+				)
 				return nil
 			}); err != nil {
 				return err

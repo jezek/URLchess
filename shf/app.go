@@ -44,9 +44,8 @@ func (t *Tools) Click(target Element, function func(Event) error) error {
 func (t *Tools) HashChange(function func(HashChangeEvent) error) error {
 	return t.app.HashChange(function)
 }
-
 func (t *Tools) CreateElement(etype string) Element {
-	elm := &element{js.Global.Get("document").Call("createElement", etype)}
+	elm := t.app.CreateElement(etype)
 	if t.created[elm] {
 		js.Global.Call("alert", "Tools.ElementCreate: an element can not be created twice the same. Why is this happening?")
 		return nil
@@ -90,6 +89,10 @@ func (app *App) Update() error {
 		return err
 	}
 	return nil
+}
+func (app *App) CreateElement(etype string) Element {
+	//TODO store all created elements, mabybe can be usefull for app removal
+	return CreateElement(etype)
 }
 func (app *App) HashChange(function func(HashChangeEvent) error) error {
 	return app.elventListener("hashchange", Window, func(e Event) error {
@@ -149,4 +152,8 @@ func (app *App) elventListener(eventName string, target Element, function func(E
 	app.events[eventName][target] = jsEventCallback
 	//js.Global.Call("alert", "registered event: "+target.String()+":"+target.Get("id").String())
 	return nil
+}
+
+func CreateElement(etype string) Element {
+	return &element{js.Global.Get("document").Call("createElement", etype)}
 }

@@ -5,6 +5,7 @@ package main
 import (
 	"URLchess/shf"
 
+	"github.com/andrewbackes/chess/game"
 	"github.com/gopherjs/gopherjs/js"
 )
 
@@ -61,7 +62,32 @@ func main() {
 		model.Game = game
 	}
 
+	if st := model.Game.game.Status(); st != game.InProgress {
+		// if game ended, notify player
+		newGameButton := app.CreateElement("button")
+		newGameButton.Set("textContent", "new game")
+		if err := app.Click(newGameButton, func(_ shf.Event) error {
+			game, err := NewGame("")
+			if err != nil {
+				return err
+			}
+			model.Game = game
+			model.Html.Notification.Shown = false
+			js.Global.Get("location").Set("hash", "")
+			return nil
+		}); err != nil {
+			// if there is an error creating event for button, simply do not show it
+			newGameButton = nil
+		}
+		model.Html.Notification.Message(
+			st.String(),
+			"",
+			newGameButton,
+		)
+	}
+
 	model.RotateBoardForPlayer()
+
 	if err := app.Update(); err != nil {
 		if model.Html.Board.Element != nil {
 			model.Html.Board.Element.Set("innerHTML", err.Error())

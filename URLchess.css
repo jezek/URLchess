@@ -448,23 +448,25 @@ div.thrown-outs .count {
 	background-color: rgba(14, 30, 30, 0.8);
 	border: 2px solid #dfefef;
 	border-radius: 0.5em;
-	padding: 0.4em 0.8em 0 0.8em;
+	padding: 0.8em 0.8em 0 0.8em;
 	margin: 0.5em auto;
 	display: flex;
 	flex-flow: column;
 	justify-content: space-between;
-
+	font-size: 0.5em;
+}
+#notification-overlay div.notification button {
+	font-size: 1em;
 }
 #notification-overlay p {
 	margin: 0;
 }
 #notification-overlay p.message {
-	font-size: 0.5em;
 	margin-bottom: 0.6em;
 }
 #notification-overlay p.hint {
 	color: #777799;
-	font-size: 0.35em;
+	font-size: 0.7em;
 }
 #notification-overlay.invisible {
 	visibility: hidden;
