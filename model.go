@@ -1048,6 +1048,7 @@ func (h *HtmlModel) Update(tools *shf.Tools) error {
 	return tools.Update(h.Board, h.ThrownOuts, h.Cover, h.Notification)
 }
 
+//TODO do not update the whole model if just rotating a board, cause pieces are redrawn (deleted and added) and it interferes with animation
 func (h *HtmlModel) RotateBoard() func(shf.Event) error {
 	return func(_ shf.Event) error {
 		h.Rotated180deg = !h.Rotated180deg
@@ -1623,7 +1624,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 				}
 				m.Html.Notification.Message(
 					"game URL was copied to clipboard",
-					"try to click on last move piece ;)",
+					"tip: click on last move piece to copy",
 				)
 				return nil
 			}); err != nil {
@@ -1647,6 +1648,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			if err := tools.Click(p.Element, func(_ shf.Event) error {
 				m.Game.nextMove.Promote = promotionPiece.Piece.Type
 				m.Html.Board.PromotionOverlay.Shown = false
+				m.Html.Cover.MoveStatus.Shown = true
 				return nil
 			}); err != nil {
 				return err
