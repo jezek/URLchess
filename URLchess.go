@@ -81,7 +81,7 @@ func main() {
 		}
 		model.Html.Notification.Message(
 			st.String(),
-			"",
+			"tip: click anywhere except \"new game\" to close this notification",
 			newGameButton,
 		)
 	}
