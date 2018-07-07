@@ -2,10 +2,10 @@
 package main
 
 import (
+	"URLchess/shf"
 	"strings"
 
 	"github.com/andrewbackes/chess/piece"
-	"github.com/gopherjs/gopherjs/js"
 )
 
 var playablePiecesType = []piece.Type{piece.Pawn, piece.Rook, piece.Knight, piece.Bishop, piece.Queen, piece.King}
@@ -32,13 +32,15 @@ var pieceNamesToType map[string]piece.Type = func() map[string]piece.Type {
 	return res
 }()
 
-func pieceElement(p piece.Piece) *js.Object {
-	elm := js.Global.Get("document").Call("createElement", "span")
+func pieceElement(p piece.Piece) shf.Element {
+	elm := shf.CreateElement("span")
 	elm.Get("classList").Call("add", "piece")
 	if p.Color != piece.NoColor {
 		elm.Get("classList").Call("add", strings.ToLower(p.Color.String()))
 	}
-	elm.Get("classList").Call("add", pieceTypesToName[p.Type])
+	if p.Type != piece.None {
+		elm.Get("classList").Call("add", pieceTypesToName[p.Type])
+	}
 	elm.Set("textContent", p.Figurine())
 	return elm
 }

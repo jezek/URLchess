@@ -196,21 +196,33 @@ type MarkersByColor struct {
 type SquareMarkers struct {
 	ByColor [2]MarkersByColor
 	Check   bool
+	Mate    bool
 }
 type GridSquare struct {
 	shf.Element
 	Id      square.Square
 	Piece   piece.Piece
 	Markers SquareMarkers
+	piece   shf.Element
+	marker  shf.Element
 }
 
 func (s *GridSquare) Init(tools *shf.Tools) error {
+	if s.piece == nil {
+		s.piece = pieceElement(piece.New(piece.NoColor, piece.None))
+	}
+	if s.marker == nil {
+		s.marker = tools.CreateElement("span")
+		s.marker.Call("appendChild", s.piece.Object())
+	}
 
 	if s.Element == nil {
 		boardGridSquareTones := []string{"light-square", "dark-square"}
 		s.Element = tools.CreateElement("div")
 		s.Set("id", s.Id.String())
 		s.Get("classList").Call("add", boardGridSquareTones[(int(s.Id)%8+int(s.Id)/8)%2])
+
+		s.Call("appendChild", s.marker.Object())
 	}
 	return nil
 }
@@ -221,48 +233,53 @@ func (s *GridSquare) Update(tools *shf.Tools) error {
 	}
 
 	// update square, generate content & replace
-	marker := tools.CreateElement("span")
+	s.marker.Set("className", "marker")
 
-	marker.Get("classList").Call("add", "marker")
 	for _, color := range piece.Colors {
 		colorString := strings.ToLower(color.String())
 
 		if s.Markers.ByColor[color].LastMove.From {
-			marker.Get("classList").Call("add", "last-move")
-			marker.Get("classList").Call("add", "last-move-"+colorString)
-			marker.Get("classList").Call("add", "last-move-from")
+			s.marker.Get("classList").Call("add", "last-move")
+			s.marker.Get("classList").Call("add", "last-move-"+colorString)
+			s.marker.Get("classList").Call("add", "last-move-from")
 		}
 		if s.Markers.ByColor[color].LastMove.To {
-			marker.Get("classList").Call("add", "last-move")
-			marker.Get("classList").Call("add", "last-move-"+colorString)
-			marker.Get("classList").Call("add", "last-move-to")
+			s.marker.Get("classList").Call("add", "last-move")
+			s.marker.Get("classList").Call("add", "last-move-"+colorString)
+			s.marker.Get("classList").Call("add", "last-move-to")
 		}
 		if s.Markers.ByColor[color].NextMove.From {
-			marker.Get("classList").Call("add", "next-move")
-			marker.Get("classList").Call("add", "next-move-"+colorString)
-			marker.Get("classList").Call("add", "next-move-from")
+			s.marker.Get("classList").Call("add", "next-move")
+			s.marker.Get("classList").Call("add", "next-move-"+colorString)
+			s.marker.Get("classList").Call("add", "next-move-from")
 		}
 		if s.Markers.ByColor[color].NextMove.To {
-			marker.Get("classList").Call("add", "next-move")
-			marker.Get("classList").Call("add", "next-move-"+colorString)
-			marker.Get("classList").Call("add", "next-move-to")
+			s.marker.Get("classList").Call("add", "next-move")
+			s.marker.Get("classList").Call("add", "next-move-"+colorString)
+			s.marker.Get("classList").Call("add", "next-move-to")
 		}
 		if s.Markers.ByColor[color].NextMove.PossibleTo {
-			marker.Get("classList").Call("add", "next-move")
-			marker.Get("classList").Call("add", "next-move-"+colorString)
-			marker.Get("classList").Call("add", "next-move-possible-to")
+			s.marker.Get("classList").Call("add", "next-move")
+			s.marker.Get("classList").Call("add", "next-move-"+colorString)
+			s.marker.Get("classList").Call("add", "next-move-possible-to")
 		}
 	}
 	if s.Markers.Check {
-		marker.Get("classList").Call("add", "check")
+		if s.Markers.Mate {
+			s.marker.Get("classList").Call("add", "check-mate")
+		} else {
+			s.marker.Get("classList").Call("add", "check")
+		}
 	}
 
+	s.piece.Set("className", "piece")
+	if s.Piece.Color != piece.NoColor {
+		s.piece.Get("classList").Call("add", strings.ToLower(s.Piece.Color.String()))
+	}
 	if s.Piece.Type != piece.None {
-		marker.Call("appendChild", pieceElement(s.Piece))
+		s.piece.Get("classList").Call("add", pieceTypesToName[s.Piece.Type])
 	}
-
-	s.Set("innerHTML", "")
-	s.Call("appendChild", marker.Object())
+	s.piece.Set("textContent", s.Piece.Figurine())
 
 	return nil
 }
@@ -321,7 +338,7 @@ func (p *PromotionPiece) RedrawElement() {
 	}
 
 	p.Element.Set("innerHTML", "")
-	p.Element.Call("appendChild", pieceElement(p.Piece))
+	p.Element.Call("appendChild", pieceElement(p.Piece).Object())
 }
 func (p *PromotionPiece) Init(tools *shf.Tools) error {
 	if p.Element == nil {
@@ -521,16 +538,34 @@ type ThrownOutsContainer struct {
 	Color            piece.Color
 	PieceCount       map[piece.Type]int
 	LastMoveThrowOut piece.Type
+	pieces           map[piece.Type][2]shf.Element // 0: outer, 1:inner
 }
 
 func (c *ThrownOutsContainer) Init(tools *shf.Tools) error {
 	if c.PieceCount == nil {
 		c.PieceCount = map[piece.Type]int{}
 	}
+	if c.pieces == nil {
+		c.pieces = map[piece.Type][2]shf.Element{}
+		for _, pieceType := range thrownOutPiecesOrderType {
+			div := tools.CreateElement("div")
+			div.Get("classList").Call("add", "piececount")
+			div.Call("appendChild", pieceElement(piece.New(c.Color, pieceType)).Object())
+
+			span := tools.CreateElement("span")
+			span.Get("classList").Call("add", "count")
+			div.Call("appendChild", span.Object())
+
+			c.pieces[pieceType] = [2]shf.Element{div, span}
+		}
+	}
 	if c.Element == nil {
 		c.Element = tools.CreateElement("div")
 		c.Set("id", "thrown-outs-"+strings.ToLower(c.Color.String()))
 		c.Get("classList").Call("add", "thrown-outs")
+		for _, pieceType := range thrownOutPiecesOrderType {
+			c.Call("appendChild", c.pieces[pieceType][0].Object())
+		}
 	}
 	return nil
 }
@@ -539,25 +574,20 @@ func (c *ThrownOutsContainer) Update(tools *shf.Tools) error {
 		return errors.New("ThrownOutsContainer is nil")
 	}
 
-	c.Set("innerHTML", "")
-	for _, pieceType := range thrownOutPiecesOrderType {
-		div := tools.CreateElement("div")
-		div.Get("classList").Call("add", "piececount")
+	for pieceType, elms := range c.pieces {
 		if c.LastMoveThrowOut == pieceType {
-			div.Get("classList").Call("add", "last-move")
+			elms[0].Get("classList").Call("add", "last-move")
+		} else {
+			elms[0].Get("classList").Call("remove", "last-move")
 		}
 		if c.PieceCount[pieceType] == 0 {
-			div.Get("classList").Call("add", "hidden")
+			elms[0].Get("classList").Call("add", "hidden")
+		} else {
+			elms[0].Get("classList").Call("remove", "hidden")
 		}
 
-		div.Call("appendChild", pieceElement(piece.New(c.Color, pieceType)))
+		elms[1].Set("textContent", strconv.Itoa(c.PieceCount[pieceType]))
 
-		span := tools.CreateElement("span")
-		span.Get("classList").Call("add", "count")
-		span.Set("textContent", strconv.Itoa(c.PieceCount[pieceType]))
-		div.Call("appendChild", span.Object())
-
-		c.Call("appendChild", div.Object())
 	}
 
 	return nil
@@ -619,10 +649,10 @@ func (sm *StatusIcons) Update(tools *shf.Tools) error {
 
 	sm.Set("innerHTML", "")
 	if sm.White {
-		sm.Call("appendChild", pieceElement(piece.New(piece.White, piece.King)))
+		sm.Call("appendChild", pieceElement(piece.New(piece.White, piece.King)).Object())
 	}
 	if sm.Black {
-		sm.Call("appendChild", pieceElement(piece.New(piece.Black, piece.King)))
+		sm.Call("appendChild", pieceElement(piece.New(piece.Black, piece.King)).Object())
 	}
 
 	return nil
@@ -1048,7 +1078,6 @@ func (h *HtmlModel) Update(tools *shf.Tools) error {
 	return tools.Update(h.Board, h.ThrownOuts, h.Cover, h.Notification)
 }
 
-//TODO do not update the whole model if just rotating a board, cause pieces are redrawn (deleted and added) and it interferes with animation
 func (h *HtmlModel) RotateBoard() func(shf.Event) error {
 	return func(_ shf.Event) error {
 		h.Rotated180deg = !h.Rotated180deg
@@ -1264,7 +1293,7 @@ func (ch *ChessGame) BackToPreviousMove() error {
 	return nil
 }
 
-func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
+func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported bool) error {
 	if err := ch.Validate(); err != nil {
 		return err
 	}
@@ -1332,6 +1361,11 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 				// piece is a king ... is he in check?
 				if position.Check(m.Board.Grid.Squares[i].Piece.Color) {
 					m.Board.Grid.Squares[i].Markers.Check = true
+
+					if ch.game.Status() != game.InProgress {
+						// game ended, has to be check mate
+						m.Board.Grid.Squares[i].Markers.Mate = true
+					}
 				}
 			}
 		}
@@ -1507,18 +1541,29 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel) error {
 
 				// last move gets some events
 				if position.LastMove != move.Null {
-					// last move to square gets copy to clipboard
-					if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.To())].Element, func(_ shf.Event) error {
-						if err := m.CopyGameURLToClipboard(); err != nil {
+					if execSupported {
+						// last move to square gets copy to clipboard
+						if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.To())].Element, func(_ shf.Event) error {
+							if err := m.CopyGameURLToClipboard(); err != nil {
+								return err
+							}
+							m.Notification.Message(
+								"Game URL was copied to clipboard",
+								"",
+							)
+							m.Cover.MoveStatus.Shown = false
+							return nil
+						}); err != nil {
 							return err
 						}
-						m.Notification.Message(
-							"Game URL was copied to clipboard",
-							"",
-						)
-						return nil
-					}); err != nil {
-						return err
+					} else {
+						// copy is not supported, just show move status
+						if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.To())].Element, func(_ shf.Event) error {
+							m.Cover.MoveStatus.Shown = true
+							return nil
+						}); err != nil {
+							return err
+						}
 					}
 
 					// last move from square gets back one move
@@ -1626,6 +1671,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 					"game URL was copied to clipboard",
 					"tip: click on last move piece to copy",
 				)
+				m.Html.Cover.MoveStatus.Shown = false
 				return nil
 			}); err != nil {
 				return err
@@ -1678,7 +1724,7 @@ func (m *Model) Update(tools *shf.Tools) error {
 	}
 
 	{ // update html model from game
-		err := m.Game.UpdateModel(tools, m.Html)
+		err := m.Game.UpdateModel(tools, m.Html, m.execSupported)
 		if err != nil {
 			return err
 		}

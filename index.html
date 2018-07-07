@@ -3,18 +3,24 @@
 		<title>URLchess</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no">
-		<link rel="stylesheet" type="text/css" href="URLchess.css?v0.6">
 		<script type="text/javascript">
+//<![CDATA[
 var hash = window.location.hash;
 var search = window.location.search;
 if (search.startsWith("?")) {
 	search = search.slice(1);
 }
-if (search.length > 0 && hash.length == 0) {
-	window.alert("URL is in format for URLchess version <=0.6, transforming...");
+if ( 
+	(search.length > 0 && hash.length == 0) 
+	|| 
+	(search.length == 0 && hash.length == 0 && window.location.href.indexOf("?") != -1)
+){
+	//window.alert("URL is in format for URLchess version <=0.6, transforming...");
 	window.location.href = window.location.href.replace("?", "#");
 }
+//]]>
 		</script>
+		<link rel="stylesheet" type="text/css" href="URLchess.css?v0.6">
 		<script src="URLchess.js?v0.6"></script>
 	</head>
 	<body>

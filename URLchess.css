@@ -208,6 +208,10 @@ button:active {
 #board .grid span.marker.check {
 	background-color: rgba(255, 0, 0, 0.4);
 }
+#board .grid span.marker.check-mate {
+	background-color: rgba(255, 0, 0, 0.4);
+	transform: rotate(90deg);
+}
 #board .grid span.marker.next-move-white {
 	background-color: rgba(0, 255, 0, 0.125);
 }
@@ -227,18 +231,21 @@ button:active {
 	background-color: rgba(0, 0, 255, 0.125);
 }
 #board .grid span.marker.next-move-possible-to::after {
-	content: "•";
+	content: " ";
 	position: absolute;
 	top: 0;
 	left: 0;
-	width: 100%;
-	height: 100%;
+	margin: 40%;
+	width: 20%;
+	height: 20%;
+	box-sizing: border-box;
+	border-radius: 100%;
 }
 #board .grid span.marker.next-move-possible-to.next-move-white::after {
-	color: rgba(0, 255, 0, 0.5);
+	background-color: rgba(0, 255, 0, 0.5);
 }
 #board .grid span.marker.next-move-possible-to.next-move-black::after {
-	color: rgba(0, 0, 255, 0.5);
+	background-color: rgba(0, 0, 255, 0.5);
 }
 #board .grid span.marker.next-move-possible-to.next-move-white:hover {
 	background-color: rgba(0, 255, 0, 0.125);
@@ -251,7 +258,7 @@ button:active {
 	background-color: rgba(0, 255, 255, 0.125);
 }
 #board .grid span.marker.next-move-possible-to:hover::after {
-	content: "";
+	display: none;
 }
 
 #promotion-overlay {
@@ -415,7 +422,7 @@ div.thrown-outs .count {
 }
 #move-status div.link input {
 	display: block;
-	margin: 0 auto;
+	margin: 0 auto 0.2em;
 }
 #move-status div.link input {
 	width: 100%;
