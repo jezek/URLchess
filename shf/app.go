@@ -3,6 +3,8 @@ package shf
 
 import (
 	"errors"
+	"strconv"
+	"time"
 
 	"github.com/gopherjs/gopherjs/js"
 )
@@ -56,13 +58,15 @@ func (t *Tools) CreateElement(etype string) Element {
 func (t *Tools) CreateTextNode(text string) *js.Object {
 	return js.Global.Get("document").Call("createTextNode", text)
 }
-
 func (t *Tools) Created(elm Element) bool {
 	if elm == nil {
 		return false
 	}
 
 	return t.created[elm]
+}
+func (t *Tools) Timer(duration time.Duration, callback func()) int {
+	return t.app.Timer(duration, callback)
 }
 
 func Create(model Updater) (*App, error) {
@@ -156,4 +160,18 @@ func (app *App) elventListener(eventName string, target Element, function func(E
 
 func CreateElement(etype string) Element {
 	return &element{js.Global.Get("document").Call("createElement", etype)}
+}
+func (app *App) Timer(duration time.Duration, callback func()) int {
+	ms := int(duration / time.Millisecond) // in milliseconds
+	timeoutId := 0
+	timeoutId = js.Global.Call("setTimeout", func() {
+		callback()
+		//js.Global.Call("alert", "timer "+strconv.Itoa(timeoutId)+" gone off after: "+strconv.Itoa(ms))
+		if err := app.Update(); err != nil {
+			js.Global.Call("alert", "after timer "+strconv.Itoa(timeoutId)+" app dom update error: "+err.Error())
+			return
+		}
+	}, ms).Int()
+	//js.Global.Call("alert", "timer "+strconv.Itoa(timeoutId)+" set to: "+strconv.Itoa(ms))
+	return timeoutId
 }

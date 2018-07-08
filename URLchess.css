@@ -440,6 +440,10 @@ div.thrown-outs .count {
 	margin: 0 1em;
 }
 
+#move-status div.tip {
+	text-align: center;
+	font-size: 0.5em;
+}
 
 /************************/
 /* notification overlay */

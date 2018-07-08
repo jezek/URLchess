@@ -4,8 +4,10 @@ package main
 import (
 	"URLchess/shf"
 	"errors"
+	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/andrewbackes/chess/game"
 	"github.com/andrewbackes/chess/piece"
@@ -868,6 +870,7 @@ type ModelMoveStatus struct {
 	//Navigation *MoveStatusNavigation
 	Undo  shf.Element
 	Close shf.Element
+	tip   shf.Element
 }
 
 func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
@@ -896,6 +899,11 @@ func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
 		}
 	}
 
+	if this.tip == nil {
+		this.tip = tools.CreateElement("div")
+		this.tip.Set("className", "tip")
+	}
+
 	if this.Element == nil {
 		this.Element = tools.CreateElement("div")
 		this.Set("id", "move-status")
@@ -914,8 +922,18 @@ func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
 
 			this.Call("appendChild", div.Object())
 		}
+		this.Call("appendChild", this.tip.Object())
 	}
 	return nil
+}
+
+var tips = []string{
+	"to close notifications, click anywhere except buttons in notification",
+	"to quick copy game to clipboard, click on last move piece",
+	"to go back a move, click on last move FROM square",
+	"to rotate board (if supported), click on corners with arrows (bottom-left, top-right)",
+	"to rotate board for current moving player, click on game status icon, or text",
+	"to toggle this game URL dialog, click on any empty square on board",
 }
 
 func (this *ModelMoveStatus) Update(tools *shf.Tools) error {
@@ -924,6 +942,7 @@ func (this *ModelMoveStatus) Update(tools *shf.Tools) error {
 	}
 
 	if this.Shown {
+		this.tip.Set("textContent", "tip: "+tips[rand.Intn(len(tips))])
 		this.Get("classList").Call("remove", "hidden")
 	} else {
 		this.Get("classList").Call("add", "hidden")
@@ -967,10 +986,21 @@ func (this *ModelCover) Update(tools *shf.Tools) error {
 
 type ModelNotification struct {
 	shf.Element
-	Shown bool
+	Shown     bool
+	timeoutId int
 }
 
+func (n *ModelNotification) cancelTimer() {
+	if n.timeoutId == 0 {
+		return
+	}
+	js.Global.Call("clearTimeout", n.timeoutId)
+	//js.Global.Call("alert", "timer "+strconv.Itoa(n.timeoutId)+" canceled")
+	n.timeoutId = 0
+}
 func (n *ModelNotification) Message(text, hint string, elements ...shf.Element) {
+	n.cancelTimer()
+
 	n.Set("innerHTML", "")
 
 	notification := shf.CreateElement("div")
@@ -997,6 +1027,40 @@ func (n *ModelNotification) Message(text, hint string, elements ...shf.Element) 
 	n.Call("appendChild", notification.Object())
 	n.Shown = true
 }
+func (n *ModelNotification) TimedMessage(tools *shf.Tools, duration time.Duration, text, hint string, elements ...shf.Element) {
+	n.cancelTimer()
+
+	notification := shf.CreateElement("div")
+	notification.Get("classList").Call("add", "notification")
+	{ // message
+		msg := shf.CreateElement("p")
+		msg.Get("classList").Call("add", "message")
+		msg.Set("textContent", text)
+		notification.Call("appendChild", msg.Object())
+	}
+
+	for _, e := range elements {
+		if e == nil || e.Object() == nil {
+			continue
+		}
+		notification.Call("appendChild", e.Object())
+	}
+	if hint != "" { // hint
+		hintElm := shf.CreateElement("p")
+		hintElm.Get("classList").Call("add", "hint")
+		hintElm.Set("textContent", hint)
+		notification.Call("appendChild", hintElm.Object())
+	}
+
+	n.Set("innerHTML", "")
+	n.Call("appendChild", notification.Object())
+
+	n.Shown = true
+	n.timeoutId = tools.Timer(duration, func() {
+		n.timeoutId = 0
+		n.Shown = false
+	})
+}
 
 func (n *ModelNotification) Init(tools *shf.Tools) error {
 
@@ -1004,6 +1068,7 @@ func (n *ModelNotification) Init(tools *shf.Tools) error {
 		n.Element = tools.CreateElement("div")
 		n.Set("id", "notification-overlay")
 		if err := tools.Click(n.Element, func(_ shf.Event) error {
+			n.cancelTimer()
 			n.Shown = false
 			return nil
 		}); err != nil {
@@ -1547,7 +1612,9 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 							if err := m.CopyGameURLToClipboard(); err != nil {
 								return err
 							}
-							m.Notification.Message(
+							m.Notification.TimedMessage(
+								tools,
+								5*time.Second,
 								"Game URL was copied to clipboard",
 								"",
 							)

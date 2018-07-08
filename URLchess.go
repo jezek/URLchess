@@ -74,6 +74,7 @@ func main() {
 			model.Game = game
 			model.Html.Notification.Shown = false
 			js.Global.Get("location").Set("hash", "")
+			model.RotateBoardForPlayer()
 			return nil
 		}); err != nil {
 			// if there is an error creating event for button, simply do not show it
