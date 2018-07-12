@@ -443,6 +443,7 @@ div.thrown-outs .count {
 #move-status div.tip {
 	text-align: center;
 	font-size: 0.5em;
+	cursor: pointer;
 }
 
 /************************/

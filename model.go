@@ -4,7 +4,6 @@ package main
 import (
 	"URLchess/shf"
 	"errors"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -871,6 +870,7 @@ type ModelMoveStatus struct {
 	Undo  shf.Element
 	Close shf.Element
 	tip   shf.Element
+	tipNo int
 }
 
 func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
@@ -902,6 +902,11 @@ func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
 	if this.tip == nil {
 		this.tip = tools.CreateElement("div")
 		this.tip.Set("className", "tip")
+		if err := tools.Click(this.tip, func(_ shf.Event) error {
+			return nil
+		}); err != nil {
+			return err
+		}
 	}
 
 	if this.Element == nil {
@@ -928,6 +933,7 @@ func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
 }
 
 var tips = []string{
+	"click on this tip, to see next tip",
 	"to close notifications, click anywhere except buttons in notification",
 	"to quick copy game to clipboard, click on last move piece",
 	"to go back a move, click on last move FROM square",
@@ -942,7 +948,10 @@ func (this *ModelMoveStatus) Update(tools *shf.Tools) error {
 	}
 
 	if this.Shown {
-		this.tip.Set("textContent", "tip: "+tips[rand.Intn(len(tips))])
+		if len(tips) > 0 {
+			this.tip.Set("textContent", "tip: "+tips[this.tipNo])
+			this.tipNo = (this.tipNo + 1) % len(tips)
+		}
 		this.Get("classList").Call("remove", "hidden")
 	} else {
 		this.Get("classList").Call("add", "hidden")
@@ -1175,6 +1184,7 @@ func (h *HtmlModel) CopyGameURLToClipboard() error {
 type ThrownOuts map[piece.Piece]uint8
 type GameThrownOuts []ThrownOuts
 type ChessGame struct {
+	gameHash   string
 	game       *game.Game
 	gameGc     GameThrownOuts
 	currMoveNo int
@@ -1251,8 +1261,7 @@ func NewGame(hash string) (*ChessGame, error) {
 				}
 			}
 
-			_, top := pMakeMove(pbm, move)
-			if top.Type != piece.None {
+			if _, top := pMakeMove(pbm, move); top.Type != piece.None {
 				tos[top] = tos[top] + 1
 			}
 
@@ -1264,6 +1273,7 @@ func NewGame(hash string) (*ChessGame, error) {
 	}
 
 	return &ChessGame{
+		gameHash:   movesString,
 		game:       g,
 		gameGc:     gtos,
 		currMoveNo: len(gtos) - 1,
@@ -1292,29 +1302,44 @@ func (ch *ChessGame) MakeNextMove() error {
 		return err
 	}
 
-	gameMoves, err := EncodeGame(ch)
+	if !isLegalMove(ch.game.Positions[ch.currMoveNo], ch.nextMove) {
+		return errors.New("can not make next move, next move is not a legal move ")
+	}
+
+	nextMoveHash, err := encodeMove(ch.nextMove)
 	if err != nil {
 		return err
 	}
 
-	nextMove, err := encodeMove(ch.nextMove)
-	if err != nil {
-		return err
+	{ // update game
+		if _, err := ch.game.MakeMove(ch.nextMove); err != nil {
+			return err
+		}
+		// update game hash
+		ch.gameHash = ch.gameHash + nextMoveHash
+
+	}
+	{ // update throw outs
+		// copy previous move throw outs
+		nt := ThrownOuts{}
+		for p, c := range ch.gameGc[ch.currMoveNo] {
+			nt[p] = c
+		}
+		// add next move thrown out piece, if any
+		if _, top := pMakeMove(ch.game.Positions[ch.currMoveNo], ch.nextMove); top.Type != piece.None {
+			nt[top] = nt[top] + 1
+		}
+		ch.gameGc = append(ch.gameGc, nt)
 	}
 
-	nextGameMoves := gameMoves + nextMove
+	// advance move number
+	ch.currMoveNo = ch.currMoveNo + 1
 
-	nextGame, err := NewGame(nextGameMoves)
-	if err != nil {
-		return err
-	}
+	// reset next move
+	ch.nextMove = move.Null
 
-	ch.game = nextGame.game
-	ch.gameGc = nextGame.gameGc
-	ch.currMoveNo = nextGame.currMoveNo
-	ch.nextMove = nextGame.nextMove
-
-	js.Global.Get("location").Set("hash", nextGameMoves)
+	// update location hash
+	js.Global.Get("location").Set("hash", ch.gameHash)
 
 	return nil
 }
@@ -1323,13 +1348,8 @@ func (ch *ChessGame) BackToPreviousMove() error {
 		return err
 	}
 	if ch.game.Positions[ch.currMoveNo].LastMove == move.Null {
-		// bo previous move, just return
+		// no previous move, just return
 		return nil
-	}
-
-	gameMoves, err := EncodeGame(ch)
-	if err != nil {
-		return err
 	}
 
 	lastMove, err := encodeMove(ch.game.Positions[ch.currMoveNo].LastMove)
@@ -1337,21 +1357,11 @@ func (ch *ChessGame) BackToPreviousMove() error {
 		return err
 	}
 
-	if !strings.HasSuffix(gameMoves, lastMove) {
-		return errors.New("last move is not suffix fo game moves")
+	if !strings.HasSuffix(ch.gameHash, lastMove) {
+		return errors.New("last move is not suffix of game moves")
 	}
 
-	previousGameMoves := strings.TrimSuffix(gameMoves, lastMove)
-
-	previousGame, err := NewGame(previousGameMoves)
-	if err != nil {
-		return err
-	}
-
-	ch.game = previousGame.game
-	ch.gameGc = previousGame.gameGc
-	ch.currMoveNo = previousGame.currMoveNo
-	ch.nextMove = previousGame.nextMove
+	previousGameMoves := strings.TrimSuffix(ch.gameHash, lastMove)
 
 	js.Global.Get("location").Set("hash", previousGameMoves)
 
@@ -1510,11 +1520,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 	}
 
 	{ // update move status
-		hash, err := EncodeGame(ch)
-		if err != nil {
-			return err
-		}
-		m.Cover.MoveStatus.Link.MoveHash = hash
+		m.Cover.MoveStatus.Link.MoveHash = ch.gameHash
 
 		if position.LastMove != move.Null {
 			m.Cover.MoveStatus.Undo.Get("classList").Call("remove", "hidden")
@@ -1667,11 +1673,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 	if err := tools.HashChange(func(e shf.HashChangeEvent) error {
 		// get game hash
-		gameMoves, err := EncodeGame(m.Game)
-		if err != nil {
-			return err
-		}
-		gameHash := "#" + gameMoves
+		gameHash := "#" + m.Game.gameHash
 		// get location hash
 		locationHash := js.Global.Get("location").Get("hash").String()
 		if gameHash == locationHash {
@@ -1679,6 +1681,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			return nil
 		}
 		// not equal game & location hash
+		//js.Global.Call("alert", "not equal game & location hash: "+gameHash+" != "+locationHash)
 
 		// create game grom location hash
 		newGame, err := NewGame(locationHash)
@@ -1686,7 +1689,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			// location hash is bad, revert document location hash to game hash
 			//TODO proper error showing throug notification
 			js.Global.Call("alert", err.Error())
-			js.Global.Get("location").Set("hash", gameMoves)
+			js.Global.Get("location").Set("hash", m.Game.gameHash)
 			return nil
 		}
 
