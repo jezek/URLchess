@@ -1437,8 +1437,8 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 				if position.Check(m.Board.Grid.Squares[i].Piece.Color) {
 					m.Board.Grid.Squares[i].Markers.Check = true
 
-					if ch.game.Status() != game.InProgress {
-						// game ended, has to be check mate
+					if ch.game.Status() == game.WhiteWon|game.BlackWon {
+						// game ended with whith someone winning, has to be check mate
 						m.Board.Grid.Squares[i].Markers.Mate = true
 					}
 				}
@@ -1553,17 +1553,20 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 
 				// every moving player figure gets unique event
 				if position.ActiveColor == sq.Piece.Color {
-					if err := tools.Click(sq.Element, func(event shf.Event) error {
-						// set next move from
-						ch.nextMove.Source = sq.Id
-						ch.nextMove.Destination = square.NoSquare
-						ch.nextMove.Promote = piece.None
+					// bt only if game is in progress
+					if st := ch.game.Status(); st == game.InProgress {
+						if err := tools.Click(sq.Element, func(event shf.Event) error {
+							// set next move from
+							ch.nextMove.Source = sq.Id
+							ch.nextMove.Destination = square.NoSquare
+							ch.nextMove.Promote = piece.None
 
-						// hide move status
-						m.Cover.MoveStatus.Shown = false
-						return nil
-					}); err != nil {
-						return err
+							// hide move status
+							m.Cover.MoveStatus.Shown = false
+							return nil
+						}); err != nil {
+							return err
+						}
 					}
 				}
 
