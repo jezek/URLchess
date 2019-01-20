@@ -1567,6 +1567,17 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 					}
 				}
 
+				// next move from square resets next move
+				if ch.nextMove.Source == sq.Id && ch.nextMove.Destination == square.NoSquare && ch.nextMove.Promote == piece.None {
+					if err := tools.Click(sq.Element, func(_ shf.Event) error {
+						ch.nextMove = move.Null
+						m.Cover.MoveStatus.Shown = false
+						return nil
+					}); err != nil {
+						return err
+					}
+				}
+
 				// square marked as possible to gets unique event
 				if sq.Markers.ByColor[position.ActiveColor].NextMove.PossibleTo {
 					// inspect next move state
