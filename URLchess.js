@@ -38514,9 +38514,9 @@ $packages["URLchess"] = (function() {
 				/* if (_r$3) { */ case 10:
 					(x$12 = m[0].Board.Grid.Squares, ((i < 0 || i >= x$12.length) ? ($throwRuntimeError("index out of range"), undefined) : x$12[i])).Markers.Check = true;
 					_r$4 = ch[0].game.Status(); /* */ $s = 15; case 15: if($c) { $c = false; _r$4 = _r$4.$blk(); } if (_r$4 && _r$4.$blk !== undefined) { break s; }
-					/* */ if (_r$4 === 510) { $s = 13; continue; }
+					/* */ if (((_r$4 & 510) >>> 0) > 0) { $s = 13; continue; }
 					/* */ $s = 14; continue;
-					/* if (_r$4 === 510) { */ case 13:
+					/* if (((_r$4 & 510) >>> 0) > 0) { */ case 13:
 						(x$13 = m[0].Board.Grid.Squares, ((i < 0 || i >= x$13.length) ? ($throwRuntimeError("index out of range"), undefined) : x$13[i])).Markers.Mate = true;
 					/* } */ case 14:
 				/* } */ case 11:
