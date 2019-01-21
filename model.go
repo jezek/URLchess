@@ -1437,7 +1437,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 				if position.Check(m.Board.Grid.Squares[i].Piece.Color) {
 					m.Board.Grid.Squares[i].Markers.Check = true
 
-					if ch.game.Status() == game.WhiteWon|game.BlackWon {
+					if ch.game.Status()&(game.WhiteWon|game.BlackWon) > 0 {
 						// game ended with whith someone winning, has to be check mate
 						m.Board.Grid.Squares[i].Markers.Mate = true
 					}
