@@ -35,7 +35,11 @@ This is an early relase. Improvements will be done soon. Some of them:
 - minimize js file size (don't use some packages like fmt, ...)
 - more touch friendly ui (dragable pieces?)
 - multilanguage?
+- transition to wasm?
 - ...
 
 ### Contribution
 Test, fork, make pull requests, file issues or improvement ideas, discuss. Everything within reasons is welcome.
+
+### Why golang + gopherjs?
+To test golang's web development capabilities and learn something from it. 
