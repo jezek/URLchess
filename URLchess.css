@@ -113,8 +113,8 @@ button:active {
 	align-items: center; 
 }
 #board div.edging, #board div.grid {
+	position: absolute;
 	box-sizing: border-box;
-	float: left;
 }
 #board div.edging {
 	font-size: calc(1em / 3);
@@ -122,9 +122,25 @@ button:active {
 #board div.edging.horizontal, #board div.edging.vertical {
 	color: #ffd700;
 }
+#board div.edging.top {
+	top: 0;
+	height: calc(100% * 2 / 28);
+}
+#board div.edging.bottom {
+	bottom: 0;
+	height: calc(100% * 2 / 28);
+}
+#board div.edging.left {
+	left: 0;
+	width: calc(100% * 2 / 28);
+}
+#board div.edging.right {
+	right: 0;
+	width: calc(100% * 2 / 28);
+}
 #board div.edging.horizontal {
-	width: calc(100vmin * 24 / 28);
-	height: calc(100vmin * 2 / 28);
+	left: calc(100% * 2 / 28);
+	width: calc(100% * 24 / 28);
 	line-height: calc(100vmin * 2 / 28);
 }
 #board div.edging.horizontal div {
@@ -133,8 +149,8 @@ button:active {
 	height: 100%;
 }
 #board div.edging.vertical {
-	width: calc(100vmin * 2 / 28);
-	height: calc(100vmin * 24 / 28);
+	top: calc(100% * 2 / 28);
+	height: calc(100% * 24 / 28);
 	line-height: calc(100vmin * 3 / 28);
 }
 #board div.edging.vertical div {
@@ -144,10 +160,7 @@ button:active {
 #edging-top div, #edging-right div, #edging-top-right {
 	transform: rotate(180deg);
 }
-
 #board div.edging.corner {
-	width: calc(100vmin * 2 / 28);
-	height: calc(100vmin * 2 / 28);
 	line-height: calc(100vmin * 2 / 28);
 }
 #edging-bottom-left.enabled, #edging-top-right.enabled {
@@ -161,10 +174,12 @@ button:active {
 }
 
 #board .grid {
+	top: calc(100% * 2 / 28);
+	left: calc(100% * 2 / 28);
 	/* this is the width of 1 #board .grid square */
 	/* 0 edging +2/28 grid +24/28 edging +2/28 */
-	width: calc(100vmin * 24 / 28);
-	height: calc(100vmin * 24 / 28);
+	width: calc(100% * 24 / 28);
+	height: calc(100% * 24 / 28);
 	font-size: calc(1em * 5 / 6);
 }
 #board .grid div {
@@ -287,15 +302,17 @@ button:active {
 #promotion-overlay span.piece:hover {
 	background-color: rgba(0, 255, 255, 0.6);
 }
-/* board rotation */
+
+/* board animation */
 #board, #promotion-overlay, #header, #board .edging, #board .grid {
 	transition-duration: 0.8s;
-	transition-property: top, left, margin, width, height, transform;
+	transition-property: top, left, margin, width, height, transform, position;
 }
-#board, #board .grid span.piece { 
+#board .grid span.piece, #promotion-overlay span { 
 	transition-duration: 0.8s;
-	transition-property: transform;
+	transition-property: all;
 }
+/* board rotation */
 #board.rotated180deg {
 	transform: rotate(180deg);
 }
@@ -521,23 +538,13 @@ div.thrown-outs .count {
 
 
 	#board div.edging.horizontal {
-		width: calc(8.4cm * 24 / 28);
-		height: calc(8.4cm * 2 / 28);
 		line-height: calc(8.4cm * 2 / 28);
 	}
 	#board div.edging.vertical {
-		width: calc(8.4cm * 2 / 28);
-		height: calc(8.4cm * 24 / 28);
 		line-height: calc(8.4cm * 3 / 28);
 	}
 	#board div.edging.corner {
-		width: calc(8.4cm * 2 / 28);
-		height: calc(8.4cm * 2 / 28);
 		line-height: calc(8.4cm * 2 / 28);
-	}
-	#board .grid {
-		width: calc(8.4cm * 24 / 28);
-		height: calc(8.4cm * 24 / 28);
 	}
 	#promotion-overlay span.piece {
 		margin: 0 calc((8.4cm * 3 / 28) / 4);
@@ -601,23 +608,13 @@ div.thrown-outs .count {
 	}
 
 	#board div.edging.horizontal {
-		width: calc(70vmin * 24 / 28);
-		height: calc(70vmin * 2 / 28);
 		line-height: calc(70vmin * 2 / 28);
 	}
 	#board div.edging.vertical {
-		width: calc(70vmin * 2 / 28);
-		height: calc(70vmin * 24 / 28);
 		line-height: calc(70vmin * 3 / 28);
 	}
 	#board div.edging.corner {
-		width: calc(70vmin * 2 / 28);
-		height: calc(70vmin * 2 / 28);
 		line-height: calc(70vmin * 2 / 28);
-	}
-	#board .grid {
-		width: calc(70vmin * 24 / 28);
-		height: calc(70vmin * 24 / 28);
 	}
 	#promotion-overlay span.piece {
 		margin: 0 calc((70vmin * 3 / 28) / 4);
@@ -732,23 +729,13 @@ div.thrown-outs .count {
 	
 
 	#board div.edging.horizontal {
-		width: calc(8.4cm * 24 / 28);
-		height: calc(8.4cm * 2 / 28);
 		line-height: calc(8.4cm * 2 / 28);
 	}
 	#board div.edging.vertical {
-		width: calc(8.4cm * 2 / 28);
-		height: calc(8.4cm * 24 / 28);
 		line-height: calc(8.4cm * 3 / 28);
 	}
 	#board div.edging.corner {
-		width: calc(8.4cm * 2 / 28);
-		height: calc(8.4cm * 2 / 28);
 		line-height: calc(8.4cm * 2 / 28);
-	}
-	#board .grid {
-		width: calc(8.4cm * 24 / 28);
-		height: calc(8.4cm * 24 / 28);
 	}
 	#promotion-overlay span.piece {
 		margin: 0 calc((8.4cm * 3 / 28) / 4);
@@ -868,23 +855,13 @@ div.thrown-outs .count {
 	
 
 	#board div.edging.horizontal {
-		width: calc(70vmin * 24 / 28);
-		height: calc(70vmin * 2 / 28);
 		line-height: calc(70vmin * 2 / 28);
 	}
 	#board div.edging.vertical {
-		width: calc(70vmin * 2 / 28);
-		height: calc(70vmin * 24 / 28);
 		line-height: calc(70vmin * 3 / 28);
 	}
 	#board div.edging.corner {
-		width: calc(70vmin * 2 / 28);
-		height: calc(70vmin * 2 / 28);
 		line-height: calc(70vmin * 2 / 28);
-	}
-	#board .grid {
-		width: calc(70vmin * 24 / 28);
-		height: calc(70vmin * 24 / 28);
 	}
 	#promotion-overlay span.piece {
 		margin: 0 calc((70vmin * 3 / 28) / 4);
@@ -922,3 +899,59 @@ div.thrown-outs .count {
 	}
 }
 
+/* zen mode */
+body.zen-mode {
+	font-size: calc(100vmin * 3 / 28);
+}
+body.zen-mode #header,
+body.zen-mode #thrown-outs-container,
+body.zen-mode #cover,
+body.zen-mode #footer { 
+	display: none;
+}
+body.zen-mode #board {
+	position: absolute;
+	top: calc((100vh - 100vmin) / 2);
+	left: calc((100vw - 100vmin) / 2);
+	width: 100vmin;
+	height: 100vmin;
+	margin: 0;
+}
+body.zen-mode #board div.edging.corner {
+	width: 0;
+	height: 0;
+}
+body.zen-mode #board div.edging.horizontal {
+	left: 0;
+	width: 100%;
+	height: 1em;
+	z-index: 1;
+	line-height: normal;
+	font-size: calc(1em / 6);
+}
+body.zen-mode #board div.edging.vertical{
+	top: 0;
+	width: auto;
+	height: 100%;
+	z-index: 1;
+	line-height: calc(100vmin * 3.5 / 28);
+	font-size: calc(1em / 6);
+}
+body.zen-mode #board div.grid {
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 0;
+}
+body.zen-mode	#promotion-overlay {
+	width: 100vmin;
+	height: 100vmin;
+	z-index:2;
+}
+body.zen-mode	#promotion-overlay span.piece {
+	margin: 0 calc((100vmin * 3 / 28) / 4);
+	width: calc(100vmin * 3 / 28);
+	height: calc(100vmin * 3 / 28);
+	font-size: calc((100vmin * 3 / 28) * 5 / 6);
+}

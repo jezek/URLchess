@@ -43,6 +43,9 @@ func (t *Tools) Update(updaters ...Updater) error {
 func (t *Tools) Click(target Element, function func(Event) error) error {
 	return t.app.Click(target, function)
 }
+func (t *Tools) DblClick(target Element, function func(Event) error) error {
+	return t.app.DblClick(target, function)
+}
 func (t *Tools) HashChange(function func(HashChangeEvent) error) error {
 	return t.app.HashChange(function)
 }
@@ -109,6 +112,9 @@ func (app *App) HashChange(function func(HashChangeEvent) error) error {
 }
 func (app *App) Click(target Element, function func(Event) error) error {
 	return app.elventListener("click", target, function)
+}
+func (app *App) DblClick(target Element, function func(Event) error) error {
+	return app.elventListener("dblclick", target, function)
 }
 func (app *App) elventListener(eventName string, target Element, function func(Event) error) error {
 	if app == nil {

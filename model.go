@@ -25,18 +25,30 @@ func (this *BoardEdging) SetPosition(s string) {
 	if this == nil {
 		return
 	}
-	this.Position = s
+	this.Position = strings.TrimSpace(s)
 
 	if this.Element == nil {
 		return
 	}
-	this.Set("id", "edging-"+this.Position)
+
+	if len(this.Position) == 0 {
+		this.Delete("id")
+	} else {
+		this.Set("id", "edging-"+this.Position)
+	}
+
+	this.Get("classList").Call("add", "edging")
+
+	if len(this.Position) > 0 {
+		for _, posClass := range strings.Split(this.Position, "-") {
+			this.Get("classList").Call("add", posClass)
+		}
+	}
 }
 
 func (this *BoardEdging) Init(tools *shf.Tools) error {
 	if this.Element == nil {
 		this.Element = tools.CreateElement("div")
-		this.Get("classList").Call("add", "edging")
 		this.SetPosition(this.Position)
 	}
 	return nil
@@ -940,6 +952,7 @@ var tips = []string{
 	"to rotate board (if supported), click on corners with arrows (bottom-left, top-right)",
 	"to rotate board for current moving player, click on game status icon, or text",
 	"to toggle this game URL dialog, click on any empty square on board",
+	"to toggle zen mode, try double click on empty chess square",
 }
 
 func (this *ModelMoveStatus) Update(tools *shf.Tools) error {
@@ -1540,6 +1553,15 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 					return err
 				}
 
+				// every square gets a double click callback for zen mode toggle
+				if err := tools.DblClick(sq.Element, func(_ shf.Event) error {
+					// toggle zen mode by adding/removing "zen-mode" class to body
+					js.Global.Get("document").Get("body").Get("classList").Call("toggle", "zen-mode")
+					return nil
+				}); err != nil {
+					return err
+				}
+
 				// every empty square or every oponent piece resets next move
 				if sq.Piece.Type == piece.None || sq.Piece.Color == complementColor(position.ActiveColor) {
 					if err := tools.Click(sq.Element, func(_ shf.Event) error {
@@ -1666,6 +1688,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 					//TODO where to put copy to clipboard?
 				}
 			}
+
 		}
 	}
 
