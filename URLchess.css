@@ -33,13 +33,22 @@ button:active {
 
 /* basic layout */
 #header {
-	margin: 0;
-	display: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	position: absolute;
 	top: 0;
 	left: 0;
+	box-sizing: border-box;
+	width: calc(100vmin * 2 / 28); 
+	height: calc(100vmin * 2 / 28); 
+	margin: 0;
+	padding: 0;
+	padding-left: 0.5em;
+	font-size: calc((100vmin * 2 / 28) / 3.3);
 	font-weight: bold;
-	padding-top: 0.5em;
+	cursor: pointer;
+	z-index: 1;
 }
 #board {
 	position:relative;
@@ -304,11 +313,11 @@ button:active {
 }
 
 /* board animation */
-#board, #promotion-overlay, #header, #board .edging, #board .grid {
+#board, #promotion-overlay, #board .edging, #board .grid {
 	transition-duration: 0.8s;
 	transition-property: top, left, margin, width, height, transform, position;
 }
-#board .grid span.piece, #promotion-overlay span { 
+#header, #board .grid span.piece, #promotion-overlay span { 
 	transition-duration: 0.8s;
 	transition-property: all;
 }
@@ -510,19 +519,25 @@ div.thrown-outs .count {
 /*********************/
 /* responsive design */
 /*********************/
+/* 8.4cm = 318px (317.480314961)*/
 @media (orientation: portrait) and (min-width: 8.4cm) {
 
 	body, button, input {
 		font-size: calc(8.4cm * 3 / 28);
 	}
 
-	#header, #board, #cover, #thrown-outs-container {
+	#header {
+		font-size: calc((100vw - 8.4cm) / 3);
+		width: auto;
+		height: calc((100vw - 8.4cm) / 2);
+		margin-left: calc((100vw - 8.4cm) / 2);
+		padding-left: 0;
+		justify-content: flex-start;
+		align-items: flex-end;
+	}
+	#board, #cover, #thrown-outs-container {
 		margin-left: calc((100vw - 8.4cm) / 2);
 		width: 8.4cm;
-	}
-	#header {
-		display: initial;
-		font-size: calc((100vw - 8.4cm) / 3);
 	}
 	#board {
 		margin-top: calc((100vw - 8.4cm) / 2);
@@ -535,7 +550,6 @@ div.thrown-outs .count {
 		height: calc((8.4cm * 2) / 28);
 		line-height: calc(8.4cm * 2 / 28);
 	}
-
 
 	#board div.edging.horizontal {
 		line-height: calc(8.4cm * 2 / 28);
@@ -554,6 +568,24 @@ div.thrown-outs .count {
 	}
 
 }
+
+/* 9.25cm = 350px (349.606299213) */
+@media (orientation: portrait) and (min-width: 8.4cm) and (max-width: 9.25cm) {
+	#header {
+		box-sizing: border-box;
+		width: calc(100vmin * 2 / 28); 
+		height: calc(100vmin * 2 / 28); 
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: calc((100vmin * 2 / 28) / 3.3);
+		margin-top: calc((100vw - 8.4cm) / 2);
+		padding: 0;
+		padding-left: 0.5em;
+	}
+}
+
+/* 10.2cm = 386px (385.511811024) */
 @media (orientation: portrait) and (min-width: 10.2cm) {
 	/* display is wide enugh to rearange trown outs to side */
 	#thrown-outs-container {
@@ -578,19 +610,21 @@ div.thrown-outs .count {
 		top: calc((-8.4cm * 3) / 28);
 	}
 }
+/* 12cm = 454px (453.543307087) */
 @media (orientation: portrait) and (min-width: 12cm) {
 
 	body, button, input {
 		font-size: calc(70vmin * 3 / 28);
 	}
 
-	#header, #board, #cover {
+	#header {
+		height: calc((100vw - 70vmin) / 2);
+		margin-left: calc((100vw - 70vmin) / 2);
+		font-size: calc((100vw - 70vmin) / 3);
+	}
+	#board, #cover {
 		margin-left: calc((100vw - 70vmin) / 2);
 		width: 70vmin;
-	}
-	#header {
-		display: initial;
-		font-size: calc((100vw - 70vmin) / 3);
 	}
 	#board {
 		margin-top: calc((100vw - 70vmin) / 2);
@@ -638,6 +672,22 @@ div.thrown-outs .count {
 		top: calc((100vh - 100vmin) / 2);
 		writing-mode: vertical-rl;
 		text-orientation: upright;
+		white-space: nowrap;
+	}
+}
+@media (orientation: landscape) and (max-aspect-ratio: 32/28) {
+	#header {
+		display: flex;
+		width: calc(100vmin * 2 / 28); 
+		height: calc(100vmin * 2 / 28); 
+		margin: 0;
+		margin-left: calc((100vw - 100vmin) / 2);
+		padding: 0;
+		padding-left: 0.5em;
+		font-size: calc((100vmin * 2 / 28) / 3.3);
+		writing-mode: initial;
+		text-orientation: initial;
+		white-space: initial;
 	}
 }
 @media (orientation: landscape) and (min-aspect-ratio: 34/28) {
@@ -665,7 +715,16 @@ div.thrown-outs .count {
 }
 @media (orientation: landscape) and (min-aspect-ratio: 43/28) {
 	#header {
-		display: none;
+		display: flex;
+		width: calc(100vmin * 2 / 28); 
+		height: calc(100vmin * 2 / 28); 
+		margin: 0;
+		padding: 0;
+		padding-left: 0.5em;
+		font-size: calc((100vmin * 2 / 28) / 3.3);
+		writing-mode: initial;
+		text-orientation: initial;
+		white-space: initial;
 	}
 	#board, #thrown-outs-container {
 		margin-left: 0;
@@ -681,9 +740,12 @@ div.thrown-outs .count {
 }
 @media (orientation: landscape) and (min-aspect-ratio: 59/28) {
 	#header {
+		/*
 		display: initial;
 		width: calc((100vw - ((100vmin / 28) * 59)) / 2);
 		font-size: calc((100vw - ((100vmin / 28) * 59)) / 2);
+	 */
+		margin-left: calc((100vw - ((100vmin / 28) * 59)) / 2);
 	}
 	#board, #thrown-outs-container {
 		margin-left: calc((100vw - ((100vmin / 28) * 59)) / 2);
@@ -693,22 +755,31 @@ div.thrown-outs .count {
 		width: 100vmin;
 	}
 }
-@media (orientation: landscape) and (min-aspect-ratio: 62/28) {
+@media (orientation: landscape) and (min-aspect-ratio: 64/28) {
 	#header {
+		width: calc((100vw - ((100vmin / 28) * 59)) / 2);
+		height: initial;
 		font-size: calc((100vmin * 2) / 28);
+		margin: 0;
+		padding: 0;
+		top: calc((100vh - 100vmin) / 2);
+		writing-mode: vertical-rl;
+		text-orientation: upright;
+		display: initial;
+		white-space: nowrap;
 	}
 }
 
+/* 8.4cm = 318px (317.480314961)*/
 @media (orientation: landscape) and (min-height: 8.4cm) {
 	body, button, input {
 		font-size: calc(8.4cm * 3 / 28);
 	}
 
-	#header, #board, #cover, #thrown-outs-container {
-		margin-left: calc((100vw - 8.4cm) / 2);
-		width: 8.4cm;
-	}
 	#header {
+		margin-left: calc((100vw - 8.4cm) / 2);
+		margin-top: calc((100vh - 8.4cm) / 2);
+		/*
 		display: initial;
 		margin: 0;
 		padding: 0;
@@ -717,6 +788,12 @@ div.thrown-outs .count {
 		top: calc((100vh - 8.4cm) / 2);
 		writing-mode: vertical-rl;
 		text-orientation: upright;
+		white-space: nowrap;
+		*/
+	}
+	#board, #cover, #thrown-outs-container {
+		margin-left: calc((100vw - 8.4cm) / 2);
+		width: 8.4cm;
 	}
 	#board {
 		margin-top: calc((100vh - 8.4cm) / 2);
@@ -744,9 +821,19 @@ div.thrown-outs .count {
 		font-size: calc((8.4cm * 3 / 28) * 5 / 6);
 	}
 }
+/* 10.2cm = 386px (385.511811024) */
 @media (orientation: landscape) and (min-width: 10.2cm) and (min-height: 8.4cm) {
 	#header {
+		display: initial;
+		top: calc((100vh - 8.4cm) / 2);
+		margin: 0;
+		padding: 0;
+		width: calc((100vw - 8.4cm) / 2);
+		height: initial;
 		font-size: calc((8.4cm * 2) / 28);
+		writing-mode: vertical-rl;
+		text-orientation: upright;
+		white-space: nowrap;
 	}
 	#board, #cover, #thrown-outs-container {
 		margin-left: calc((100vw - 8.4cm) / 2);
@@ -770,8 +857,21 @@ div.thrown-outs .count {
 		padding-top: 0.7em
 	}
 }
+/* 12.9cm = 488px (487.559055118) */
 @media (orientation: landscape) and (min-width: 12.9cm) and (min-height: 8.4cm) {
 	#header {
+		display: flex;
+		top: calc((100vh - 8.4cm) / 2);
+		width: calc(8.4cm * 2 / 28); 
+		height: calc(8.4cm * 2 / 28); 
+		margin: 0;
+		padding: 0;
+		padding-left: 0.5em;
+		font-size: calc((8.4cm * 2 / 28) / 3.3);
+		writing-mode: initial;
+		text-orientation: initial;
+		white-space: initial;
+    /*
 		font-size: calc((100vh - 8.4cm) / 3);
     padding-top: 0.5em;
 		top: 0;
@@ -779,6 +879,7 @@ div.thrown-outs .count {
 		writing-mode: initial;
 		text-orientation: initial;
 		width: 8.4cm;
+		*/
 	}
 	#board, #thrown-outs-container {
 		margin-left: 0;
@@ -793,8 +894,9 @@ div.thrown-outs .count {
 		margin: 0;
 	}
 }
+/* 17.7cm = 669px (668.976377953) */
 @media (orientation: landscape) and (min-width: 17.7cm) and (min-height: 8.4cm) {
-	#board, #thrown-outs-container {
+	#header, #board, #thrown-outs-container {
 		margin-left: calc((100vw - ((8.4cm / 28) * 59)) / 2);
 	}
 	#cover {
@@ -802,6 +904,7 @@ div.thrown-outs .count {
 		width: 8.4cm;
 	}
 }
+/* 18.6cm = 703px (702.992125984) */
 @media (orientation: landscape) and (min-width: 18.6cm) and (min-height: 8.4cm) {
 	#header {
 		display: initial;
@@ -812,14 +915,17 @@ div.thrown-outs .count {
 		top: calc((100vh - 8.4cm) / 2);
 		writing-mode: vertical-rl;
 		text-orientation: upright;
+		white-space: nowrap;
 	}
 }
+/* 19.5cm = 738px (737.007874016) */
 @media (orientation: landscape) and (min-width: 19.5cm) and (min-height: 8.4cm) {
 	#header {
 		font-size: calc((8.4cm * 2) / 28);
 	}
 }
 
+/* 12cm = 454px (453.543307087) */
 @media (orientation: landscape) and (min-height: 12cm) {
 	body, button, input {
 		font-size: calc(70vmin * 3 / 28);
@@ -837,7 +943,8 @@ div.thrown-outs .count {
 		left: calc((100vw - 70vmin) / 2);
 		writing-mode: initial;
 		text-orientation: initial;
-		width: 70vmin;
+		width: auto;
+		padding-left: 0;
 	}
 	#board {
 		margin-top: calc((100vh - 70vmin) / 2);

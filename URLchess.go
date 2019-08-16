@@ -17,14 +17,6 @@ func main() {
 		return
 	}
 
-	document.Call("write", "<div id=\"header\">URLchess</div>")
-
-	defer func() {
-		js.Global.Get("document").Call("write", `<div id="footer">
-		<a href="https://jezek.github.io/URLchess">URLchess</a> by jEzEk. Source on <a href="https://github.com/jezek/URLchess">github</a>.
-</div>`)
-	}()
-
 	model := &Model{}
 
 	// is rotation supported?
@@ -46,10 +38,12 @@ func main() {
 	}
 
 	body := document.Get("body")
+	body.Call("appendChild", model.Html.Header.Element.Object())
 	body.Call("appendChild", model.Html.Board.Element.Object())
 	body.Call("appendChild", model.Html.ThrownOuts.Element.Object())
 	body.Call("appendChild", model.Html.Cover.Element.Object())
 	body.Call("appendChild", model.Html.Notification.Element.Object())
+	body.Call("appendChild", model.Html.Footer.Element.Object())
 
 	if hash := js.Global.Get("location").Get("hash").String(); len(hash) > 0 {
 		game, err := NewGame(hash)
@@ -65,7 +59,7 @@ func main() {
 	if st := model.Game.game.Status(); st != game.InProgress {
 		// if game ended, notify player
 		newGameButton := app.CreateElement("button")
-		newGameButton.Set("textContent", "new game")
+		newGameButton.Set("textContent", "New game")
 		if err := app.Click(newGameButton, func(_ shf.Event) error {
 			game, err := NewGame("")
 			if err != nil {
@@ -82,7 +76,7 @@ func main() {
 		}
 		model.Html.Notification.Message(
 			st.String(),
-			"tip: click anywhere except \"new game\" to close this notification",
+			"tip: click anywhere except \"New game\" to close this notification",
 			newGameButton,
 		)
 	}

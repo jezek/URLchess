@@ -16,6 +16,60 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
+type ModelHeader struct {
+	shf.Element
+}
+
+func (h *ModelHeader) Init(tools *shf.Tools) error {
+	if h.Element == nil {
+		h.Element = tools.CreateElement("div")
+		h.Set("id", "header")
+		h.Set("innerHTML", "URL&#8203;chess")
+	}
+	return nil
+}
+func (h *ModelHeader) Update(tools *shf.Tools) error {
+	if h == nil {
+		return errors.New("ModelHeader is nil")
+	}
+	return nil
+}
+
+type ModelFooter struct {
+	shf.Element
+}
+
+func (f *ModelFooter) Init(tools *shf.Tools) error {
+	if f.Element == nil {
+		f.Element = tools.CreateElement("div")
+		f.Set("id", "footer")
+
+		linkURLchess := tools.CreateElement("a")
+		linkURLchess.Set("href", "https://jezek.github.io/URLchess")
+		linkURLchess.Call("appendChild", tools.CreateTextNode("URLchess"))
+		if err := tools.Click(linkURLchess, func(_ shf.Event) error {
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		linkGit := tools.CreateElement("a")
+		linkGit.Set("href", "https://github.com/jezek/URLchess")
+		linkGit.Call("appendChild", tools.CreateTextNode("github"))
+
+		f.Call("appendChild", linkURLchess.Object())
+		f.Call("appendChild", tools.CreateTextNode(" by jEzEk. Source on "))
+		f.Call("appendChild", linkGit.Object())
+	}
+	return nil
+}
+func (f *ModelFooter) Update(tools *shf.Tools) error {
+	if f == nil {
+		return errors.New("ModelFooter is nil")
+	}
+	return nil
+}
+
 type BoardEdging struct {
 	shf.Element
 	Position string //top, bottom, left, right, top-left, top-right, bottom-left, bottom-right
@@ -1115,13 +1169,21 @@ func (n *ModelNotification) Update(tools *shf.Tools) error {
 type HtmlModel struct {
 	Rotated180deg bool
 
+	Header       *ModelHeader
 	Board        *ModelBoard
 	ThrownOuts   *ModelThrownouts
 	Cover        *ModelCover
 	Notification *ModelNotification
+	Footer       *ModelFooter
 }
 
 func (h *HtmlModel) Init(tools *shf.Tools) error {
+	if h.Header == nil {
+		h.Header = &ModelHeader{}
+		if err := tools.Update(h.Header); err != nil {
+			return err
+		}
+	}
 	if h.Board == nil {
 		h.Board = &ModelBoard{}
 		if err := tools.Update(h.Board); err != nil {
@@ -1146,6 +1208,12 @@ func (h *HtmlModel) Init(tools *shf.Tools) error {
 			return err
 		}
 	}
+	if h.Footer == nil {
+		h.Footer = &ModelFooter{}
+		if err := tools.Update(h.Footer); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1162,7 +1230,7 @@ func (h *HtmlModel) Update(tools *shf.Tools) error {
 		h.ThrownOuts.Get("classList").Call("remove", "rotated180deg")
 	}
 
-	return tools.Update(h.Board, h.ThrownOuts, h.Cover, h.Notification)
+	return tools.Update(h.Header, h.Board, h.ThrownOuts, h.Cover, h.Notification, h.Footer)
 }
 
 func (h *HtmlModel) RotateBoard() func(shf.Event) error {
@@ -1786,6 +1854,73 @@ func (m *Model) Init(tools *shf.Tools) error {
 		}
 	}
 
+	{ // add click events for html header & footer
+
+		newGameButton := tools.CreateElement("button")
+		newGameButton.Set("textContent", "new game")
+		if err := tools.Click(newGameButton, func(_ shf.Event) error {
+			game, err := NewGame("")
+			if err != nil {
+				return err
+			}
+			m.Game = game
+			m.Html.Notification.Shown = false
+			js.Global.Get("location").Set("hash", "")
+			m.RotateBoardForPlayer()
+			return nil
+		}); err != nil {
+			// if there is an error creating event for button, simply do not show it
+			newGameButton = nil
+		}
+
+		copyLinkButton := shf.Element(nil)
+		if m.execSupported {
+			copyLinkButton = tools.CreateElement("button")
+			copyLinkButton.Set("textContent", "copy link")
+			if err := tools.Click(copyLinkButton, func(e shf.Event) error {
+				e.Call("stopPropagation")
+
+				if err := m.Html.CopyGameURLToClipboard(); err != nil {
+					return err
+				}
+				m.Html.Cover.MoveStatus.Shown = false
+				m.Html.Notification.TimedMessage(
+					tools,
+					5*time.Second,
+					"game URL was copied to clipboard",
+					"tip: click on last move piece to copy",
+				)
+				return nil
+			}); err != nil {
+				// if there is an error creating event for button, simply do not show it
+				copyLinkButton = nil
+			}
+		}
+
+		zenModeButton := tools.CreateElement("button")
+		zenModeButton.Set("textContent", "toggle zen mode")
+		if err := tools.Click(zenModeButton, func(_ shf.Event) error {
+			m.Html.Notification.Shown = false
+			js.Global.Get("document").Get("body").Get("classList").Call("toggle", "zen-mode")
+			return nil
+		}); err != nil {
+			// if there is an error creating event for button, simply do not show it
+			zenModeButton = nil
+		}
+
+		if err := tools.Click(m.Html.Header.Element, func(_ shf.Event) error {
+			m.Html.Notification.Message(
+				"Quick actions",
+				"tip: double click on empty square to toggle zen mode",
+				newGameButton,
+				copyLinkButton,
+				zenModeButton,
+			)
+			return nil
+		}); err != nil {
+			return err
+		}
+	}
 	{ // add promotion events to promotion overlay
 		if err := tools.Click(m.Html.Board.PromotionOverlay.Element, func(_ shf.Event) error {
 			m.Game.nextMove.Promote = piece.None
