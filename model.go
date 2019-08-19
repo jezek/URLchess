@@ -1,4 +1,3 @@
-// +build js
 package main
 
 import (
@@ -58,7 +57,7 @@ func (f *ModelFooter) Init(tools *shf.Tools) error {
 		linkGit.Call("appendChild", tools.CreateTextNode("github"))
 
 		f.Call("appendChild", linkURLchess.Object())
-		f.Call("appendChild", tools.CreateTextNode(" by jEzEk. Source on "))
+		f.Call("appendChild", tools.CreateTextNode(" v"+Version+" by jEzEk. Source on "))
 		f.Call("appendChild", linkGit.Object())
 	}
 	return nil

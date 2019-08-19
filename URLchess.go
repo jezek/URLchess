@@ -1,6 +1,6 @@
-// +build js
-//go:generate gopherjs build -m
 package main
+
+//go:generate gopherjs build -m
 
 import (
 	"URLchess/shf"
@@ -8,6 +8,8 @@ import (
 	"github.com/andrewbackes/chess/game"
 	"github.com/gopherjs/gopherjs/js"
 )
+
+const Version = "0.9"
 
 func main() {
 	//js.Global.Call("alert", "main")
