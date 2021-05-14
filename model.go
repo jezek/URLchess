@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/andrewbackes/chess/game"
+	"github.com/andrewbackes/chess/pgn"
 	"github.com/andrewbackes/chess/piece"
 	"github.com/andrewbackes/chess/position"
 	"github.com/andrewbackes/chess/position/move"
@@ -1907,6 +1908,18 @@ func (m *Model) Init(tools *shf.Tools) error {
 			zenModeButton = nil
 		}
 
+		exportButton := tools.CreateElement("button")
+		exportButton.Set("textContent", "export game")
+		if err := tools.Click(exportButton, func(e shf.Event) error {
+			e.Call("stopPropagation")
+
+			m.Html.Notification.Message("export: "+pgn.Encode(m.Game.game).String(), "hint")
+			return nil
+		}); err != nil {
+			// if there is an error creating event for button, simply do not show it
+			exportButton = nil
+		}
+
 		if err := tools.Click(m.Html.Header.Element, func(_ shf.Event) error {
 			m.Html.Notification.Message(
 				"Quick actions",
@@ -1914,12 +1927,14 @@ func (m *Model) Init(tools *shf.Tools) error {
 				newGameButton,
 				copyLinkButton,
 				zenModeButton,
+				exportButton,
 			)
 			return nil
 		}); err != nil {
 			return err
 		}
 	}
+
 	{ // add promotion events to promotion overlay
 		if err := tools.Click(m.Html.Board.PromotionOverlay.Element, func(_ shf.Event) error {
 			m.Game.nextMove.Promote = piece.None
