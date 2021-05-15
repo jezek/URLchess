@@ -1143,9 +1143,11 @@ func (n *ModelNotification) Init(tools *shf.Tools) error {
 	if n.Element == nil {
 		n.Element = tools.CreateElement("div")
 		n.Set("id", "notification-overlay")
-		if err := tools.Click(n.Element, func(_ shf.Event) error {
-			n.cancelTimer()
-			n.Shown = false
+		if err := tools.Click(n.Element, func(e shf.Event) error {
+			if e.Get("target").Get("id").String() == "notification-overlay" {
+				n.cancelTimer()
+				n.Shown = false
+			}
 			return nil
 		}); err != nil {
 			return err
