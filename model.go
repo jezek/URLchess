@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/andrewbackes/chess/game"
-	"github.com/andrewbackes/chess/pgn"
 	"github.com/andrewbackes/chess/piece"
 	"github.com/andrewbackes/chess/position"
 	"github.com/andrewbackes/chess/position/move"
@@ -1060,6 +1059,69 @@ func (this *ModelCover) Update(tools *shf.Tools) error {
 	return tools.Update(this.GameStatus, this.MoveStatus)
 }
 
+type ModelExportName struct {
+	shf.Element
+	Color piece.Color
+}
+
+func (this *ModelExportName) Init(tools *shf.Tools) error {
+
+	if this.Element == nil {
+		this.Element = tools.CreateElement("input")
+		this.Set("id", "export-name-"+strings.ToLower(this.Color.String()))
+	}
+
+	return nil
+}
+func (this *ModelExportName) Update(tools *shf.Tools) error {
+	if this == nil {
+		return errors.New("ModelExportName is nil")
+	}
+
+	return nil
+}
+
+type ModelExport struct {
+	shf.Element
+	Shown bool
+
+	Name [2]*ModelExportName
+}
+
+func (this *ModelExport) Init(tools *shf.Tools) error {
+
+	if this.Element == nil {
+		this.Element = tools.CreateElement("div")
+		this.Set("id", "export-overlay")
+		if err := tools.Click(this.Element, func(e shf.Event) error {
+			if e.Get("target").Get("id").String() == "export-overlay" {
+				this.Shown = false
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		export := tools.CreateElement("div")
+		export.Set("id", "export")
+
+		this.Call("appendChild", export.Object())
+	}
+	return nil
+}
+func (this *ModelExport) Update(tools *shf.Tools) error {
+	if this == nil {
+		return errors.New("ModelExport is nil")
+	}
+
+	if this.Shown {
+		this.Get("classList").Call("remove", "invisible")
+	} else {
+		this.Get("classList").Call("add", "invisible")
+	}
+	return nil
+}
+
 type ModelNotification struct {
 	shf.Element
 	Shown     bool
@@ -1175,6 +1237,7 @@ type HtmlModel struct {
 	Board        *ModelBoard
 	ThrownOuts   *ModelThrownouts
 	Cover        *ModelCover
+	Export       *ModelExport
 	Notification *ModelNotification
 	Footer       *ModelFooter
 }
@@ -1201,6 +1264,12 @@ func (h *HtmlModel) Init(tools *shf.Tools) error {
 	if h.Cover == nil {
 		h.Cover = &ModelCover{}
 		if err := tools.Update(h.Cover); err != nil {
+			return err
+		}
+	}
+	if h.Export == nil {
+		h.Export = &ModelExport{}
+		if err := tools.Update(h.Export); err != nil {
 			return err
 		}
 	}
@@ -1232,7 +1301,7 @@ func (h *HtmlModel) Update(tools *shf.Tools) error {
 		h.ThrownOuts.Get("classList").Call("remove", "rotated180deg")
 	}
 
-	return tools.Update(h.Header, h.Board, h.ThrownOuts, h.Cover, h.Notification, h.Footer)
+	return tools.Update(h.Header, h.Board, h.ThrownOuts, h.Cover, h.Export, h.Notification, h.Footer)
 }
 
 func (h *HtmlModel) RotateBoard() func(shf.Event) error {
@@ -1915,7 +1984,9 @@ func (m *Model) Init(tools *shf.Tools) error {
 		if err := tools.Click(exportButton, func(e shf.Event) error {
 			e.Call("stopPropagation")
 
-			m.Html.Notification.Message("export: "+pgn.Encode(m.Game.game).String(), "hint")
+			m.Html.Notification.Shown = false
+			m.Html.Export.Shown = true
+			//.Message("export: "+pgn.Encode(m.Game.game).String(), "hint")
 			return nil
 		}); err != nil {
 			// if there is an error creating event for button, simply do not show it

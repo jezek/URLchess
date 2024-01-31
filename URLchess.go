@@ -44,8 +44,9 @@ func main() {
 	body.Call("appendChild", model.Html.Board.Element.Object())
 	body.Call("appendChild", model.Html.ThrownOuts.Element.Object())
 	body.Call("appendChild", model.Html.Cover.Element.Object())
-	body.Call("appendChild", model.Html.Notification.Element.Object())
 	body.Call("appendChild", model.Html.Footer.Element.Object())
+	body.Call("appendChild", model.Html.Export.Element.Object())
+	body.Call("appendChild", model.Html.Notification.Element.Object())
 
 	if hash := js.Global.Get("location").Get("hash").String(); len(hash) > 0 {
 		game, err := NewGame(hash)

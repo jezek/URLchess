@@ -97,16 +97,29 @@ button:active {
 	flex-flow: column;
 	justify-content: space-between;
 }
+#export-overlay {
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 100vw;
+	height: 100vh;
+	background-color: rgba(0, 0, 0, 0.7);
+	display: flex;
+	justify-content: center;
+	flex-flow: column;
+	z-index: 1;
+}
 #notification-overlay {
 	position: fixed;
 	left: 0;
 	top: 0;
 	width: 100vw;
 	height: 100vh;
-	background-color: transparent;
+	background-color: rgba(0, 0, 0, 0.7);
 	display: flex;
 	justify-content: center;
 	flex-flow: column;
+	z-index: 2;
 }
 #footer {
 	position: relative;
@@ -474,6 +487,13 @@ div.thrown-outs .count {
 	text-align: center;
 	font-size: 0.5em;
 	cursor: pointer;
+}
+
+/************************/
+/* export overlay */
+/************************/
+#export-overlay.invisible {
+	visibility: hidden;
 }
 
 /************************/
