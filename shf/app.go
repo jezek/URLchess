@@ -40,6 +40,9 @@ func (t *Tools) Update(updaters ...Updater) error {
 	}
 	return nil
 }
+func (t *Tools) Input(target Element, function func(Event) error) error {
+	return t.app.Input(target, function)
+}
 func (t *Tools) Click(target Element, function func(Event) error) error {
 	return t.app.Click(target, function)
 }
@@ -109,6 +112,9 @@ func (app *App) HashChange(function func(HashChangeEvent) error) error {
 		}
 		return nil
 	})
+}
+func (app *App) Input(target Element, function func(Event) error) error {
+	return app.elventListener("input", target, function)
 }
 func (app *App) Click(target Element, function func(Event) error) error {
 	return app.elventListener("click", target, function)

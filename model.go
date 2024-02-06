@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/andrewbackes/chess/game"
+	"github.com/andrewbackes/chess/pgn"
 	"github.com/andrewbackes/chess/piece"
 	"github.com/andrewbackes/chess/position"
 	"github.com/andrewbackes/chess/position/move"
@@ -1062,13 +1063,19 @@ func (this *ModelCover) Update(tools *shf.Tools) error {
 type ModelExportName struct {
 	shf.Element
 	Color piece.Color
+	Input shf.Element
 }
 
 func (this *ModelExportName) Init(tools *shf.Tools) error {
 
 	if this.Element == nil {
-		this.Element = tools.CreateElement("input")
+		this.Input = tools.CreateElement("input")
+
+		this.Element = tools.CreateElement("span")
 		this.Set("id", "export-name-"+strings.ToLower(this.Color.String()))
+		this.Set("textContent", this.Color.String()+":")
+
+		this.Call("appendChild", this.Input.Object())
 	}
 
 	return nil
@@ -1081,14 +1088,68 @@ func (this *ModelExportName) Update(tools *shf.Tools) error {
 	return nil
 }
 
+type ModelExportOutput struct {
+	shf.Element
+	PGN *pgn.PGN
+}
+
+func (this *ModelExportOutput) Init(tools *shf.Tools) error {
+	if this.PGN == nil {
+		this.PGN = &pgn.PGN{}
+	}
+
+	if this.Element == nil {
+		this.Element = tools.CreateElement("textarea")
+		this.Set("id", "export-output")
+		this.Call("setAttribute", "readonly", "readonly")
+	}
+
+	return nil
+}
+func (this *ModelExportOutput) Update(tools *shf.Tools) error {
+	if this == nil {
+		return errors.New("ModelExportOutput is nil")
+	}
+
+	if this.PGN != nil {
+		this.Set("value", this.PGN.String())
+	}
+
+	return nil
+}
+
 type ModelExport struct {
 	shf.Element
 	Shown bool
 
-	Name [2]*ModelExportName
+	Name   [2]*ModelExportName
+	Output *ModelExportOutput
 }
 
 func (this *ModelExport) Init(tools *shf.Tools) error {
+
+	if this.Output == nil {
+		this.Output = &ModelExportOutput{}
+		if err := tools.Update(this.Output); err != nil {
+			return err
+		}
+	}
+
+	for i, color := range piece.Colors {
+		if this.Name[i] == nil {
+			this.Name[i] = &ModelExportName{Color: color}
+			n := this.Name[i]
+			if err := tools.Update(n); err != nil {
+				return err
+			}
+			if err := tools.Input(n.Input, func(e shf.Event) error {
+				this.Output.PGN.Tags[n.Color.String()] = n.Input.Get("value").String()
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+	}
 
 	if this.Element == nil {
 		this.Element = tools.CreateElement("div")
@@ -1096,6 +1157,7 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		if err := tools.Click(this.Element, func(e shf.Event) error {
 			if e.Get("target").Get("id").String() == "export-overlay" {
 				this.Shown = false
+				this.Output.PGN = nil
 			}
 			return nil
 		}); err != nil {
@@ -1103,7 +1165,12 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		}
 
 		export := tools.CreateElement("div")
-		export.Set("id", "export")
+		export.Get("classList").Call("add", "export")
+
+		for _, name := range this.Name {
+			export.Call("appendChild", name.Element.Object())
+		}
+		export.Call("appendChild", this.Output.Element.Object())
 
 		this.Call("appendChild", export.Object())
 	}
@@ -1112,6 +1179,10 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 func (this *ModelExport) Update(tools *shf.Tools) error {
 	if this == nil {
 		return errors.New("ModelExport is nil")
+	}
+
+	if err := tools.Update(this.Name[0], this.Name[1], this.Output); err != nil {
+		return err
 	}
 
 	if this.Shown {
@@ -1985,8 +2056,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 			e.Call("stopPropagation")
 
 			m.Html.Notification.Shown = false
+			m.Html.Export.Output.PGN = pgn.EncodeSAN(m.Game.game)
 			m.Html.Export.Shown = true
-			//.Message("export: "+pgn.Encode(m.Game.game).String(), "hint")
 			return nil
 		}); err != nil {
 			// if there is an error creating event for button, simply do not show it
