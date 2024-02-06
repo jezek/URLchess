@@ -1,4 +1,4 @@
-body, button, input {
+body, button, input, textarea {
 	margin: 0;
 	background-color: #0e1e1e;
 	color: #dfefef;
@@ -9,7 +9,7 @@ body, button, input {
 a {
 	color: #dfefef;
 }
-input {
+input, textarea {
 	padding-top: 0.3em;
 }
 .piece {
@@ -495,6 +495,34 @@ div.thrown-outs .count {
 #export-overlay.invisible {
 	visibility: hidden;
 }
+#export-overlay, #export-overlay div.export {
+	transition-duration: 0.2s;
+	transition-property: height, min-height, padding, border, visibility;
+	overflow: hidden;
+}
+#export-overlay div.export {
+	box-sizing: border-box;
+	text-align: center;
+	background-color: rgba(14, 30, 30, 0.8);
+	border: 2px solid #dfefef;
+	border-radius: 0.5em;
+	padding: 0.8em 0.8em 0 0.8em;
+	margin: 0.5em auto;
+	display: flex;
+	flex-flow: column;
+	justify-content: space-between;
+	font-size: 0.5em;
+}
+#export-overlay.invisible div.export {
+	min-height: 0;
+	height: 0;
+	padding: 0;
+	border: 0;
+}
+
+#export-overlay textarea {
+	display: block;
+}
 
 /************************/
 /* notification overlay */
@@ -545,7 +573,7 @@ div.thrown-outs .count {
 /* 8.4cm = 318px (317.480314961)*/
 @media (orientation: portrait) and (min-width: 8.4cm) {
 
-	body, button, input {
+	body, button, input, textarea {
 		font-size: calc(8.4cm * 3 / 28);
 	}
 
@@ -636,7 +664,7 @@ div.thrown-outs .count {
 /* 12cm = 454px (453.543307087) */
 @media (orientation: portrait) and (min-width: 12cm) {
 
-	body, button, input {
+	body, button, input, textarea {
 		font-size: calc(70vmin * 3 / 28);
 	}
 
@@ -795,7 +823,7 @@ div.thrown-outs .count {
 
 /* 8.4cm = 318px (317.480314961)*/
 @media (orientation: landscape) and (min-height: 8.4cm) {
-	body, button, input {
+	body, button, input, textarea {
 		font-size: calc(8.4cm * 3 / 28);
 	}
 
@@ -950,7 +978,7 @@ div.thrown-outs .count {
 
 /* 12cm = 454px (453.543307087) */
 @media (orientation: landscape) and (min-height: 12cm) {
-	body, button, input {
+	body, button, input, textarea {
 		font-size: calc(70vmin * 3 / 28);
 	}
 
