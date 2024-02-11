@@ -1060,31 +1060,94 @@ func (this *ModelCover) Update(tools *shf.Tools) error {
 	return tools.Update(this.GameStatus, this.MoveStatus)
 }
 
-type ModelExportName struct {
+type ModelExportTag struct {
 	shf.Element
-	Color piece.Color
-	Input shf.Element
+	Name, Label string
+	Input       shf.Element
 }
 
-func (this *ModelExportName) Init(tools *shf.Tools) error {
+func (this *ModelExportTag) Init(tools *shf.Tools) error {
+	if this.Input == nil {
+		this.Input = tools.CreateElement("input")
+	}
 
 	if this.Element == nil {
-		this.Input = tools.CreateElement("input")
-
 		this.Element = tools.CreateElement("span")
-		this.Set("id", "export-name-"+strings.ToLower(this.Color.String()))
-		this.Set("textContent", this.Color.String()+":")
+		this.Set("id", "export-tag-"+strings.ToLower(this.Name))
+		this.Set("textContent", this.Label+":")
 
 		this.Call("appendChild", this.Input.Object())
 	}
 
 	return nil
 }
-func (this *ModelExportName) Update(tools *shf.Tools) error {
+func (this *ModelExportTag) Update(tools *shf.Tools) error {
 	if this == nil {
-		return errors.New("ModelExportName is nil")
+		return errors.New("ModelExportTag is nil")
 	}
 
+	return nil
+}
+
+type ModelExportInput struct {
+	shf.Element
+	Tags []*ModelExportTag
+}
+
+func (this *ModelExportInput) Init(tools *shf.Tools) error {
+	// PGN Tags known by lichess (from: https://github.com/lichess-org/lila/blob/master/modules/study/src/main/PgnTags.scala#L30)
+	// White,
+	// WhiteElo,
+	// WhiteTitle,
+	// WhiteTeam,
+	// WhiteFideId,
+	// Black,
+	// BlackElo,
+	// BlackTitle,
+	// BlackTeam,
+	// BlackFideId,
+	// TimeControl,
+	// Date,
+	// Result,
+	// Termination,
+	// Site,
+	// Event,
+	// Round,
+	// Board,
+	// Annotator
+
+	if this.Tags == nil {
+		this.Tags = []*ModelExportTag{
+			&ModelExportTag{Name: "White", Label: "White name"},
+			&ModelExportTag{Name: "Black", Label: "Black name"},
+		}
+		for _, tag := range this.Tags {
+			if err := tools.Update(tag); err != nil {
+				return err
+			}
+		}
+	}
+
+	if this.Element == nil {
+		this.Element = tools.CreateElement("p")
+		this.Element.Get("classList").Call("add", "tags")
+
+		for _, tag := range this.Tags {
+			this.Element.Call("appendChild", tag.Element.Object())
+		}
+	}
+	return nil
+}
+func (this *ModelExportInput) Update(tools *shf.Tools) error {
+	if this == nil {
+		return errors.New("ModelExportInput is nil")
+	}
+
+	for _, tag := range this.Tags {
+		if err := tools.Update(tag); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1122,28 +1185,36 @@ type ModelExport struct {
 	shf.Element
 	Shown bool
 
-	Name   [2]*ModelExportName
+	Input  *ModelExportInput
 	Output *ModelExportOutput
 }
 
 func (this *ModelExport) Init(tools *shf.Tools) error {
-
 	if this.Output == nil {
 		this.Output = &ModelExportOutput{}
 		if err := tools.Update(this.Output); err != nil {
 			return err
 		}
 	}
+	if this.Input == nil {
+		this.Input = &ModelExportInput{}
+		if err := tools.Update(this.Input); err != nil {
+			return err
+		}
 
-	for i, color := range piece.Colors {
-		if this.Name[i] == nil {
-			this.Name[i] = &ModelExportName{Color: color}
-			n := this.Name[i]
-			if err := tools.Update(n); err != nil {
-				return err
-			}
-			if err := tools.Input(n.Input, func(e shf.Event) error {
-				this.Output.PGN.Tags[n.Color.String()] = n.Input.Get("value").String()
+		// Bind tags input value change to update output PGN tags.
+		for i := range this.Input.Tags {
+			tag := this.Input.Tags[i]
+			if err := tools.Input(tag.Input, func(e shf.Event) error {
+				key, value := tag.Name, tag.Input.Get("value").String()
+				if key == "" {
+					return errors.New("Empty key value")
+				}
+				if value != "" {
+					this.Output.PGN.Tags[key] = value
+				} else {
+					delete(this.Output.PGN.Tags, key)
+				}
 				return nil
 			}); err != nil {
 				return err
@@ -1167,10 +1238,12 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		export := tools.CreateElement("div")
 		export.Get("classList").Call("add", "export")
 
-		for _, name := range this.Name {
-			export.Call("appendChild", name.Element.Object())
-		}
-		export.Call("appendChild", this.Output.Element.Object())
+		pOut := tools.CreateElement("p")
+		pOut.Get("classList").Call("add", "output")
+		pOut.Call("appendChild", this.Output.Element.Object())
+
+		export.Call("appendChild", this.Input.Element.Object())
+		export.Call("appendChild", pOut.Object())
 
 		this.Call("appendChild", export.Object())
 	}
@@ -1181,7 +1254,7 @@ func (this *ModelExport) Update(tools *shf.Tools) error {
 		return errors.New("ModelExport is nil")
 	}
 
-	if err := tools.Update(this.Name[0], this.Name[1], this.Output); err != nil {
+	if err := tools.Update(this.Input, this.Output); err != nil {
 		return err
 	}
 
