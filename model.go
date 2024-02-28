@@ -1060,38 +1060,96 @@ func (this *ModelCover) Update(tools *shf.Tools) error {
 	return tools.Update(this.GameStatus, this.MoveStatus)
 }
 
-type ModelExportTag struct {
+type ModelExportTagInput struct {
 	shf.Element
 	Name, Label string
 	Input       shf.Element
 }
 
-func (this *ModelExportTag) Init(tools *shf.Tools) error {
+func (this *ModelExportTagInput) Init(tools *shf.Tools) error {
 	if this.Input == nil {
 		this.Input = tools.CreateElement("input")
 	}
 
 	if this.Element == nil {
-		this.Element = tools.CreateElement("span")
-		this.Set("id", "export-tag-"+strings.ToLower(this.Name))
-		this.Set("textContent", this.Label+":")
+		label := tools.CreateElement("span")
+		label.Set("textContent", this.Label)
 
+		this.Element = tools.CreateElement("p")
+		this.Set("id", "export-tag-"+strings.ToLower(this.Name))
+		this.Element.Get("classList").Call("add", "tag")
+
+		this.Call("appendChild", label.Object())
 		this.Call("appendChild", this.Input.Object())
 	}
 
 	return nil
 }
-func (this *ModelExportTag) Update(tools *shf.Tools) error {
+func (this *ModelExportTagInput) Update(tools *shf.Tools) error {
 	if this == nil {
-		return errors.New("ModelExportTag is nil")
+		return errors.New("ModelExportTagInput is nil")
 	}
 
 	return nil
 }
+func (this *ModelExportTagInput) GetInput() shf.Element {
+	return this.Input
+}
+func (this *ModelExportTagInput) GetName() string {
+	return this.Name
+}
+
+type ModelExportTagSelect struct {
+	shf.Element
+	Select      shf.Element
+	Options     []string
+	Selected    uint
+	Name, Label string
+}
+
+func (this *ModelExportTagSelect) Init(tools *shf.Tools) error {
+	if this.Select == nil {
+		this.Select = tools.CreateElement("select")
+	}
+
+	if this.Element == nil {
+		label := tools.CreateElement("span")
+		label.Set("textContent", this.Label)
+
+		this.Element = tools.CreateElement("p")
+		this.Set("id", "export-tag-"+strings.ToLower(this.Name))
+		this.Element.Get("classList").Call("add", "tag")
+
+		this.Call("appendChild", label.Object())
+		this.Call("appendChild", this.Select.Object())
+	}
+
+	return nil
+}
+func (this *ModelExportTagSelect) Update(tools *shf.Tools) error {
+	if this == nil {
+		return errors.New("ModelExportTagSelect is nil")
+	}
+
+	return nil
+}
+func (this *ModelExportTagSelect) GetInput() shf.Element {
+	return this.Select
+}
+func (this *ModelExportTagSelect) GetName() string {
+	return this.Name
+}
+
+type ModelExportTager interface {
+	shf.Element
+	shf.Updater
+	GetInput() shf.Element
+	GetName() string
+}
 
 type ModelExportInput struct {
 	shf.Element
-	Tags []*ModelExportTag
+	Tags []ModelExportTager
 }
 
 func (this *ModelExportInput) Init(tools *shf.Tools) error {
@@ -1117,9 +1175,10 @@ func (this *ModelExportInput) Init(tools *shf.Tools) error {
 	// Annotator
 
 	if this.Tags == nil {
-		this.Tags = []*ModelExportTag{
-			&ModelExportTag{Name: "White", Label: "White name"},
-			&ModelExportTag{Name: "Black", Label: "Black name"},
+		this.Tags = []ModelExportTager{
+			&ModelExportTagInput{Name: "White", Label: "White name"},
+			&ModelExportTagInput{Name: "Black", Label: "Black name"},
+			&ModelExportTagSelect{Name: "Result", Label: "Result"},
 		}
 		for _, tag := range this.Tags {
 			if err := tools.Update(tag); err != nil {
@@ -1133,7 +1192,7 @@ func (this *ModelExportInput) Init(tools *shf.Tools) error {
 		this.Element.Get("classList").Call("add", "tags")
 
 		for _, tag := range this.Tags {
-			this.Element.Call("appendChild", tag.Element.Object())
+			this.Element.Call("appendChild", tag.Object())
 		}
 	}
 	return nil
@@ -1205,8 +1264,8 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		// Bind tags input value change to update output PGN tags.
 		for i := range this.Input.Tags {
 			tag := this.Input.Tags[i]
-			if err := tools.Input(tag.Input, func(e shf.Event) error {
-				key, value := tag.Name, tag.Input.Get("value").String()
+			if err := tools.Input(tag.GetInput(), func(e shf.Event) error {
+				key, value := tag.GetName(), tag.GetInput().Get("value").String()
 				if key == "" {
 					return errors.New("Empty key value")
 				}

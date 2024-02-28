@@ -527,7 +527,7 @@ div.thrown-outs .count {
 	border: 0;
 }
 
-#export-overlay p.tags span {
+#export-overlay p.tags p.tag {
 	display: flex;
 	float: left;
 	min-width: 50%;
