@@ -855,12 +855,12 @@ func (gs *ModelGameStatus) Update(tools *shf.Tools) error {
 	return tools.Update(gs.Header, gs.Moves)
 }
 
-type LinkCopy struct {
+type CopyButton struct {
 	shf.Element
 	Shown bool
 }
 
-func (this *LinkCopy) Init(tools *shf.Tools) error {
+func (this *CopyButton) Init(tools *shf.Tools) error {
 	if this.Element == nil {
 		this.Element = tools.CreateElement("button")
 		this.Set("textContent", "Copy to clipboard")
@@ -868,9 +868,9 @@ func (this *LinkCopy) Init(tools *shf.Tools) error {
 	}
 	return nil
 }
-func (this *LinkCopy) Update(tools *shf.Tools) error {
+func (this *CopyButton) Update(tools *shf.Tools) error {
 	if this == nil {
-		return errors.New("LinkCopy is nil")
+		return errors.New("CopyButton is nil")
 	}
 	if this.Shown {
 		this.Get("classList").Call("remove", "hidden")
@@ -884,8 +884,8 @@ type MoveStatusLink struct {
 	shf.Element
 	MoveHash string
 
-	input shf.Element
-	Copy  *LinkCopy
+	Input shf.Element
+	Copy  *CopyButton
 }
 
 func (this *MoveStatusLink) GetURL() string {
@@ -893,14 +893,14 @@ func (this *MoveStatusLink) GetURL() string {
 	return strings.Split(js.Global.Get("location").String(), "#")[0] + hash
 }
 func (this *MoveStatusLink) Init(tools *shf.Tools) error {
-	if this.input == nil {
-		this.input = tools.CreateElement("input")
-		this.input.Set("type", "text")
-		this.input.Call("setAttribute", "readonly", "readonly")
+	if this.Input == nil {
+		this.Input = tools.CreateElement("input")
+		this.Input.Set("type", "text")
+		this.Input.Call("setAttribute", "readonly", "readonly")
 	}
 
 	if this.Copy == nil {
-		this.Copy = &LinkCopy{}
+		this.Copy = &CopyButton{}
 		if err := tools.Update(this.Copy); err != nil {
 			return err
 		}
@@ -910,7 +910,7 @@ func (this *MoveStatusLink) Init(tools *shf.Tools) error {
 		this.Element = tools.CreateElement("div")
 		this.Get("classList").Call("add", "link")
 
-		this.Call("appendChild", this.input.Object())
+		this.Call("appendChild", this.Input.Object())
 		this.Call("appendChild", this.Copy.Object())
 		this.Call("appendChild", tools.CreateTextNode("This URL link represents the state of current chess game. You can copy it and store it or send it."))
 
@@ -922,7 +922,7 @@ func (this *MoveStatusLink) Update(tools *shf.Tools) error {
 		return errors.New("MoveStatusLink is nil")
 	}
 
-	this.input.Set("value", this.GetURL())
+	this.Input.Set("value", this.GetURL())
 
 	return tools.Update(this.Copy)
 }
@@ -1092,18 +1092,12 @@ func (this *ModelExportTagInput) Update(tools *shf.Tools) error {
 
 	return nil
 }
-func (this *ModelExportTagInput) GetInput() shf.Element {
-	return this.Input
-}
-func (this *ModelExportTagInput) GetName() string {
-	return this.Name
-}
 
 type ModelExportTagSelect struct {
 	shf.Element
 	Select      shf.Element
-	Options     []string
-	Selected    uint
+	Options     [][2]string
+	Selected    string
 	Name, Label string
 }
 
@@ -1131,25 +1125,29 @@ func (this *ModelExportTagSelect) Update(tools *shf.Tools) error {
 		return errors.New("ModelExportTagSelect is nil")
 	}
 
-	return nil
-}
-func (this *ModelExportTagSelect) GetInput() shf.Element {
-	return this.Select
-}
-func (this *ModelExportTagSelect) GetName() string {
-	return this.Name
-}
+	if this.Select != nil {
+		this.Select.Set("innerHTML", "")
 
-type ModelExportTager interface {
-	shf.Element
-	shf.Updater
-	GetInput() shf.Element
-	GetName() string
+		for _, o := range this.Options {
+
+			option := tools.CreateElement("option")
+			option.Set("textContent", o[1])
+			option.Set("value", o[0])
+			if this.Selected == o[0] {
+				option.Call("setAttribute", "selected", "selected")
+			}
+
+			this.Select.Call("appendChild", option.Object())
+		}
+	}
+
+	return nil
 }
 
 type ModelExportInput struct {
 	shf.Element
-	Tags []ModelExportTager
+	White, Black *ModelExportTagInput
+	Result       *ModelExportTagSelect
 }
 
 func (this *ModelExportInput) Init(tools *shf.Tools) error {
@@ -1174,16 +1172,28 @@ func (this *ModelExportInput) Init(tools *shf.Tools) error {
 	// Board,
 	// Annotator
 
-	if this.Tags == nil {
-		this.Tags = []ModelExportTager{
-			&ModelExportTagInput{Name: "White", Label: "White name"},
-			&ModelExportTagInput{Name: "Black", Label: "Black name"},
-			&ModelExportTagSelect{Name: "Result", Label: "Result"},
+	if this.White == nil {
+		this.White = &ModelExportTagInput{Name: "White", Label: "White name"}
+		if err := tools.Update(this.White); err != nil {
+			return err
 		}
-		for _, tag := range this.Tags {
-			if err := tools.Update(tag); err != nil {
-				return err
-			}
+	}
+	if this.Black == nil {
+		this.Black = &ModelExportTagInput{Name: "Black", Label: "Black name"}
+		if err := tools.Update(this.Black); err != nil {
+			return err
+		}
+	}
+	if this.Result == nil {
+		this.Result = &ModelExportTagSelect{Name: "Result", Label: "Result",
+			Options: [][2]string{
+				{"*", game.InProgress.String()},
+				{"1-0", game.WhiteWon.String()},
+				{"1/2-1/2", game.Draw.String()},
+				{"0-1", game.BlackWon.String()},
+			}}
+		if err := tools.Update(this.Result); err != nil {
+			return err
 		}
 	}
 
@@ -1191,9 +1201,9 @@ func (this *ModelExportInput) Init(tools *shf.Tools) error {
 		this.Element = tools.CreateElement("p")
 		this.Element.Get("classList").Call("add", "tags")
 
-		for _, tag := range this.Tags {
-			this.Element.Call("appendChild", tag.Object())
-		}
+		this.Element.Call("appendChild", this.White.Object())
+		this.Element.Call("appendChild", this.Black.Object())
+		this.Element.Call("appendChild", this.Result.Object())
 	}
 	return nil
 }
@@ -1202,10 +1212,8 @@ func (this *ModelExportInput) Update(tools *shf.Tools) error {
 		return errors.New("ModelExportInput is nil")
 	}
 
-	for _, tag := range this.Tags {
-		if err := tools.Update(tag); err != nil {
-			return err
-		}
+	if err := tools.Update(this.White, this.Black, this.Result); err != nil {
+		return err
 	}
 	return nil
 }
@@ -1213,6 +1221,9 @@ func (this *ModelExportInput) Update(tools *shf.Tools) error {
 type ModelExportOutput struct {
 	shf.Element
 	PGN *pgn.PGN
+
+	TextArea shf.Element
+	Copy     *CopyButton
 }
 
 func (this *ModelExportOutput) Init(tools *shf.Tools) error {
@@ -1220,10 +1231,25 @@ func (this *ModelExportOutput) Init(tools *shf.Tools) error {
 		this.PGN = &pgn.PGN{}
 	}
 
+	if this.Copy == nil {
+		this.Copy = &CopyButton{Shown: true}
+		if err := tools.Update(this.Copy); err != nil {
+			return err
+		}
+	}
+
+	if this.TextArea == nil {
+		this.TextArea = tools.CreateElement("textarea")
+		this.TextArea.Set("id", "export-output")
+		this.TextArea.Call("setAttribute", "readonly", "readonly")
+	}
+
 	if this.Element == nil {
-		this.Element = tools.CreateElement("textarea")
-		this.Set("id", "export-output")
-		this.Call("setAttribute", "readonly", "readonly")
+
+		this.Element = tools.CreateElement("p")
+		this.Get("classList").Call("add", "output")
+		this.Call("appendChild", this.TextArea.Object())
+		this.Call("appendChild", this.Copy.Object())
 	}
 
 	return nil
@@ -1234,10 +1260,10 @@ func (this *ModelExportOutput) Update(tools *shf.Tools) error {
 	}
 
 	if this.PGN != nil {
-		this.Set("value", this.PGN.String())
+		this.TextArea.Set("value", this.PGN.String())
 	}
 
-	return nil
+	return tools.Update(this.Copy)
 }
 
 type ModelExport struct {
@@ -1262,22 +1288,31 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		}
 
 		// Bind tags input value change to update output PGN tags.
-		for i := range this.Input.Tags {
-			tag := this.Input.Tags[i]
-			if err := tools.Input(tag.GetInput(), func(e shf.Event) error {
-				key, value := tag.GetName(), tag.GetInput().Get("value").String()
-				if key == "" {
-					return errors.New("Empty key value")
-				}
-				if value != "" {
-					this.Output.PGN.Tags[key] = value
-				} else {
-					delete(this.Output.PGN.Tags, key)
-				}
-				return nil
-			}); err != nil {
-				return err
+		applyTag := func(key, value string) {
+			if value != "" {
+				this.Output.PGN.Tags[key] = value
+			} else {
+				delete(this.Output.PGN.Tags, key)
 			}
+		}
+		if err := tools.Input(this.Input.White.Input, func(e shf.Event) error {
+			applyTag(this.Input.White.Name, this.Input.White.Input.Get("value").String())
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := tools.Input(this.Input.Black.Input, func(e shf.Event) error {
+			applyTag(this.Input.Black.Name, this.Input.Black.Input.Get("value").String())
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := tools.Input(this.Input.Result.Select, func(e shf.Event) error {
+			this.Input.Result.Selected = this.Input.Result.Select.Get("value").String()
+			applyTag(this.Input.Result.Name, this.Input.Result.Selected)
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -1297,12 +1332,8 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		export := tools.CreateElement("div")
 		export.Get("classList").Call("add", "export")
 
-		pOut := tools.CreateElement("p")
-		pOut.Get("classList").Call("add", "output")
-		pOut.Call("appendChild", this.Output.Element.Object())
-
 		export.Call("appendChild", this.Input.Element.Object())
-		export.Call("appendChild", pOut.Object())
+		export.Call("appendChild", this.Output.Element.Object())
 
 		this.Call("appendChild", export.Object())
 	}
@@ -1524,12 +1555,34 @@ func (h *HtmlModel) CopyGameURLToClipboard() error {
 	if temporaryShow {
 		h.Cover.MoveStatus.Element.Get("classList").Call("remove", "hidden")
 	}
-	h.Cover.MoveStatus.Link.input.Call("focus")
-	h.Cover.MoveStatus.Link.input.Call("setSelectionRange", 0, h.Cover.MoveStatus.Link.input.Get("value").Get("length"))
+	h.Cover.MoveStatus.Link.Input.Call("focus")
+	h.Cover.MoveStatus.Link.Input.Call("setSelectionRange", 0, h.Cover.MoveStatus.Link.Input.Get("value").Get("length"))
 	js.Global.Get("document").Call("execCommand", "Copy")
-	h.Cover.MoveStatus.Link.input.Call("blur")
+	h.Cover.MoveStatus.Link.Input.Call("blur")
 	if temporaryShow {
 		h.Cover.MoveStatus.Element.Get("classList").Call("add", "hidden")
+	}
+
+	js.Global.Call("scrollTo", positionX, positionY)
+	return nil
+}
+func (h *HtmlModel) CopyExportOutputToClipboard() error {
+	positionX := js.Global.Get("pageXOffset")
+	positionY := js.Global.Get("pageYOffset")
+
+	temporaryShow := false
+	if !h.Export.Shown {
+		temporaryShow = true
+	}
+	if temporaryShow {
+		h.Export.Element.Get("classList").Call("remove", "invisible")
+	}
+	h.Export.Output.TextArea.Call("focus")
+	h.Export.Output.TextArea.Call("setSelectionRange", 0, h.Export.Output.TextArea.Get("value").Get("length"))
+	js.Global.Get("document").Call("execCommand", "Copy")
+	h.Export.Output.TextArea.Call("blur")
+	if temporaryShow {
+		h.Export.Element.Get("classList").Call("add", "invisible")
 	}
 
 	js.Global.Call("scrollTo", positionX, positionY)
@@ -2110,6 +2163,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 		if !m.execSupported {
 			m.Html.Cover.MoveStatus.Link.Copy.Shown = false
+			//TODO - Hide copy button in export.
 		} else {
 			m.Html.Cover.MoveStatus.Link.Copy.Shown = true
 			if err := tools.Click(m.Html.Cover.MoveStatus.Link.Copy.Element, func(_ shf.Event) error {
@@ -2121,6 +2175,22 @@ func (m *Model) Init(tools *shf.Tools) error {
 					"tip: click on last move piece to copy",
 				)
 				m.Html.Cover.MoveStatus.Shown = false
+				return nil
+			}); err != nil {
+				return err
+			}
+
+			if err := tools.Click(m.Html.Export.Output.Copy, func(_ shf.Event) error {
+				if err := m.Html.CopyExportOutputToClipboard(); err != nil {
+					return err
+				}
+				m.Html.Notification.TimedMessage(
+					tools,
+					5*time.Second,
+					"Game PGN was copied to clipboard",
+					"",
+				)
+				//m.Html.Export.Shown = false
 				return nil
 			}); err != nil {
 				return err
@@ -2188,6 +2258,21 @@ func (m *Model) Init(tools *shf.Tools) error {
 			e.Call("stopPropagation")
 
 			m.Html.Notification.Shown = false
+			gs := m.Game.game.Status()
+			if gs == game.InProgress {
+				m.Html.Export.Input.Result.Selected = "*"
+			}
+			if gs&game.WhiteWon != 0 {
+				m.Html.Export.Input.Result.Selected = "1-0"
+			}
+			if gs&game.BlackWon != 0 {
+				m.Html.Export.Input.Result.Selected = "0-1"
+			}
+			if gs&game.Draw != 0 {
+				m.Html.Export.Input.Result.Selected = "1/2-1/2"
+			}
+			//TODO add event & round tags - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
+			//TODO add termination tag - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
 			m.Html.Export.Output.PGN = pgn.EncodeSAN(m.Game.game)
 			m.Html.Export.Shown = true
 			return nil

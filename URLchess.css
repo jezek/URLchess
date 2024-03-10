@@ -19,7 +19,7 @@ button {
 	display: block;
 	border: 2px solid #dfefef;
 	border-radius: 0.5em;
-	padding: 0.4em 0.8em 0.2em 0.8em;
+	padding: 0.3em 0.8em 0.3em 0.8em;
 	margin: 0.5em auto;
 	cursor: pointer;
 }
@@ -462,6 +462,7 @@ div.thrown-outs .count {
 }
 #move-status div.link {
 	text-align: center;
+	max-height: 7em;
 }
 #move-status div.link input {
 	display: block;
@@ -498,7 +499,7 @@ div.thrown-outs .count {
 #export-overlay, #export-overlay div.export {
 	transition-duration: 0.2s;
 	transition-property: height, min-height, padding, border, visibility;
-	overflow: hidden;
+	overflow: scroll;
 }
 #export-overlay div.export {
 	box-sizing: border-box;
@@ -515,10 +516,12 @@ div.thrown-outs .count {
 	width: 90%;
 
 }
-#export-overlay div.export button,
-#export-overlay div.export input,
 #export-overlay div.export textarea {
 	font-size: 0.5em;
+}
+#export-overlay div.export button,
+#export-overlay div.export input {
+	font-size: 1em;
 }
 #export-overlay.invisible div.export {
 	min-height: 0;
@@ -818,6 +821,7 @@ div.thrown-outs .count {
 	#cover {
 		right: calc((100vw - ((100vmin / 28) * 59)) / 2);
 		width: 100vmin;
+		height: 100vmin;
 	}
 }
 @media (orientation: landscape) and (min-aspect-ratio: 64/28) {
@@ -862,6 +866,9 @@ div.thrown-outs .count {
 	}
 	#board {
 		margin-top: calc((100vh - 8.4cm) / 2);
+		height: 8.4cm;
+	}
+	#cover {
 		height: 8.4cm;
 	}
 	#thrown-outs-container {
@@ -955,7 +962,6 @@ div.thrown-outs .count {
 		left: 9.3cm;
 		width: calc(100vw - 9.3cm);
 		height: 8.4cm;
-		min-height: 8.4cm;
 		margin: 0;
 	}
 }
@@ -967,6 +973,7 @@ div.thrown-outs .count {
 	#cover {
 		left: calc(((100vw - ((8.4cm / 28) * 59)) / 2) + 9.3cm);
 		width: 8.4cm;
+		height: 8.4cm;
 	}
 }
 /* 18.6cm = 703px (702.992125984) */
@@ -1023,6 +1030,7 @@ div.thrown-outs .count {
 		position: relative;
 		top: 0;
 		left: 0;
+		height: 70vmin;
 	}
 	
 
@@ -1068,6 +1076,7 @@ div.thrown-outs .count {
 	#cover {
 		left: calc(((100vw - ((70vmin *59) / 28)) / 2) + ((70vmin * 31) / 28));
 		width: 70vmin;
+		height: 70vmin;
 	}
 }
 
