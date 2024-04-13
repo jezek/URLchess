@@ -1198,7 +1198,7 @@ func (this *ModelExportInput) Init(tools *shf.Tools) error {
 	}
 
 	if this.Element == nil {
-		this.Element = tools.CreateElement("p")
+		this.Element = tools.CreateElement("div")
 		this.Element.Get("classList").Call("add", "tags")
 
 		this.Element.Call("appendChild", this.White.Object())
@@ -1218,12 +1218,31 @@ func (this *ModelExportInput) Update(tools *shf.Tools) error {
 	return nil
 }
 
+type CloseButton struct {
+	shf.Element
+}
+
+func (this *CloseButton) Init(tools *shf.Tools) error {
+	if this.Element == nil {
+		this.Element = tools.CreateElement("button")
+		this.Set("textContent", "Close")
+	}
+	return nil
+}
+func (this *CloseButton) Update(tools *shf.Tools) error {
+	if this == nil {
+		return errors.New("CloseButton is nil")
+	}
+	return nil
+}
+
 type ModelExportOutput struct {
 	shf.Element
 	PGN *pgn.PGN
 
 	TextArea shf.Element
 	Copy     *CopyButton
+	Close    *CloseButton
 }
 
 func (this *ModelExportOutput) Init(tools *shf.Tools) error {
@@ -1238,6 +1257,13 @@ func (this *ModelExportOutput) Init(tools *shf.Tools) error {
 		}
 	}
 
+	if this.Close == nil {
+		this.Close = &CloseButton{}
+		if err := tools.Update(this.Close); err != nil {
+			return err
+		}
+	}
+
 	if this.TextArea == nil {
 		this.TextArea = tools.CreateElement("textarea")
 		this.TextArea.Set("id", "export-output")
@@ -1246,10 +1272,15 @@ func (this *ModelExportOutput) Init(tools *shf.Tools) error {
 
 	if this.Element == nil {
 
-		this.Element = tools.CreateElement("p")
+		buttons := tools.CreateElement("p")
+		buttons.Get("classList").Call("add", "buttons")
+		buttons.Call("appendChild", this.Copy.Object())
+		buttons.Call("appendChild", this.Close.Object())
+
+		this.Element = tools.CreateElement("div")
 		this.Get("classList").Call("add", "output")
 		this.Call("appendChild", this.TextArea.Object())
-		this.Call("appendChild", this.Copy.Object())
+		this.Call("appendChild", buttons.Object())
 	}
 
 	return nil
@@ -1263,7 +1294,7 @@ func (this *ModelExportOutput) Update(tools *shf.Tools) error {
 		this.TextArea.Set("value", this.PGN.String())
 	}
 
-	return tools.Update(this.Copy)
+	return tools.Update(this.Copy, this.Close)
 }
 
 type ModelExport struct {
@@ -1280,6 +1311,15 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		if err := tools.Update(this.Output); err != nil {
 			return err
 		}
+
+		if err := tools.Click(this.Output.Close.Element, func(e shf.Event) error {
+			this.Shown = false
+			this.Output.PGN = nil
+			return nil
+		}); err != nil {
+			return err
+		}
+
 	}
 	if this.Input == nil {
 		this.Input = &ModelExportInput{}

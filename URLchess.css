@@ -516,12 +516,26 @@ div.thrown-outs .count {
 	width: 90%;
 
 }
+#export-overlay #export-tag-result {
+	clear: left;
+}
+
 #export-overlay div.export textarea {
 	font-size: 0.5em;
 }
 #export-overlay div.export button,
 #export-overlay div.export input {
 	font-size: 1em;
+}
+#export-overlay div.export input {
+	width: 10em;
+}
+#export-overlay div.export p.buttons {
+	text-align: center;
+}
+#export-overlay div.export p.buttons button {
+	display: inline-block;
+	margin: 0.5em 1em;
 }
 #export-overlay.invisible div.export {
 	min-height: 0;
@@ -530,12 +544,31 @@ div.thrown-outs .count {
 	border: 0;
 }
 
-#export-overlay p.tags p.tag {
-	display: flex;
-	float: left;
-	min-width: 50%;
+#export-overlay div.tags {
+	width: 100%;
 }
-#export-overlay p.output textarea {
+#export-overlay div.tags p.tag {
+	float: left;
+	text-align: left;
+	max-width: 100%;
+}
+#export-overlay div.tags p.tag input,
+#export-overlay div.tags p.tag select {
+	display: inline-block;
+  margin-right: 0.5em;
+  margin-left: 0.5em;
+  font-size: 1em;
+  max-width: calc(100% - 1em);
+}
+#export-overlay div.tags p.tag span {
+	display: inline-block;
+	width: 7em;
+  text-align: left;
+}
+#export-overlay div.tags p.tag span:after {
+	content: ": ";
+}
+#export-overlay div.output textarea {
 	display: block;
 	width: 100%;
 	height: 16em;
