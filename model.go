@@ -1099,6 +1099,7 @@ type ModelExportTagSelect struct {
 	Options     [][2]string
 	Selected    string
 	Name, Label string
+	Disabled    bool
 }
 
 func (this *ModelExportTagSelect) Init(tools *shf.Tools) error {
@@ -1138,6 +1139,12 @@ func (this *ModelExportTagSelect) Update(tools *shf.Tools) error {
 			}
 
 			this.Select.Call("appendChild", option.Object())
+		}
+
+		if this.Disabled {
+			this.Select.Call("setAttribute", "disabled", "disabled")
+		} else {
+			this.Select.Call("removeAttribute", "disabled")
 		}
 	}
 
@@ -1305,6 +1312,15 @@ type ModelExport struct {
 	Output *ModelExportOutput
 }
 
+// EscapePGNString escapes special characters in a string for PGN tag values.
+func EscapePGNString(s string) string {
+	// Escape backslashes first to avoid escaping already escaped characters
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	// Escape double quotes
+	s = strings.ReplaceAll(s, "\"", "\\\"")
+	return s
+}
+
 func (this *ModelExport) Init(tools *shf.Tools) error {
 	if this.Output == nil {
 		this.Output = &ModelExportOutput{}
@@ -1330,7 +1346,7 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		// Bind tags input value change to update output PGN tags.
 		applyTag := func(key, value string) {
 			if value != "" {
-				this.Output.PGN.Tags[key] = value
+				this.Output.PGN.Tags[key] = EscapePGNString(value)
 			} else {
 				delete(this.Output.PGN.Tags, key)
 			}
@@ -2301,15 +2317,19 @@ func (m *Model) Init(tools *shf.Tools) error {
 			gs := m.Game.game.Status()
 			if gs == game.InProgress {
 				m.Html.Export.Input.Result.Selected = "*"
+				m.Html.Export.Input.Result.Disabled = false
 			}
 			if gs&game.WhiteWon != 0 {
 				m.Html.Export.Input.Result.Selected = "1-0"
+				m.Html.Export.Input.Result.Disabled = true
 			}
 			if gs&game.BlackWon != 0 {
 				m.Html.Export.Input.Result.Selected = "0-1"
+				m.Html.Export.Input.Result.Disabled = true
 			}
 			if gs&game.Draw != 0 {
 				m.Html.Export.Input.Result.Selected = "1/2-1/2"
+				m.Html.Export.Input.Result.Disabled = true
 			}
 			//TODO add event & round tags - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
 			//TODO add termination tag - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
