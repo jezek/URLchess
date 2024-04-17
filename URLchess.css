@@ -516,6 +516,7 @@ div.thrown-outs .count {
 	width: 90%;
 
 }
+#export-overlay #export-tag-round,
 #export-overlay #export-tag-result {
 	clear: left;
 }

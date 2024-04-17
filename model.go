@@ -1154,6 +1154,7 @@ func (this *ModelExportTagSelect) Update(tools *shf.Tools) error {
 type ModelExportInput struct {
 	shf.Element
 	White, Black *ModelExportTagInput
+	Round, Date  *ModelExportTagInput
 	Result       *ModelExportTagSelect
 }
 
@@ -1191,6 +1192,18 @@ func (this *ModelExportInput) Init(tools *shf.Tools) error {
 			return err
 		}
 	}
+	if this.Round == nil {
+		this.Round = &ModelExportTagInput{Name: "Round", Label: "Round no."}
+		if err := tools.Update(this.Round); err != nil {
+			return err
+		}
+	}
+	if this.Date == nil {
+		this.Date = &ModelExportTagInput{Name: "Date", Label: "Start date"}
+		if err := tools.Update(this.Date); err != nil {
+			return err
+		}
+	}
 	if this.Result == nil {
 		this.Result = &ModelExportTagSelect{Name: "Result", Label: "Result",
 			Options: [][2]string{
@@ -1210,6 +1223,8 @@ func (this *ModelExportInput) Init(tools *shf.Tools) error {
 
 		this.Element.Call("appendChild", this.White.Object())
 		this.Element.Call("appendChild", this.Black.Object())
+		this.Element.Call("appendChild", this.Round.Object())
+		this.Element.Call("appendChild", this.Date.Object())
 		this.Element.Call("appendChild", this.Result.Object())
 	}
 	return nil
@@ -1219,7 +1234,7 @@ func (this *ModelExportInput) Update(tools *shf.Tools) error {
 		return errors.New("ModelExportInput is nil")
 	}
 
-	if err := tools.Update(this.White, this.Black, this.Result); err != nil {
+	if err := tools.Update(this.White, this.Black, this.Round, this.Date, this.Result); err != nil {
 		return err
 	}
 	return nil
@@ -1321,6 +1336,18 @@ func EscapePGNString(s string) string {
 	return s
 }
 
+func (this *ModelExport) applyTag(key, value string) error {
+	if this.Output == nil || this.Output.PGN == nil || this.Output.PGN.Tags == nil {
+		return errors.New("output PGN tags are not initialized")
+	}
+	if value != "" {
+		//TODO - Move escaping to chess engine.
+		this.Output.PGN.Tags[key] = EscapePGNString(value)
+	} else {
+		delete(this.Output.PGN.Tags, key)
+	}
+	return nil
+}
 func (this *ModelExport) Init(tools *shf.Tools) error {
 	if this.Output == nil {
 		this.Output = &ModelExportOutput{}
@@ -1344,29 +1371,29 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		}
 
 		// Bind tags input value change to update output PGN tags.
-		applyTag := func(key, value string) {
-			if value != "" {
-				this.Output.PGN.Tags[key] = EscapePGNString(value)
-			} else {
-				delete(this.Output.PGN.Tags, key)
-			}
-		}
 		if err := tools.Input(this.Input.White.Input, func(e shf.Event) error {
-			applyTag(this.Input.White.Name, this.Input.White.Input.Get("value").String())
-			return nil
+			return this.applyTag(this.Input.White.Name, this.Input.White.Input.Get("value").String())
 		}); err != nil {
 			return err
 		}
 		if err := tools.Input(this.Input.Black.Input, func(e shf.Event) error {
-			applyTag(this.Input.Black.Name, this.Input.Black.Input.Get("value").String())
-			return nil
+			return this.applyTag(this.Input.Black.Name, this.Input.Black.Input.Get("value").String())
+		}); err != nil {
+			return err
+		}
+		if err := tools.Input(this.Input.Round.Input, func(e shf.Event) error {
+			return this.applyTag(this.Input.Round.Name, this.Input.Round.Input.Get("value").String())
+		}); err != nil {
+			return err
+		}
+		if err := tools.Input(this.Input.Date.Input, func(e shf.Event) error {
+			return this.applyTag(this.Input.Date.Name, this.Input.Date.Input.Get("value").String())
 		}); err != nil {
 			return err
 		}
 		if err := tools.Input(this.Input.Result.Select, func(e shf.Event) error {
 			this.Input.Result.Selected = this.Input.Result.Select.Get("value").String()
-			applyTag(this.Input.Result.Name, this.Input.Result.Selected)
-			return nil
+			return this.applyTag(this.Input.Result.Name, this.Input.Result.Selected)
 		}); err != nil {
 			return err
 		}
@@ -1400,7 +1427,30 @@ func (this *ModelExport) Update(tools *shf.Tools) error {
 		return errors.New("ModelExport is nil")
 	}
 
-	if err := tools.Update(this.Input, this.Output); err != nil {
+	if err := tools.Update(this.Input); err != nil {
+		return err
+	}
+
+	if this.Input != nil && this.Output != nil && this.Output.PGN != nil && this.Output.PGN.Tags != nil {
+		// Populate input tags to output PGN.
+		if this.Input.White != nil && this.Input.White.Input != nil {
+			this.applyTag(this.Input.White.Name, this.Input.White.Input.Get("value").String())
+		}
+		if this.Input.Black != nil && this.Input.Black.Input != nil {
+			this.applyTag(this.Input.Black.Name, this.Input.Black.Input.Get("value").String())
+		}
+		if this.Input.Round != nil && this.Input.Round.Input != nil {
+			this.applyTag(this.Input.Round.Name, this.Input.Round.Input.Get("value").String())
+		}
+		if this.Input.Date != nil && this.Input.Date.Input != nil {
+			this.applyTag(this.Input.Date.Name, this.Input.Date.Input.Get("value").String())
+		}
+		if this.Input.Result != nil {
+			this.applyTag(this.Input.Result.Name, this.Input.Result.Selected)
+		}
+	}
+
+	if err := tools.Update(this.Output); err != nil {
 		return err
 	}
 
@@ -2331,8 +2381,23 @@ func (m *Model) Init(tools *shf.Tools) error {
 				m.Html.Export.Input.Result.Selected = "1/2-1/2"
 				m.Html.Export.Input.Result.Disabled = true
 			}
-			//TODO add event & round tags - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
-			//TODO add termination tag - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
+			// http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm
+			// 8.1.1.3: The Date tag
+			//
+			// The Date tag value gives the starting date for the game. (Note: this is not necessarily the same as the starting date for the event.) The date is given with respect to the local time of the site given in the Event tag. The Date tag value field always uses a standard ten character format: "YYYY.MM.DD". The first four characters are digits that give the year, the next character is a period, the next two characters are digits that give the month, the next character is a period, and the final two characters are digits that give the day of the month. If the any of the digit fields are not known, then question marks are used in place of the digits.
+			//
+			// Examples:
+			//
+			// [Date "1992.08.31"]
+			// [Date "1993.??.??"]
+			// [Date "2001.01.01"]
+			// TODO add hints to fields?
+			// Fill current date if empty.
+			if m.Html.Export.Input.Date.Input.Get("value").String() == "" {
+				m.Html.Export.Input.Date.Input.Set("value", time.Now().Format("2006.01.02"))
+			}
+			//TODO add event tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
+			//TODO add termination tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
 			m.Html.Export.Output.PGN = pgn.EncodeSAN(m.Game.game)
 			m.Html.Export.Shown = true
 			return nil
