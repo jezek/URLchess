@@ -373,7 +373,7 @@ func (g *BoardGrid) Init(tools *shf.Tools) error {
 		g.Get("classList").Call("add", "grid")
 		for i := int(63); i >= 0; i-- {
 			if g.Squares[i].Element != nil {
-				//TODO append/replace to position
+				//TODO - Append/replace to position.
 				g.Call("appendChild", g.Squares[i].Element.Object())
 			}
 		}
@@ -1748,7 +1748,7 @@ func NewGame(hash string) (*ChessGame, error) {
 	}
 
 	g := game.New()
-	//TODO move thown out pieces to game
+	//TODO - Move thown out pieces to game engine.
 	gtos := make(GameThrownOuts, len(moves))
 
 	{ // apply game moves
@@ -2186,7 +2186,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 						return err
 					}
 				} else {
-					//TODO where to put copy to clipboard?
+					// The copy to clipboard can be found in menu.
 				}
 			}
 
@@ -2225,7 +2225,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 		newGame, err := NewGame(locationHash)
 		if err != nil {
 			// location hash is bad, revert document location hash to game hash
-			//TODO proper error showing throug notification
+			//TODO - Proper error showing through notification.
 			js.Global.Call("alert", err.Error())
 			js.Global.Get("location").Set("hash", m.Game.gameHash)
 			return nil
@@ -2269,7 +2269,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 		if !m.execSupported {
 			m.Html.Cover.MoveStatus.Link.Copy.Shown = false
-			//TODO - Hide copy button in export.
+			m.Html.Export.Output.Copy.Shown = false
 		} else {
 			m.Html.Cover.MoveStatus.Link.Copy.Shown = true
 			if err := tools.Click(m.Html.Cover.MoveStatus.Link.Copy.Element, func(_ shf.Event) error {
@@ -2391,13 +2391,13 @@ func (m *Model) Init(tools *shf.Tools) error {
 			// [Date "1992.08.31"]
 			// [Date "1993.??.??"]
 			// [Date "2001.01.01"]
-			// TODO add hints to fields?
+			// TODO - Add hints to fields?
 			// Fill current date if empty.
 			if m.Html.Export.Input.Date.Input.Get("value").String() == "" {
 				m.Html.Export.Input.Date.Input.Set("value", time.Now().Format("2006.01.02"))
 			}
-			//TODO add event tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
-			//TODO add termination tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
+			//TODO - Add event tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
+			//TODO - Add termination tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
 			m.Html.Export.Output.PGN = pgn.EncodeSAN(m.Game.game)
 			m.Html.Export.Shown = true
 			return nil

@@ -51,7 +51,7 @@ func main() {
 	if hash := js.Global.Get("location").Get("hash").String(); len(hash) > 0 {
 		game, err := NewGame(hash)
 		if err != nil {
-			//TODO use app to write error
+			//TODO - Use app to write error.
 			document.Call("write", "<div class=\"error\">"+err.Error()+"</div>")
 			return
 		}
