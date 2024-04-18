@@ -77,10 +77,29 @@ func main() {
 			// if there is an error creating event for button, simply do not show it
 			newGameButton = nil
 		}
+		exportButton := app.CreateElement("button")
+		exportButton.Set("textContent", "Export")
+		if err := app.Click(exportButton, func(_ shf.Event) error {
+			model.Html.Export.Shown = true
+			model.Html.Notification.Shown = false
+			return nil
+		}); err != nil {
+			// if there is an error creating event for button, simply do not show it
+			exportButton = nil
+		}
+		closeButton := app.CreateElement("button")
+		closeButton.Set("textContent", "Close")
+		if err := app.Click(closeButton, func(_ shf.Event) error {
+			model.Html.Notification.Shown = false
+			return nil
+		}); err != nil {
+			// if there is an error creating event for button, simply do not show it
+			closeButton = nil
+		}
 		model.Html.Notification.Message(
 			st.String(),
-			"tip: click anywhere except \"New game\" to close this notification",
-			newGameButton,
+			"tip: also click anywhere outside to close this notification",
+			newGameButton, exportButton, closeButton,
 		)
 	}
 

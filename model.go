@@ -1748,7 +1748,7 @@ func NewGame(hash string) (*ChessGame, error) {
 	}
 
 	g := game.New()
-	//TODO - Move thown out pieces to game engine.
+	//TODO - Move thrown out pieces to game engine.
 	gtos := make(GameThrownOuts, len(moves))
 
 	{ // apply game moves
@@ -2252,6 +2252,50 @@ func (m *Model) Init(tools *shf.Tools) error {
 			m.Html.Board.Edgings.TopRight.Disable()
 		} else {
 			if err := tools.Click(m.Html.Cover.GameStatus.Header.Element, func(_ shf.Event) error {
+				//TODO - Deduplicate code inside this condition with URLchess.go:L62.
+				if st := m.Game.game.Status(); st != game.InProgress {
+					// if game ended, notify player
+					newGameButton := tools.CreateElement("button")
+					newGameButton.Set("textContent", "new game")
+					if err := tools.Click(newGameButton, func(_ shf.Event) error {
+						game, err := NewGame("")
+						if err != nil {
+							return err
+						}
+						m.Game = game
+						m.Html.Notification.Shown = false
+						js.Global.Get("location").Set("hash", "")
+						m.RotateBoardForPlayer()
+						return nil
+					}); err != nil {
+						// if there is an error creating event for button, simply do not show it
+						newGameButton = nil
+					}
+					exportButton := tools.CreateElement("button")
+					exportButton.Set("textContent", "export")
+					if err := tools.Click(exportButton, func(_ shf.Event) error {
+						m.Html.Export.Shown = true
+						m.Html.Notification.Shown = false
+						return nil
+					}); err != nil {
+						// if there is an error creating event for button, simply do not show it
+						exportButton = nil
+					}
+					closeButton := tools.CreateElement("button")
+					closeButton.Set("textContent", "close")
+					if err := tools.Click(closeButton, func(_ shf.Event) error {
+						m.Html.Notification.Shown = false
+						return nil
+					}); err != nil {
+						// if there is an error creating event for button, simply do not show it
+						closeButton = nil
+					}
+					m.Html.Notification.Message(
+						st.String(),
+						"tip: also click anywhere outside to close this notification",
+						newGameButton, exportButton, closeButton,
+					)
+				}
 				m.RotateBoardForPlayer()
 				return nil
 			}); err != nil {
