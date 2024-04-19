@@ -949,14 +949,14 @@ func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
 
 	if this.Undo == nil {
 		this.Undo = tools.CreateElement("button")
-		this.Undo.Set("textContent", "Back")
+		this.Undo.Set("textContent", "back")
 		// Model sets Event
 		// Model.ChessGame.UpdateModel sets visibility
 	}
 
 	if this.Close == nil {
 		this.Close = tools.CreateElement("button")
-		this.Close.Set("textContent", "Close")
+		this.Close.Set("textContent", "close")
 		if err := tools.Click(this.Close, func(_ shf.Event) error {
 			this.Shown = false
 			return nil
@@ -1247,7 +1247,7 @@ type CloseButton struct {
 func (this *CloseButton) Init(tools *shf.Tools) error {
 	if this.Element == nil {
 		this.Element = tools.CreateElement("button")
-		this.Set("textContent", "Close")
+		this.Set("textContent", "close")
 	}
 	return nil
 }
@@ -2204,6 +2204,89 @@ type Model struct {
 	execSupported     bool
 }
 
+func (m *Model) showEndGameNotification(tools *shf.Tools) error {
+	newGameButton := tools.CreateElement("button")
+	newGameButton.Set("textContent", "new game")
+	if err := tools.Click(newGameButton, func(_ shf.Event) error {
+		game, err := NewGame("")
+		if err != nil {
+			return err
+		}
+		m.Game = game
+		m.Html.Notification.Shown = false
+		js.Global.Get("location").Set("hash", "")
+		m.RotateBoardForPlayer()
+		return nil
+	}); err != nil {
+		// if there is an error creating event for button, simply do not show it
+		newGameButton = nil
+	}
+	exportButton := tools.CreateElement("button")
+	exportButton.Set("textContent", "export")
+	if err := tools.Click(exportButton, func(_ shf.Event) error {
+		m.refreshExportOutputData()
+		m.Html.Notification.Shown = false
+		m.Html.Export.Shown = true
+		return nil
+	}); err != nil {
+		// if there is an error creating event for button, simply do not show it
+		exportButton = nil
+	}
+	closeButton := tools.CreateElement("button")
+	closeButton.Set("textContent", "close")
+	if err := tools.Click(closeButton, func(_ shf.Event) error {
+		m.Html.Notification.Shown = false
+		return nil
+	}); err != nil {
+		// if there is an error creating event for button, simply do not show it
+		closeButton = nil
+	}
+	m.Html.Notification.Message(
+		m.Game.game.Status().String(),
+		"tip: also click anywhere outside to close this notification",
+		newGameButton, exportButton, closeButton,
+	)
+	return nil
+}
+
+func (m *Model) refreshExportOutputData() {
+	gs := m.Game.game.Status()
+	if gs == game.InProgress {
+		m.Html.Export.Input.Result.Selected = "*"
+		m.Html.Export.Input.Result.Disabled = false
+	}
+	if gs&game.WhiteWon != 0 {
+		m.Html.Export.Input.Result.Selected = "1-0"
+		m.Html.Export.Input.Result.Disabled = true
+	}
+	if gs&game.BlackWon != 0 {
+		m.Html.Export.Input.Result.Selected = "0-1"
+		m.Html.Export.Input.Result.Disabled = true
+	}
+	if gs&game.Draw != 0 {
+		m.Html.Export.Input.Result.Selected = "1/2-1/2"
+		m.Html.Export.Input.Result.Disabled = true
+	}
+	// http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm
+	// 8.1.1.3: The Date tag
+	//
+	// The Date tag value gives the starting date for the game. (Note: this is not necessarily the same as the starting date for the event.) The date is given with respect to the local time of the site given in the Event tag. The Date tag value field always uses a standard ten character format: "YYYY.MM.DD". The first four characters are digits that give the year, the next character is a period, the next two characters are digits that give the month, the next character is a period, and the final two characters are digits that give the day of the month. If the any of the digit fields are not known, then question marks are used in place of the digits.
+	//
+	// Examples:
+	//
+	// [Date "1992.08.31"]
+	// [Date "1993.??.??"]
+	// [Date "2001.01.01"]
+	// TODO - Add hints to fields?
+	// Fill current date if empty.
+	if m.Html.Export.Input.Date.Input.Get("value").String() == "" {
+		m.Html.Export.Input.Date.Input.Set("value", time.Now().Format("2006.01.02"))
+	}
+	//TODO - Add event tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
+	//TODO - Add termination tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
+	m.Html.Export.Output.PGN = pgn.EncodeSAN(m.Game.game)
+}
+
 func (m *Model) Init(tools *shf.Tools) error {
 	if m.Game == nil {
 		m.Game, _ = NewGame("")
@@ -2252,50 +2335,13 @@ func (m *Model) Init(tools *shf.Tools) error {
 			m.Html.Board.Edgings.TopRight.Disable()
 		} else {
 			if err := tools.Click(m.Html.Cover.GameStatus.Header.Element, func(_ shf.Event) error {
-				//TODO - Deduplicate code inside this condition with URLchess.go:L62.
+				// If game ended, notify the player.
 				if st := m.Game.game.Status(); st != game.InProgress {
-					// if game ended, notify player
-					newGameButton := tools.CreateElement("button")
-					newGameButton.Set("textContent", "new game")
-					if err := tools.Click(newGameButton, func(_ shf.Event) error {
-						game, err := NewGame("")
-						if err != nil {
-							return err
-						}
-						m.Game = game
-						m.Html.Notification.Shown = false
-						js.Global.Get("location").Set("hash", "")
-						m.RotateBoardForPlayer()
-						return nil
-					}); err != nil {
-						// if there is an error creating event for button, simply do not show it
-						newGameButton = nil
+					if err := m.showEndGameNotification(tools); err != nil {
+						return err
 					}
-					exportButton := tools.CreateElement("button")
-					exportButton.Set("textContent", "export")
-					if err := tools.Click(exportButton, func(_ shf.Event) error {
-						m.Html.Export.Shown = true
-						m.Html.Notification.Shown = false
-						return nil
-					}); err != nil {
-						// if there is an error creating event for button, simply do not show it
-						exportButton = nil
-					}
-					closeButton := tools.CreateElement("button")
-					closeButton.Set("textContent", "close")
-					if err := tools.Click(closeButton, func(_ shf.Event) error {
-						m.Html.Notification.Shown = false
-						return nil
-					}); err != nil {
-						// if there is an error creating event for button, simply do not show it
-						closeButton = nil
-					}
-					m.Html.Notification.Message(
-						st.String(),
-						"tip: also click anywhere outside to close this notification",
-						newGameButton, exportButton, closeButton,
-					)
 				}
+
 				m.RotateBoardForPlayer()
 				return nil
 			}); err != nil {
@@ -2407,42 +2453,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 		if err := tools.Click(exportButton, func(e shf.Event) error {
 			e.Call("stopPropagation")
 
+			m.refreshExportOutputData()
 			m.Html.Notification.Shown = false
-			gs := m.Game.game.Status()
-			if gs == game.InProgress {
-				m.Html.Export.Input.Result.Selected = "*"
-				m.Html.Export.Input.Result.Disabled = false
-			}
-			if gs&game.WhiteWon != 0 {
-				m.Html.Export.Input.Result.Selected = "1-0"
-				m.Html.Export.Input.Result.Disabled = true
-			}
-			if gs&game.BlackWon != 0 {
-				m.Html.Export.Input.Result.Selected = "0-1"
-				m.Html.Export.Input.Result.Disabled = true
-			}
-			if gs&game.Draw != 0 {
-				m.Html.Export.Input.Result.Selected = "1/2-1/2"
-				m.Html.Export.Input.Result.Disabled = true
-			}
-			// http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm
-			// 8.1.1.3: The Date tag
-			//
-			// The Date tag value gives the starting date for the game. (Note: this is not necessarily the same as the starting date for the event.) The date is given with respect to the local time of the site given in the Event tag. The Date tag value field always uses a standard ten character format: "YYYY.MM.DD". The first four characters are digits that give the year, the next character is a period, the next two characters are digits that give the month, the next character is a period, and the final two characters are digits that give the day of the month. If the any of the digit fields are not known, then question marks are used in place of the digits.
-			//
-			// Examples:
-			//
-			// [Date "1992.08.31"]
-			// [Date "1993.??.??"]
-			// [Date "2001.01.01"]
-			// TODO - Add hints to fields?
-			// Fill current date if empty.
-			if m.Html.Export.Input.Date.Input.Get("value").String() == "" {
-				m.Html.Export.Input.Date.Input.Set("value", time.Now().Format("2006.01.02"))
-			}
-			//TODO - Add event tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
-			//TODO - Add termination tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
-			m.Html.Export.Output.PGN = pgn.EncodeSAN(m.Game.game)
 			m.Html.Export.Shown = true
 			return nil
 		}); err != nil {

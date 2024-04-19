@@ -79,8 +79,11 @@ func Create(model Updater) (*App, error) {
 	app := &App{
 		model,
 		nil,
+		nil,
 		map[Initializer]bool{},
 	}
+	app.tools = &Tools{app, map[Element]bool{}}
+
 	if err := app.Update(); err != nil {
 		return nil, err
 	}
@@ -89,13 +92,14 @@ func Create(model Updater) (*App, error) {
 
 type App struct {
 	model       Updater
+	tools       *Tools
 	events      map[string]map[Element]func(*js.Object)
 	initialized map[Initializer]bool
 }
 
+func (app *App) Tools() *Tools { return app.tools }
 func (app *App) Update() error {
-	tools := &Tools{app, map[Element]bool{}}
-	if err := tools.Update(app.model); err != nil {
+	if err := app.tools.Update(app.model); err != nil {
 		return err
 	}
 	return nil

@@ -462,7 +462,7 @@ div.thrown-outs .count {
 }
 #move-status div.link {
 	text-align: center;
-	max-height: 7em;
+	max-height: 8em;
 }
 #move-status div.link input {
 	display: block;
