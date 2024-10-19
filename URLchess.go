@@ -1,18 +1,23 @@
 package main
 
-//go:generate gopherjs build -m
+//go:generate env GOOS=js GOARCH=ecmascript gopherjs build -m
 
 import (
 	"URLchess/shf"
+	"URLchess/shf/js"
+	"os"
 
 	"github.com/andrewbackes/chess/game"
-	"github.com/gopherjs/gopherjs/js"
 )
 
 const Version = "0.9"
 
 func main() {
 	//js.Global.Call("alert", "main")
+	if js.Global == nil {
+		println("Not supposed to be run as file, use 'go generate' and run index.html in browser")
+		os.Exit(-1)
+	}
 
 	document := js.Global.Get("document")
 	if document == js.Undefined {

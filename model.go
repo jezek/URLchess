@@ -2,6 +2,7 @@ package main
 
 import (
 	"URLchess/shf"
+	"URLchess/shf/js"
 	"errors"
 	"strconv"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	"github.com/andrewbackes/chess/position"
 	"github.com/andrewbackes/chess/position/move"
 	"github.com/andrewbackes/chess/position/square"
-	"github.com/gopherjs/gopherjs/js"
 )
 
 type ModelHeader struct {

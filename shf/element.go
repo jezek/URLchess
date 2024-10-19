@@ -1,6 +1,6 @@
 package shf
 
-import "github.com/gopherjs/gopherjs/js"
+import "URLchess/shf/js"
 
 type Element interface {
 	Event

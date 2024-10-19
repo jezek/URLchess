@@ -2,11 +2,10 @@
 package shf
 
 import (
+	"URLchess/shf/js"
 	"errors"
 	"strconv"
 	"time"
-
-	"github.com/gopherjs/gopherjs/js"
 )
 
 type Initializer interface {
