@@ -1,6 +1,6 @@
 module URLchess
 
-go 1.16
+go 1.18
 
 require (
 	github.com/andrewbackes/chess v1.1.0

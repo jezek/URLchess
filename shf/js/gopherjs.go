@@ -1,8 +1,10 @@
-//go:build js && !wasm
+//go:build js && ecmascript
 
 package js
 
 import "github.com/gopherjs/gopherjs/js"
+
+const WRAPS = "github.com/gopherjs/gopherjs/js"
 
 type Object = js.Object
 

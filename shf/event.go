@@ -3,14 +3,14 @@ package shf
 import "URLchess/shf/js"
 
 type Event interface {
-	Get(key string) *js.Object
+	Get(key string) js.Object
 	Set(key string, value interface{})
 	Delete(key string)
-	Call(name string, args ...interface{}) *js.Object
+	Call(name string, args ...any) js.Object
 }
 
 type event struct {
-	*js.Object
+	js.Object
 }
 
 type HashChangeEvent interface {

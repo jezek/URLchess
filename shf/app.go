@@ -39,13 +39,13 @@ func (t *Tools) Update(updaters ...Updater) error {
 	}
 	return nil
 }
-func (t *Tools) Input(target Element, function func(Event) error) error {
+func (t *Tools) Input(target Element, function func(this js.Object, args []js.Object) error) error {
 	return t.app.Input(target, function)
 }
-func (t *Tools) Click(target Element, function func(Event) error) error {
+func (t *Tools) Click(target Element, function func(this js.Object, args []js.Object) error) error {
 	return t.app.Click(target, function)
 }
-func (t *Tools) DblClick(target Element, function func(Event) error) error {
+func (t *Tools) DblClick(target Element, function func(this js.Object, args []js.Object) error) error {
 	return t.app.DblClick(target, function)
 }
 func (t *Tools) HashChange(function func(HashChangeEvent) error) error {
@@ -54,14 +54,14 @@ func (t *Tools) HashChange(function func(HashChangeEvent) error) error {
 func (t *Tools) CreateElement(etype string) Element {
 	elm := t.app.CreateElement(etype)
 	if t.created[elm] {
-		js.Global.Call("alert", "Tools.ElementCreate: an element can not be created twice the same. Why is this happening?")
+		js.Global().Call("alert", "Tools.ElementCreate: an element can not be created twice the same. Why is this happening?")
 		return nil
 	}
 	t.created[elm] = true
 	return elm
 }
-func (t *Tools) CreateTextNode(text string) *js.Object {
-	return js.Global.Get("document").Call("createTextNode", text)
+func (t *Tools) CreateTextNode(text string) js.Object {
+	return js.Global().Get("document").Call("createTextNode", text)
 }
 func (t *Tools) Created(elm Element) bool {
 	if elm == nil {
@@ -92,7 +92,7 @@ func Create(model Updater) (*App, error) {
 type App struct {
 	model       Updater
 	tools       *Tools
-	events      map[string]map[Element]func(*js.Object)
+	events      map[string]map[Element]js.Func
 	initialized map[Initializer]bool
 }
 
@@ -108,24 +108,24 @@ func (app *App) CreateElement(etype string) Element {
 	return CreateElement(etype)
 }
 func (app *App) HashChange(function func(HashChangeEvent) error) error {
-	return app.elventListener("hashchange", Window, func(e Event) error {
-		hce := &hashChangeEvent{e}
+	return app.elventListener("hashchange", Window, func(this js.Object, args []js.Object) error {
+		hce := &hashChangeEvent{this}
 		if err := function(hce); err != nil {
 			return err
 		}
 		return nil
 	})
 }
-func (app *App) Input(target Element, function func(Event) error) error {
+func (app *App) Input(target Element, function func(this js.Object, args []js.Object) error) error {
 	return app.elventListener("input", target, function)
 }
-func (app *App) Click(target Element, function func(Event) error) error {
+func (app *App) Click(target Element, function func(this js.Object, args []js.Object) error) error {
 	return app.elventListener("click", target, function)
 }
-func (app *App) DblClick(target Element, function func(Event) error) error {
+func (app *App) DblClick(target Element, function func(this js.Object, args []js.Object) error) error {
 	return app.elventListener("dblclick", target, function)
 }
-func (app *App) elventListener(eventName string, target Element, function func(Event) error) error {
+func (app *App) elventListener(eventName string, target Element, function func(this js.Object, args []js.Object) error) error {
 	if app == nil {
 		return errors.New("App is nil")
 	}
@@ -137,56 +137,59 @@ func (app *App) elventListener(eventName string, target Element, function func(E
 	}
 
 	if app.events == nil {
-		app.events = map[string]map[Element]func(*js.Object){}
+		app.events = map[string]map[Element]js.Func{}
 	}
 
 	_, ok := app.events[eventName]
 	if !ok {
-		app.events[eventName] = map[Element]func(*js.Object){}
+		app.events[eventName] = map[Element]js.Func{}
 	}
 
 	if registeredFunc, ok := app.events[eventName][target]; ok {
 		target.Call("removeEventListener", eventName, registeredFunc, false)
 		delete(app.events[eventName], target)
-		//js.Global.Call("alert", "unregistered event: "+e.target.String()+":"+e.target.Get("id").String())
+		registeredFunc.Release()
+		//js.Global().Call("alert", "unregistered event: "+e.target.String()+":"+e.target.Get("id").String())
 	}
 
 	if function == nil {
 		return nil
 	}
 
-	jsEventCallback := func(e *js.Object) {
+	jsEventCallback := js.FuncOf(func(this js.Object, args []js.Object) any {
 		//TODO handle errors via app.ErrorCallback
-		if err := function(&event{e}); err != nil {
-			js.Global.Call("alert", eventName+" event function returned error: "+err.Error())
-			return
+		if err := function(this, args); err != nil {
+			js.Global().Call("alert", eventName+" event function returned error: "+err.Error())
+			return err
 		}
 		if err := app.Update(); err != nil {
-			js.Global.Call("alert", "after "+eventName+" event app dom update error: "+err.Error())
-			return
+			js.Global().Call("alert", "after "+eventName+" event app dom update error: "+err.Error())
+			return err
 		}
-	}
+		return nil
+	})
 
 	target.Call("addEventListener", eventName, jsEventCallback, false)
 	app.events[eventName][target] = jsEventCallback
-	//js.Global.Call("alert", "registered event: "+target.String()+":"+target.Get("id").String())
+	//js.Global().Call("alert", "registered event: "+target.String()+":"+target.Get("id").String())
 	return nil
 }
 
 func CreateElement(etype string) Element {
-	return &element{js.Global.Get("document").Call("createElement", etype)}
+	return &element{js.Global().Get("document").Call("createElement", etype)}
 }
 func (app *App) Timer(duration time.Duration, callback func()) int {
 	ms := int(duration / time.Millisecond) // in milliseconds
 	timeoutId := 0
-	timeoutId = js.Global.Call("setTimeout", func() {
+	timeoutId = js.Global().Call("setTimeout", js.FuncOf(func(this js.Object, args []js.Object) any {
 		callback()
-		//js.Global.Call("alert", "timer "+strconv.Itoa(timeoutId)+" gone off after: "+strconv.Itoa(ms))
+		//js.Global().Call("alert", "timer "+strconv.Itoa(timeoutId)+" gone off after: "+strconv.Itoa(ms))
 		if err := app.Update(); err != nil {
-			js.Global.Call("alert", "after timer "+strconv.Itoa(timeoutId)+" app dom update error: "+err.Error())
-			return
+			js.Global().Call("alert", "after timer "+strconv.Itoa(timeoutId)+" app dom update error: "+err.Error())
+			return err
 		}
-	}, ms).Int()
-	//js.Global.Call("alert", "timer "+strconv.Itoa(timeoutId)+" set to: "+strconv.Itoa(ms))
+		return nil
+	}), ms).Int()
+	//js.Global().Call("alert", "timer "+strconv.Itoa(timeoutId)+" set to: "+strconv.Itoa(ms))
 	return timeoutId
 }

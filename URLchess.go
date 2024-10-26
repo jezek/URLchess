@@ -13,28 +13,30 @@ import (
 const Version = "0.9"
 
 func main() {
-	//js.Global.Call("alert", "main")
-	if js.Global == nil {
+	//js.Global().Call("alert", "main")
+	if js.WRAPS == "" {
 		println("Not supposed to be run as file, use 'go generate' and run index.html in browser")
 		os.Exit(-1)
 	}
+	println("using:", js.WRAPS)
 
-	document := js.Global.Get("document")
-	if document == js.Undefined {
+	document := js.Global().Get("document")
+	if document.IsUndefined() {
+		println("ERROR: Undefined document")
 		return
 	}
 
 	model := &Model{}
 
 	// is rotation supported?
-	if div := js.Global.Get("document").Call("createElement", "div"); div != js.Undefined {
-		if div.Get("style").Get("transform") != js.Undefined {
+	if div := js.Global().Get("document").Call("createElement", "div"); !div.IsUndefined() {
+		if !div.Get("style").Get("transform").IsUndefined() {
 			model.rotationSupported = true
 		}
 		div.Call("remove")
 	}
 	// is execCommand supported?
-	if exec := js.Global.Get("document").Get("execCommand"); exec != nil && exec != js.Undefined {
+	if exec := js.Global().Get("document").Get("execCommand"); !exec.IsUndefined() {
 		model.execSupported = true
 	}
 
@@ -53,7 +55,7 @@ func main() {
 	body.Call("appendChild", model.Html.Export.Element.Object())
 	body.Call("appendChild", model.Html.Notification.Element.Object())
 
-	if hash := js.Global.Get("location").Get("hash").String(); len(hash) > 0 {
+	if hash := js.Global().Get("location").Get("hash").String(); len(hash) > 0 {
 		game, err := NewGame(hash)
 		if err != nil {
 			//TODO - Use app to write error.
@@ -79,5 +81,9 @@ func main() {
 			document.Call("write", "<div id=\"board\" class=\"error\">"+err.Error()+"</div>")
 		}
 		return
+	}
+
+	if js.WRAPS == "syscall/js" {
+		select {}
 	}
 }

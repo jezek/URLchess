@@ -21,27 +21,23 @@ if (
 //]]>
 		</script>
 		<link rel="stylesheet" type="text/css" href="URLchess.css?v0.9">
+		<script src="wasm_exec.js" defer></script>
 		<script>
 			document.addEventListener("DOMContentLoaded", function() {
 				if (typeof WebAssembly === "object") {
-					// Load the Go WebAssembly runtime
-					var script = document.createElement('script');
-					script.src = 'wasm_exec.js';
-					script.defer = true;
-					script.onload = function() {
-						const go = new Go();
-						WebAssembly.instantiateStreaming(fetch("URLchess.wasm"), go.importObject).then((result) => {
-							go.run(result.instance);
-						}).catch((err) => {
-							console.error("Failed to load WebAssembly", err);
-						});
-					};
-					document.head.appendChild(script);
+					// Load the Go WebAssembly runtime after wasm_exec.js is ready
+					if (typeof Go === "undefined") {
+						console.error("Go runtime is not loaded.");
+						return;
+					}
+					const go = new Go();
+					WebAssembly.instantiateStreaming(fetch("URLchess.wasm"), go.importObject).then((result) => {
+						go.run(result.instance);
+					}).catch((err) => {
+						console.error("Failed to load WebAssembly", err);
+					});
 				} else {
-					var script = document.createElement('script');
-					script.src = 'URLchess.js?v0.9';
-					script.defer = true;
-					document.head.appendChild(script);
+					alert("No wasm in browser!");
 				}
 			});
 		</script>

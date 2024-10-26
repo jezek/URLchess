@@ -1,6 +1,8 @@
-//go:build !js && !wasm
+//go:build !js || (!ecmascript && !wasm)
 
 package js
+
+const WRAPS = ""
 
 type Object struct{}
 
