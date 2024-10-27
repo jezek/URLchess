@@ -891,7 +891,8 @@ type MoveStatusLink struct {
 
 func (this *MoveStatusLink) GetURL() string {
 	hash := "#" + strings.TrimPrefix(this.MoveHash, "#")
-	return strings.Split(js.Global().Get("location").String(), "#")[0] + hash
+	loc := js.Global().Get("location")
+	return loc.Get("origin").String() + loc.Get("pathname").String() + hash
 }
 func (this *MoveStatusLink) Init(tools *shf.Tools) error {
 	if this.Input == nil {
