@@ -4,7 +4,6 @@ import (
 	"URLchess/shf"
 	"URLchess/shf/js"
 	"errors"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -1404,8 +1403,11 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 	if this.Element == nil {
 		this.Element = tools.CreateElement("div")
 		this.Set("id", "export-overlay")
-		if err := tools.Click(this.Element, func(target js.Object, _ []js.Object) error {
-			if target.Get("id").String() == "export-overlay" {
+		if err := tools.Click(this.Element, func(_ js.Object, args []js.Object) error {
+			if len(args) == 0 {
+				return errors.New("No arguments for ModelExport.Click callback")
+			}
+			if args[0].Get("target").Get("id").String() == "export-overlay" {
 				this.Shown = false
 				this.Output.PGN = nil
 			}
@@ -1541,9 +1543,12 @@ func (n *ModelNotification) Init(tools *shf.Tools) error {
 	if n.Element == nil {
 		n.Element = tools.CreateElement("div")
 		n.Set("id", "notification-overlay")
-		if err := tools.Click(n.Element, func(target js.Object, _ []js.Object) error {
-			log.Println("ModelNotification.Init: click event id:", target.Get("id"))
-			if target.Get("id").String() == "notification-overlay" {
+		if err := tools.Click(n.Element, func(_ js.Object, args []js.Object) error {
+			if len(args) == 0 {
+				return errors.New("No arguments for ModelNotification.Click callback")
+			}
+
+			if args[0].Get("target").Get("id").String() == "notification-overlay" {
 				n.cancelTimer()
 				n.Shown = false
 			}
@@ -1681,7 +1686,7 @@ func (h *HtmlModel) CopyExportOutputToClipboard() error {
 		h.Export.Element.Get("classList").Call("remove", "invisible")
 	}
 	h.Export.Output.TextArea.Call("focus")
-	h.Export.Output.TextArea.Call("setSelectionRange", 0, h.Export.Output.TextArea.Get("value").Get("length"))
+	h.Export.Output.TextArea.Call("setSelectionRange", 0, len(h.Export.Output.TextArea.Get("value").String()))
 	js.Global().Get("document").Call("execCommand", "Copy")
 	h.Export.Output.TextArea.Call("blur")
 	if temporaryShow {
@@ -2415,7 +2420,6 @@ func (m *Model) Init(tools *shf.Tools) error {
 			copyLinkButton = tools.CreateElement("button")
 			copyLinkButton.Set("textContent", "copy link")
 			if err := tools.Click(copyLinkButton, func(_ js.Object, args []js.Object) error {
-				log.Println("copy link called")
 				args[0].Call("stopPropagation")
 
 				if err := m.Html.CopyGameURLToClipboard(); err != nil {
