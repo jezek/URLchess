@@ -39,13 +39,13 @@ func (t *Tools) Update(updaters ...Updater) error {
 	}
 	return nil
 }
-func (t *Tools) Input(target Element, function func(this js.Object, args []js.Object) error) error {
+func (t *Tools) Input(target Element, function func(js.Object) error) error {
 	return t.app.Input(target, function)
 }
-func (t *Tools) Click(target Element, function func(this js.Object, args []js.Object) error) error {
+func (t *Tools) Click(target Element, function func(js.Object) error) error {
 	return t.app.Click(target, function)
 }
-func (t *Tools) DblClick(target Element, function func(this js.Object, args []js.Object) error) error {
+func (t *Tools) DblClick(target Element, function func(js.Object) error) error {
 	return t.app.DblClick(target, function)
 }
 func (t *Tools) HashChange(function func(HashChangeEvent) error) error {
@@ -108,24 +108,24 @@ func (app *App) CreateElement(etype string) Element {
 	return CreateElement(etype)
 }
 func (app *App) HashChange(function func(HashChangeEvent) error) error {
-	return app.elventListener("hashchange", Window, func(this js.Object, args []js.Object) error {
-		hce := &hashChangeEvent{this}
+	return app.elventListener("hashchange", Window, func(e js.Object) error {
+		hce := &hashChangeEvent{e}
 		if err := function(hce); err != nil {
 			return err
 		}
 		return nil
 	})
 }
-func (app *App) Input(target Element, function func(this js.Object, args []js.Object) error) error {
+func (app *App) Input(target Element, function func(event js.Object) error) error {
 	return app.elventListener("input", target, function)
 }
-func (app *App) Click(target Element, function func(this js.Object, args []js.Object) error) error {
+func (app *App) Click(target Element, function func(event js.Object) error) error {
 	return app.elventListener("click", target, function)
 }
-func (app *App) DblClick(target Element, function func(this js.Object, args []js.Object) error) error {
+func (app *App) DblClick(target Element, function func(event js.Object) error) error {
 	return app.elventListener("dblclick", target, function)
 }
-func (app *App) elventListener(eventName string, target Element, function func(this js.Object, args []js.Object) error) error {
+func (app *App) elventListener(eventName string, target Element, function func(event js.Object) error) error {
 	if app == nil {
 		return errors.New("App is nil")
 	}
@@ -156,9 +156,13 @@ func (app *App) elventListener(eventName string, target Element, function func(t
 		return nil
 	}
 
-	jsEventCallback := js.FuncOf(func(this js.Object, args []js.Object) any {
+	jsEventCallback := js.FuncOf(func(_ js.Object, args []js.Object) any {
 		//TODO handle errors via app.ErrorCallback
-		if err := function(this, args); err != nil {
+		if len(args) < 1 {
+			js.Global().Call("alert", eventName+" event function called with no arguments")
+			return errors.New(eventName + " event function called with no arguments")
+		}
+		if err := function(args[0]); err != nil {
 			js.Global().Call("alert", eventName+" event function returned error: "+err.Error())
 			return err
 		}

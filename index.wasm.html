@@ -1,50 +1,63 @@
-<html>
+<!DOCTYPE html>
 	<head>
 		<title>URLchess</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no">
-		<script type="text/javascript">
-//<![CDATA[
-var hash = window.location.hash;
-var search = window.location.search;
-if (search.startsWith("?")) {
-	search = search.slice(1);
-}
-if ( 
-	(search.length > 0 && hash.length == 0) 
-	|| 
-	(search.length == 0 && hash.length == 0 && window.location.href.indexOf("?") != -1)
-){
-	//window.alert("URL is in format for URLchess version <=0.6, transforming...");
-	window.location.href = window.location.href.replace("?", "#");
-}
-//]]>
-		</script>
-		<link rel="stylesheet" type="text/css" href="URLchess.css?v0.9">
-		<script src="wasm_exec.js" defer></script>
-		<script>
-			document.addEventListener("DOMContentLoaded", function() {
-				if (typeof WebAssembly === "object") {
-					// Load the Go WebAssembly runtime after wasm_exec.js is ready
-					if (typeof Go === "undefined") {
-						console.error("Go runtime is not loaded.");
-						return;
-					}
-					const go = new Go();
-					WebAssembly.instantiateStreaming(fetch("URLchess.wasm"), go.importObject).then((result) => {
-						go.run(result.instance);
-					}).catch((err) => {
-						console.error("Failed to load WebAssembly", err);
-					});
-				} else {
-					alert("No wasm in browser!");
-				}
-			});
-		</script>
+		<link rel="preload" href="URLchess.css?v0.10" as="style" onload="this.rel='stylesheet'">
 	</head>
 	<body>
 		<noscript>
 			<p>You need to enable JavaScript to run URLchess.</p>
 		</noscript>
+		<script type="text/javascript">
+//<![CDATA[
+window.addEventListener("load", function() {
+	// Backwards compatibility with URLchess links when version was 0.6 and lower.
+	var hash = window.location.hash;
+	var search = window.location.search;
+	if (search.startsWith("?")) {
+		search = search.slice(1);
+	}
+	if (
+		(search.length > 0 && hash.length == 0)
+		||
+		(search.length == 0 && hash.length == 0 && window.location.href.indexOf("?") != -1)
+	){
+		//window.alert("URL is in format for URLchess version <=0.6, transforming...");
+		window.location.href = window.location.href.replace("?", "#");
+	}
+
+	// If browser supports wasm, run URLchess.wasm.
+	if (typeof WebAssembly === "object") {
+		// Load and execute wasm_exec.js
+		var script = document.createElement('script');
+		script.src = "wasm_exec.js?v0.10";
+		script.onload = function() {
+			// After wasm_exec.js is loaded, continue to run URLchess.wasm.
+
+			// Check if go is present.
+			if (typeof Go === "undefined") {
+				console.error("Go runtime is not loaded.");
+				return;
+			}
+
+			// Load the Go WebAssembly runtime and run URLchess.wasm..
+			const go = new Go();
+			WebAssembly.instantiateStreaming(fetch("URLchess.wasm?v0.10"), go.importObject).then((result) => {
+				go.run(result.instance);
+			}).catch((err) => {
+				console.error("Failed to load WebAssembly", err);
+			});
+		};
+
+		// Append the script with wasm to body.
+		document.body.appendChild(script);
+	}
+	else {
+		alert("No wasm in browser!");
+	}
+});
+//]]>
+		</script>
 	</body>
 </html>

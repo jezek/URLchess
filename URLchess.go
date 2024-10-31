@@ -1,6 +1,7 @@
 package main
 
 //go:generate env GOOS=js GOARCH=ecmascript gopherjs build -m
+//go:generate env GOOS=js GOARCH=wasm go build -o URLchess.wasm
 
 import (
 	"URLchess/shf"
@@ -10,7 +11,7 @@ import (
 	"github.com/andrewbackes/chess/game"
 )
 
-const Version = "0.9"
+const Version = "0.10"
 
 func main() {
 	//js.Global().Call("alert", "main")
@@ -21,7 +22,7 @@ func main() {
 	println("using:", js.WRAPS)
 
 	document := js.Global().Get("document")
-	if document.IsUndefined() {
+	if js.IsUndefined(document) {
 		println("ERROR: Undefined document")
 		return
 	}
@@ -29,14 +30,14 @@ func main() {
 	model := &Model{}
 
 	// is rotation supported?
-	if div := js.Global().Get("document").Call("createElement", "div"); !div.IsUndefined() {
-		if !div.Get("style").Get("transform").IsUndefined() {
+	if div := js.Global().Get("document").Call("createElement", "div"); !js.IsUndefined(div) {
+		if !js.IsUndefined(div.Get("style").Get("transform")) {
 			model.rotationSupported = true
 		}
 		div.Call("remove")
 	}
 	// is execCommand supported?
-	if exec := js.Global().Get("document").Get("execCommand"); !exec.IsUndefined() {
+	if exec := js.Global().Get("document").Get("execCommand"); !js.IsUndefined(exec) {
 		model.execSupported = true
 	}
 
