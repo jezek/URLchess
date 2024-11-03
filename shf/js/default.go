@@ -6,56 +6,53 @@ const WRAPS = ""
 
 type Object struct{}
 
-// Get returns the object's property with the given key.
-func (o *Object) Get(key string) *Object { return nil }
+// gopherjs: Get returns the object's property with the given key.
+// wasm: Get returns the JavaScript property key of object o. It panics if o is not a JavaScript object.
+func (o Object) Get(key string) Object { return Object{} }
 
-// Set assigns the value to the object's property with the given key.
-func (o *Object) Set(key string, value interface{}) {}
+// gopherjs: Set assigns the value to the object's property with the given key.
+// wasm: Set sets the JavaScript property key of value value to ValueOf(key). It panics if o is not a JavaScript object. (Note: Wasm uses generics: func (o Object) Set(key string, value any))
+func (o Object) Set(key string, value interface{}) {}
 
-// Delete removes the object's property with the given key.
-func (o *Object) Delete(key string) {}
+// gopherjs: Delete removes the object's property with the given key.
+// wasm: Delete deletes the JavaScript property key of object o. It panics if o is not a JavaScript object.
+func (o Object) Delete(key string) {}
 
-// Length returns the object's "length" property, converted to int.
-func (o *Object) Length() int { return 0 }
+// gopherjs: Call calls the object's method with the given name.
+// wasm: Call does a JavaScript call to the method m of value v with the given arguments. It panics if v has no method m. The arguments get mapped to JavaScript values according to the ValueOf function. (Note: Wasm uses generics func (o Object) Call(m string, args ...any) Object)
+func (o Object) Call(name string, args ...interface{}) Object { return Object{} }
 
-// Index returns the i'th element of an array.
-func (o *Object) Index(i int) *Object { return nil }
+// gopherjs: Bool returns the object converted to bool according to JavaScript type conversions.
+// wasm: Bool returns the object o as a bool. It panics if o is not a JavaScript boolean.
+func (o Object) Bool() bool { return false }
 
-// SetIndex sets the i'th element of an array.
-func (o *Object) SetIndex(i int, value interface{}) {}
+// gopherjs: String returns the object converted to string according to JavaScript type conversions.
+// wasm: String returns the object o as a string. String is a special case because of Go's String method convention. Unlike the other getters, it does not panic if o's Type is not TypeString. Instead, it returns a string of the form "<T>" or "<T: V>" where T is o's type and V is a string representation of o's value.
+func (o Object) String() string { return "" }
 
-// Call calls the object's method with the given name.
-func (o *Object) Call(name string, args ...interface{}) *Object { return nil }
+// gopherjs: Int returns the object converted to int according to JavaScript type conversions (parseInt).
+// wasm: Int returns the object o truncated to an int. It panics if o is not a JavaScript number.
+func (o Object) Int() int { return 0 }
 
-// Invoke calls the object itself. This will fail if it is not a function.
-func (o *Object) Invoke(args ...interface{}) *Object { return nil }
+// gopherjs: Float returns the object converted to float64 according to JavaScript type conversions (parseFloat).
+// wasm: Float returns the object o as a float64. It panics if o is not a JavaScript number.
+func (o Object) Float() float64 { return 0 }
 
-// New creates a new instance of this type object. This will fail if it not a function (constructor).
-func (o *Object) New(args ...interface{}) *Object { return nil }
+// gopherjs: No such thing exists in gopherjs.
+// wasm: Func is a wrapped Go function to be called by JavaScript.
+type Func func(e Object)
 
-// Bool returns the object converted to bool according to JavaScript type conversions.
-func (o *Object) Bool() bool { return false }
+// gopherjs: No such thing exists in gopherjs.
+// wasm: Release frees up resources allocated for the function. The function must not be invoked after calling Release. It is allowed to call Release while the function is still running
+func (c Func) Release() {}
 
-// String returns the object converted to string according to JavaScript type conversions.
-func (o *Object) String() string { return "" }
+// gopherjs: No such thing exists in gopherjs.
+// wasm: FuncOf returns a function to be used by JavaScript. ...
+var FuncOf = func(fn func(_ Object, _ []Object) any) Func {
+	return nil
+}
 
-// Int returns the object converted to int according to JavaScript type conversions (parseInt).
-func (o *Object) Int() int { return 0 }
+var Global = func() Object { return Object{} }
+var Undefined = func() Object { return Object{} }
 
-// Int64 returns the object converted to int64 according to JavaScript type conversions (parseInt).
-func (o *Object) Int64() int64 { return 0 }
-
-// Uint64 returns the object converted to uint64 according to JavaScript type conversions (parseInt).
-func (o *Object) Uint64() uint64 { return 0 }
-
-// Float returns the object converted to float64 according to JavaScript type conversions (parseFloat).
-func (o *Object) Float() float64 { return 0 }
-
-// Interface returns the object converted to interface{}. See table in package comment for details.
-func (o *Object) Interface() interface{} { return nil }
-
-// Unsafe returns the object as an uintptr, which can be converted via unsafe.Pointer. Not intended for public use.
-func (o *Object) Unsafe() uintptr { return 0 }
-
-var Global *Object
-var Undefined *Object
+func IsUndefined(o Object) bool { return true }

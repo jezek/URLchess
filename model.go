@@ -47,7 +47,7 @@ func (f *ModelFooter) Init(tools *shf.Tools) error {
 		linkURLchess := tools.CreateElement("a")
 		linkURLchess.Set("href", "https://jezek.github.io/URLchess")
 		linkURLchess.Call("appendChild", tools.CreateTextNode("URLchess"))
-		if err := tools.Click(linkURLchess, func(_ js.Object) error {
+		if err := tools.Click(linkURLchess, func(_ shf.Event) error {
 			return nil
 		}); err != nil {
 			return err
@@ -965,7 +965,7 @@ func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
 	if this.Close == nil {
 		this.Close = tools.CreateElement("button")
 		this.Close.Set("textContent", "close")
-		if err := tools.Click(this.Close, func(_ js.Object) error {
+		if err := tools.Click(this.Close, func(_ shf.Event) error {
 			this.Shown = false
 			return nil
 		}); err != nil {
@@ -976,7 +976,7 @@ func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
 	if this.tip == nil {
 		this.tip = tools.CreateElement("div")
 		this.tip.Set("className", "tip")
-		if err := tools.Click(this.tip, func(_ js.Object) error {
+		if err := tools.Click(this.tip, func(_ shf.Event) error {
 			return nil
 		}); err != nil {
 			return err
@@ -1363,7 +1363,7 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 			return err
 		}
 
-		if err := tools.Click(this.Output.Close.Element, func(_ js.Object) error {
+		if err := tools.Click(this.Output.Close.Element, func(_ shf.Event) error {
 			this.Shown = false
 			this.Output.PGN = nil
 			return nil
@@ -1379,27 +1379,27 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		}
 
 		// Bind tags input value change to update output PGN tags.
-		if err := tools.Input(this.Input.White.Input, func(_ js.Object) error {
+		if err := tools.Input(this.Input.White.Input, func(_ shf.Event) error {
 			return this.applyTag(this.Input.White.Name, this.Input.White.Input.Get("value").String())
 		}); err != nil {
 			return err
 		}
-		if err := tools.Input(this.Input.Black.Input, func(_ js.Object) error {
+		if err := tools.Input(this.Input.Black.Input, func(_ shf.Event) error {
 			return this.applyTag(this.Input.Black.Name, this.Input.Black.Input.Get("value").String())
 		}); err != nil {
 			return err
 		}
-		if err := tools.Input(this.Input.Round.Input, func(_ js.Object) error {
+		if err := tools.Input(this.Input.Round.Input, func(_ shf.Event) error {
 			return this.applyTag(this.Input.Round.Name, this.Input.Round.Input.Get("value").String())
 		}); err != nil {
 			return err
 		}
-		if err := tools.Input(this.Input.Date.Input, func(_ js.Object) error {
+		if err := tools.Input(this.Input.Date.Input, func(_ shf.Event) error {
 			return this.applyTag(this.Input.Date.Name, this.Input.Date.Input.Get("value").String())
 		}); err != nil {
 			return err
 		}
-		if err := tools.Input(this.Input.Result.Select, func(_ js.Object) error {
+		if err := tools.Input(this.Input.Result.Select, func(_ shf.Event) error {
 			this.Input.Result.Selected = this.Input.Result.Select.Get("value").String()
 			return this.applyTag(this.Input.Result.Name, this.Input.Result.Selected)
 		}); err != nil {
@@ -1410,8 +1410,8 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 	if this.Element == nil {
 		this.Element = tools.CreateElement("div")
 		this.Set("id", "export-overlay")
-		if err := tools.Click(this.Element, func(event js.Object) error {
-			if event.Get("target").Get("id").String() == "export-overlay" {
+		if err := tools.Click(this.Element, func(e shf.Event) error {
+			if e.Get("target").Get("id").String() == "export-overlay" {
 				this.Shown = false
 				this.Output.PGN = nil
 			}
@@ -1547,8 +1547,8 @@ func (n *ModelNotification) Init(tools *shf.Tools) error {
 	if n.Element == nil {
 		n.Element = tools.CreateElement("div")
 		n.Set("id", "notification-overlay")
-		if err := tools.Click(n.Element, func(event js.Object) error {
-			if event.Get("target").Get("id").String() == "notification-overlay" {
+		if err := tools.Click(n.Element, func(e shf.Event) error {
+			if e.Get("target").Get("id").String() == "notification-overlay" {
 				n.cancelTimer()
 				n.Shown = false
 			}
@@ -1646,8 +1646,8 @@ func (h *HtmlModel) Update(tools *shf.Tools) error {
 	return tools.Update(h.Header, h.Board, h.ThrownOuts, h.Cover, h.Export, h.Notification, h.Footer)
 }
 
-func (h *HtmlModel) RotateBoard() func(event js.Object) error {
-	return func(_ js.Object) error {
+func (h *HtmlModel) RotateBoard() func(e shf.Event) error {
+	return func(_ shf.Event) error {
 		h.Rotated180deg = !h.Rotated180deg
 		return nil
 	}
@@ -2057,7 +2057,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 				}
 
 				// every square gets a double click callback for zen mode toggle
-				if err := tools.DblClick(sq.Element, func(_ js.Object) error {
+				if err := tools.DblClick(sq.Element, func(_ shf.Event) error {
 					// toggle zen mode by adding/removing "zen-mode" class to body
 					js.Global().Get("document").Get("body").Get("classList").Call("toggle", "zen-mode")
 					return nil
@@ -2067,7 +2067,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 
 				// every empty square or every oponent piece resets next move
 				if sq.Piece.Type == piece.None || sq.Piece.Color == complementColor(position.ActiveColor) {
-					if err := tools.Click(sq.Element, func(_ js.Object) error {
+					if err := tools.Click(sq.Element, func(_ shf.Event) error {
 						ch.nextMove = move.Null
 						m.Cover.MoveStatus.Shown = false
 						return nil
@@ -2080,7 +2080,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 				if position.ActiveColor == sq.Piece.Color {
 					// bt only if game is in progress
 					if st := ch.game.Status(); st == game.InProgress {
-						if err := tools.Click(sq.Element, func(_ js.Object) error {
+						if err := tools.Click(sq.Element, func(_ shf.Event) error {
 							// set next move from
 							ch.nextMove.Source = sq.Id
 							ch.nextMove.Destination = square.NoSquare
@@ -2097,7 +2097,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 
 				// next move from square resets next move
 				if ch.nextMove.Source == sq.Id && ch.nextMove.Destination == square.NoSquare && ch.nextMove.Promote == piece.None {
-					if err := tools.Click(sq.Element, func(_ js.Object) error {
+					if err := tools.Click(sq.Element, func(_ shf.Event) error {
 						ch.nextMove = move.Null
 						m.Cover.MoveStatus.Shown = false
 						return nil
@@ -2117,7 +2117,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 						return errors.New("square " + sq.Id.String() + " is marked as possible to, but the next move here is not legal move or waiting to promoion")
 					}
 					// every moving player possible to move gets event
-					if err := tools.Click(sq.Element, func(_ js.Object) error {
+					if err := tools.Click(sq.Element, func(_ shf.Event) error {
 						// set next move to
 						ch.nextMove.Destination = sq.Id
 						if squareNextMoveState == NMLegalMove {
@@ -2140,7 +2140,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 				// every empty square toggles move status
 				for _, sq := range m.Board.Grid.Squares {
 					if sq.Piece.Type == piece.None {
-						if err := tools.Click(sq.Element, func(_ js.Object) error {
+						if err := tools.Click(sq.Element, func(_ shf.Event) error {
 							m.Cover.MoveStatus.Shown = !m.Cover.MoveStatus.Shown
 							return nil
 						}); err != nil {
@@ -2153,7 +2153,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 				if position.LastMove != move.Null {
 					if execSupported {
 						// last move to square gets copy to clipboard
-						if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.To())].Element, func(_ js.Object) error {
+						if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.To())].Element, func(_ shf.Event) error {
 							if err := m.CopyGameURLToClipboard(); err != nil {
 								return err
 							}
@@ -2170,7 +2170,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 						}
 					} else {
 						// copy is not supported, just show move status
-						if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.To())].Element, func(_ js.Object) error {
+						if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.To())].Element, func(_ shf.Event) error {
 							m.Cover.MoveStatus.Shown = true
 							return nil
 						}); err != nil {
@@ -2179,7 +2179,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 					}
 
 					// last move from square gets back one move
-					if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.From())].Element, func(_ js.Object) error {
+					if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.From())].Element, func(_ shf.Event) error {
 						if err := ch.BackToPreviousMove(); err != nil {
 							return err
 						}
@@ -2209,7 +2209,7 @@ type Model struct {
 func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 	newGameButton := tools.CreateElement("button")
 	newGameButton.Set("textContent", "new game")
-	if err := tools.Click(newGameButton, func(_ js.Object) error {
+	if err := tools.Click(newGameButton, func(_ shf.Event) error {
 		game, err := NewGame("")
 		if err != nil {
 			return err
@@ -2225,7 +2225,7 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 	}
 	exportButton := tools.CreateElement("button")
 	exportButton.Set("textContent", "export")
-	if err := tools.Click(exportButton, func(_ js.Object) error {
+	if err := tools.Click(exportButton, func(_ shf.Event) error {
 		m.refreshExportOutputData()
 		m.Html.Notification.Shown = false
 		m.Html.Export.Shown = true
@@ -2236,7 +2236,7 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 	}
 	closeButton := tools.CreateElement("button")
 	closeButton.Set("textContent", "close")
-	if err := tools.Click(closeButton, func(_ js.Object) error {
+	if err := tools.Click(closeButton, func(_ shf.Event) error {
 		m.Html.Notification.Shown = false
 		return nil
 	}); err != nil {
@@ -2336,7 +2336,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			m.Html.Board.Edgings.BottomLeft.Disable()
 			m.Html.Board.Edgings.TopRight.Disable()
 		} else {
-			if err := tools.Click(m.Html.Cover.GameStatus.Header.Element, func(_ js.Object) error {
+			if err := tools.Click(m.Html.Cover.GameStatus.Header.Element, func(_ shf.Event) error {
 				// If game ended, notify the player.
 				if st := m.Game.game.Status(); st != game.InProgress {
 					if err := m.showEndGameNotification(tools); err != nil {
@@ -2364,7 +2364,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			m.Html.Export.Output.Copy.Shown = false
 		} else {
 			m.Html.Cover.MoveStatus.Link.Copy.Shown = true
-			if err := tools.Click(m.Html.Cover.MoveStatus.Link.Copy.Element, func(_ js.Object) error {
+			if err := tools.Click(m.Html.Cover.MoveStatus.Link.Copy.Element, func(_ shf.Event) error {
 				if err := m.Html.CopyGameURLToClipboard(); err != nil {
 					return err
 				}
@@ -2378,7 +2378,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 				return err
 			}
 
-			if err := tools.Click(m.Html.Export.Output.Copy, func(_ js.Object) error {
+			if err := tools.Click(m.Html.Export.Output.Copy, func(_ shf.Event) error {
 				if err := m.Html.CopyExportOutputToClipboard(); err != nil {
 					return err
 				}
@@ -2400,7 +2400,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 		newGameButton := tools.CreateElement("button")
 		newGameButton.Set("textContent", "new game")
-		if err := tools.Click(newGameButton, func(_ js.Object) error {
+		if err := tools.Click(newGameButton, func(_ shf.Event) error {
 			game, err := NewGame("")
 			if err != nil {
 				return err
@@ -2419,8 +2419,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 		if m.execSupported {
 			copyLinkButton = tools.CreateElement("button")
 			copyLinkButton.Set("textContent", "copy link")
-			if err := tools.Click(copyLinkButton, func(event js.Object) error {
-				event.Call("stopPropagation")
+			if err := tools.Click(copyLinkButton, func(e shf.Event) error {
+				e.Call("stopPropagation")
 
 				if err := m.Html.CopyGameURLToClipboard(); err != nil {
 					return err
@@ -2441,7 +2441,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 		zenModeButton := tools.CreateElement("button")
 		zenModeButton.Set("textContent", "toggle zen mode")
-		if err := tools.Click(zenModeButton, func(_ js.Object) error {
+		if err := tools.Click(zenModeButton, func(_ shf.Event) error {
 			m.Html.Notification.Shown = false
 			js.Global().Get("document").Get("body").Get("classList").Call("toggle", "zen-mode")
 			return nil
@@ -2452,8 +2452,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 		exportButton := tools.CreateElement("button")
 		exportButton.Set("textContent", "export game")
-		if err := tools.Click(exportButton, func(event js.Object) error {
-			event.Call("stopPropagation")
+		if err := tools.Click(exportButton, func(e shf.Event) error {
+			e.Call("stopPropagation")
 
 			m.refreshExportOutputData()
 			m.Html.Notification.Shown = false
@@ -2464,7 +2464,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			exportButton = nil
 		}
 
-		if err := tools.Click(m.Html.Header.Element, func(_ js.Object) error {
+		if err := tools.Click(m.Html.Header.Element, func(_ shf.Event) error {
 			m.Html.Notification.Message(
 				"Quick actions",
 				"tip: double click on empty square to toggle zen mode",
@@ -2480,7 +2480,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 	}
 
 	{ // add promotion events to promotion overlay
-		if err := tools.Click(m.Html.Board.PromotionOverlay.Element, func(_ js.Object) error {
+		if err := tools.Click(m.Html.Board.PromotionOverlay.Element, func(_ shf.Event) error {
 			m.Game.nextMove.Promote = piece.None
 			m.Game.nextMove.Destination = square.NoSquare
 			m.Html.Board.PromotionOverlay.Shown = false
@@ -2491,7 +2491,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 		for _, p := range m.Html.Board.PromotionOverlay.Pieces {
 			promotionPiece := p
-			if err := tools.Click(p.Element, func(_ js.Object) error {
+			if err := tools.Click(p.Element, func(_ shf.Event) error {
 				m.Game.nextMove.Promote = promotionPiece.Piece.Type
 				m.Html.Board.PromotionOverlay.Shown = false
 				m.Html.Cover.MoveStatus.Shown = true
@@ -2503,7 +2503,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 	}
 
 	{ // add back event for move-status
-		if err := tools.Click(m.Html.Cover.MoveStatus.Undo, func(_ js.Object) error {
+		if err := tools.Click(m.Html.Cover.MoveStatus.Undo, func(_ shf.Event) error {
 			if err := m.Game.BackToPreviousMove(); err != nil {
 				return err
 			}

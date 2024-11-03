@@ -9,10 +9,6 @@ type Event interface {
 	Call(name string, args ...any) js.Object
 }
 
-type event struct {
-	js.Object
-}
-
 type HashChangeEvent interface {
 	Event
 	NewURL() string
