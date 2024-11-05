@@ -1,7 +1,7 @@
 package main
 
-//go:generate env GOOS=js GOARCH=ecmascript gopherjs build -m
-//go:generate env GOOS=js GOARCH=wasm go build -o URLchess.wasm
+//go:generate env GOOS=js GOARCH=ecmascript gopherjs build -m -o assets/URLchess.js
+//go:generate env GOOS=js GOARCH=wasm go build -o assets/URLchess.wasm
 
 import (
 	"URLchess/shf"
