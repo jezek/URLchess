@@ -27,6 +27,14 @@ window.addEventListener("load", function() {
 		window.location.href = window.location.href.replace("?", "#");
 	}
 
+	function fallBackToJsVersion() {
+		console.warn("Fall back to js version.");
+		// Load and execute js version of the URLchess app.
+		var script = document.createElement('script');
+		script.src = "assets/URLchess.js?v0.10";
+		document.body.appendChild(script);
+	}
+
 	// If browser supports wasm, try running the wasm version, if something fails use the js version.
 	if (typeof WebAssembly === "object") {
 		// Load and execute go wasm runtime.
@@ -37,7 +45,8 @@ window.addEventListener("load", function() {
 
 			// Check if go is present.
 			if (typeof Go === "undefined") {
-				console.error("Go runtime is not loaded.");
+				console.warn("Go runtime is not loaded.");
+				fallBackToJsVersion();
 				return;
 			}
 
@@ -46,17 +55,16 @@ window.addEventListener("load", function() {
 			WebAssembly.instantiateStreaming(fetch("assets/URLchess.wasm?v0.10"), go.importObject).then((result) => {
 				go.run(result.instance);
 			}).catch((err) => {
-				console.error("Failed to load WebAssembly", err);
+				console.warn("Failed to load WebAssembly:", err);
+				fallBackToJsVersion();
 			});
 		};
 
 		// Append the script with wasm to body.
 		document.body.appendChild(script);
 	} else {
-		// Load and execute js version of the URLchess app.
-		var script = document.createElement('script');
-		script.src = "assets/URLchess.js?v0.10";
-		document.body.appendChild(script);
+		console.warn("No wasm in browser!");
+		fallBackToJsVersion();
 	}
 });
 //]]>

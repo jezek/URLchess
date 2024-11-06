@@ -3,7 +3,7 @@
 		<title>URLchess</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no">
-		<link rel="preload" href="URLchess.css?v0.10" as="style" onload="this.rel='stylesheet'">
+		<link rel="preload" href="assets/URLchess.css?v0.10" as="style" onload="this.rel='stylesheet'">
 	</head>
 	<body>
 		<noscript>
@@ -29,31 +29,30 @@ window.addEventListener("load", function() {
 
 	// If browser supports wasm, run URLchess.wasm.
 	if (typeof WebAssembly === "object") {
-		// Load and execute wasm_exec.js
+		// Load and execute go wasm runtime.
 		var script = document.createElement('script');
-		script.src = "wasm_exec.js?v0.10";
+		script.src = "assets/wasm_exec.js?v0.10";
 		script.onload = function() {
-			// After wasm_exec.js is loaded, continue to run URLchess.wasm.
+			// After wasm runtime is loaded, continue to run the URLchess wasm app.
 
 			// Check if go is present.
 			if (typeof Go === "undefined") {
-				console.error("Go runtime is not loaded.");
+				alert("Go runtime is not loaded.");
 				return;
 			}
 
-			// Load the Go WebAssembly runtime and run URLchess.wasm..
+			// Start the Go WebAssembly runtime and run URLchess wasm app.
 			const go = new Go();
-			WebAssembly.instantiateStreaming(fetch("URLchess.wasm?v0.10"), go.importObject).then((result) => {
+			WebAssembly.instantiateStreaming(fetch("assets/URLchess.wasm?v0.10"), go.importObject).then((result) => {
 				go.run(result.instance);
 			}).catch((err) => {
-				console.error("Failed to load WebAssembly", err);
+				alert("Failed to load WebAssembly", err);
 			});
 		};
 
 		// Append the script with wasm to body.
 		document.body.appendChild(script);
-	}
-	else {
+	} else {
 		alert("No wasm in browser!");
 	}
 });
