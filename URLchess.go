@@ -1,8 +1,5 @@
 package main
 
-//go:generate env GOOS=js GOARCH=ecmascript gopherjs build -m -o assets/URLchess.js
-//go:generate env GOOS=js GOARCH=wasm go build -o assets/URLchess.wasm
-
 import (
 	"URLchess/shf"
 	"URLchess/shf/js"
@@ -13,13 +10,19 @@ import (
 
 const Version = "0.10"
 
+// Apply version to *.html files.
+//go:generate sh -c "sed -i 's/?v[0-9.]\\+/?v'\"$(grep '^const Version = ' URLchess.go | grep -oP '\\d+\\.\\d+(\\.\\d+)?')\"'/' *.html"
+
+// Build URLchess and generate assets/URLchess.wasm file.
+//go:generate env GOOS=js GOARCH=wasm go build -o assets/URLchess.wasm
+// Build URLchess using gopherjs and generate assets/URLchess.js and assets/URLchess.js.map files.
+//go:generate env GOOS=js GOARCH=ecmascript gopherjs build -m -o assets/URLchess.js
+
 func main() {
-	//js.Global().Call("alert", "main")
 	if js.WRAPS == "" {
-		println("Not supposed to be run as file, use 'go generate' and run index.html in browser")
+		println("Not supposed to be run as file, use 'go generate' and run index.html in browser.")
 		os.Exit(-1)
 	}
-	println("using:", js.WRAPS)
 
 	document := js.Global().Get("document")
 	if js.IsUndefined(document) {
