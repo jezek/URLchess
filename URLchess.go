@@ -20,9 +20,10 @@ const Version = "0.10"
 //go:generate sh -c "GOOS=js GOARCH=wasm go build -o assets/URLchess.wasm"
 //go:generate sh -c "cp \"$(go env GOROOT)\"/misc/wasm/wasm_exec.js ./assets"
 
-// Build URLchess and generate assets/URLchess.tinygo.wasm file using tinygo and copy tinygo wasm runtime to assets. Note: The .wasm file currently doesn't work and panics.
-//go:generate sh -c "GOROOT=\"$(go1.22.9 env GOROOT)\" PATH=\"$(go1.22.9 env GOROOT)\"/bin:$PATH tinygo build -o assets/URLchess.tinygo.wasm -target wasm ."
-//go:generate sh -c "cp \"$(tinygo env TINYGOROOT)\"/targets/wasm_exec.js assets/wasm_exec.tinygo.js"
+// TinyGo generation takes too long and the results are not working. That's why it's commented out for now.
+//// Build URLchess and generate assets/URLchess.tinygo.wasm file using tinygo and copy tinygo wasm runtime to assets.
+////go:generate sh -c "GOROOT=\"$(go1.22.9 env GOROOT)\" PATH=\"$(go1.22.9 env GOROOT)\"/bin:$PATH tinygo build -o assets/URLchess.tinygo.wasm -target wasm ."
+////go:generate sh -c "cp \"$(tinygo env TINYGOROOT)\"/targets/wasm_exec.js assets/wasm_exec.tinygo.js"
 
 func main() {
 	if js.WRAPS == "" {
