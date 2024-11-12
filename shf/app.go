@@ -48,6 +48,12 @@ func (t *Tools) Click(target Element, function func(e Event) error) error {
 func (t *Tools) DblClick(target Element, function func(e Event) error) error {
 	return t.app.DblClick(target, function)
 }
+func (t *Tools) ClickRemove(target Element) error {
+	return t.app.Click(target, nil)
+}
+func (t *Tools) DblClickRemove(target Element) error {
+	return t.app.DblClick(target, nil)
+}
 func (t *Tools) HashChange(function func(HashChangeEvent) error) error {
 	return t.app.HashChange(function)
 }

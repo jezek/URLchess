@@ -1115,7 +1115,17 @@ div.thrown-outs .count {
 }
 
 /* zen mode */
-body.zen-mode #header,
+body.zen-mode #header {
+	opacity: 0.9;
+	z-index: 2;
+	top: calc((100vh - 100vmin) / 2);
+	left: calc((100vw - 100vmin) / 2);
+	margin: 0;
+	padding: 0;
+	font-size: calc((100vmin * 2 / 28) / 10);
+	height: auto;
+	color: #0e1e1e;
+}
 body.zen-mode #thrown-outs-container,
 body.zen-mode #cover,
 body.zen-mode #footer { 

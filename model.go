@@ -2051,62 +2051,26 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 				// square hack to be able to use 'sq' in anonymous functions
 				sq := sq
 
-				// remove square event for sure
-				if err := tools.Click(sq.Element, nil); err != nil {
+				// remove square events
+				if err := tools.ClickRemove(sq.Element); err != nil {
+					return err
+				}
+				if err := tools.DblClickRemove(sq.Element); err != nil {
 					return err
 				}
 
-				// every square gets a double click callback for zen mode toggle
-				if err := tools.DblClick(sq.Element, func(_ shf.Event) error {
-					// toggle zen mode by adding/removing "zen-mode" class to body
-					js.Global().Get("document").Get("body").Get("classList").Call("toggle", "zen-mode")
-					return nil
-				}); err != nil {
-					return err
-				}
-
-				// every empty square or every oponent piece resets next move
-				if sq.Piece.Type == piece.None || sq.Piece.Color == complementColor(position.ActiveColor) {
-					if err := tools.Click(sq.Element, func(_ shf.Event) error {
-						ch.nextMove = move.Null
-						m.Cover.MoveStatus.Shown = false
+				// every empty square gets a double click callback for zen mode toggle
+				if sq.Piece.Type == piece.None {
+					if err := tools.DblClick(sq.Element, func(_ shf.Event) error {
+						// toggle zen mode by adding/removing "zen-mode" class to body
+						js.Global().Get("document").Get("body").Get("classList").Call("toggle", "zen-mode")
 						return nil
 					}); err != nil {
 						return err
 					}
 				}
 
-				// every moving player figure gets unique event
-				if position.ActiveColor == sq.Piece.Color {
-					// bt only if game is in progress
-					if st := ch.game.Status(); st == game.InProgress {
-						if err := tools.Click(sq.Element, func(_ shf.Event) error {
-							// set next move from
-							ch.nextMove.Source = sq.Id
-							ch.nextMove.Destination = square.NoSquare
-							ch.nextMove.Promote = piece.None
-
-							// hide move status
-							m.Cover.MoveStatus.Shown = false
-							return nil
-						}); err != nil {
-							return err
-						}
-					}
-				}
-
-				// next move from square resets next move
-				if ch.nextMove.Source == sq.Id && ch.nextMove.Destination == square.NoSquare && ch.nextMove.Promote == piece.None {
-					if err := tools.Click(sq.Element, func(_ shf.Event) error {
-						ch.nextMove = move.Null
-						m.Cover.MoveStatus.Shown = false
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-
-				// square marked as possible to gets unique event
+				// square marked as "possible to" gets unique event
 				if sq.Markers.ByColor[position.ActiveColor].NextMove.PossibleTo {
 					// inspect next move state
 					squareNextMove := ch.nextMove
@@ -2131,6 +2095,59 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 					}); err != nil {
 						return err
 					}
+
+					// a square can have only one click event, continue to next square
+					continue
+				}
+
+				// next move from square resets next move
+				if ch.nextMove.Source == sq.Id && ch.nextMove.Destination == square.NoSquare && ch.nextMove.Promote == piece.None {
+					if err := tools.Click(sq.Element, func(_ shf.Event) error {
+						ch.nextMove = move.Null
+						m.Cover.MoveStatus.Shown = false
+						return nil
+					}); err != nil {
+						return err
+					}
+
+					// a square can have only one click event, continue to next square
+					continue
+				}
+
+				// every moving player figure gets unique event
+				if position.ActiveColor == sq.Piece.Color {
+					// but only if game is in progress
+					if st := ch.game.Status(); st == game.InProgress {
+						if err := tools.Click(sq.Element, func(_ shf.Event) error {
+							// set next move from
+							ch.nextMove.Source = sq.Id
+							ch.nextMove.Destination = square.NoSquare
+							ch.nextMove.Promote = piece.None
+
+							// hide move status
+							m.Cover.MoveStatus.Shown = false
+							return nil
+						}); err != nil {
+							return err
+						}
+
+						// a square can have only one click event, continue to next square
+						continue
+					}
+				}
+
+				// every empty square or every oponent piece resets next move
+				if sq.Piece.Type == piece.None || sq.Piece.Color == complementColor(position.ActiveColor) {
+					if err := tools.Click(sq.Element, func(_ shf.Event) error {
+						ch.nextMove = move.Null
+						m.Cover.MoveStatus.Shown = false
+						return nil
+					}); err != nil {
+						return err
+					}
+
+					// a square can have only one click event, continue to next square
+					continue
 				}
 
 			}
