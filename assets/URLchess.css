@@ -441,11 +441,38 @@ div.thrown-outs .count {
 	text-align: center;
 }
 #game-status-moves {
-	visibility: hidden;
   box-sizing: border-box;
 	width: 100%;
 	height: calc(100% * 23 / 28);
-	border: 1px solid black;
+	font-size: calc(1em / 2);
+	overflow: scroll;
+	margin: 0.3em;
+}
+#game-status-moves p {
+  box-sizing: border-box;
+	width: 100%;
+	margin: 0.25em 0;
+	padding: 0;
+}
+#game-status-moves p span {
+	display: inline-block;
+  box-sizing: border-box;
+}
+#game-status-moves p span.move-no {
+	display: inline-block;
+	width: 3em;
+	padding: 0 1em;
+	background-color: rgba(255, 255, 255, 0.1);
+	text-align: right;
+}
+#game-status-moves p span.move-no:after {
+	content: ".";
+}
+#game-status-moves p span.move-white,
+#game-status-moves p span.move-black {
+	width: calc(50% - (3em / 2));
+	background-color: transparent;
+	padding: 0 1em;
 }
 /*************/
 /* move status */

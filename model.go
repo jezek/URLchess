@@ -793,7 +793,7 @@ func (gs *StatusHeader) Update(tools *shf.Tools) error {
 
 type StatusMoves struct {
 	shf.Element
-	GameMovesCount, GameMoveNo uint
+	PGN *pgn.PGN
 }
 
 func (si *StatusMoves) Init(tools *shf.Tools) error {
@@ -803,24 +803,44 @@ func (si *StatusMoves) Init(tools *shf.Tools) error {
 	}
 	return nil
 }
+
 func (si *StatusMoves) Update(tools *shf.Tools) error {
 	if si == nil {
 		return errors.New("StatusMoves is nil")
 	}
 
 	si.Set("innerHTML", "")
-	{ // game moves count
-		gmc := tools.CreateElement("div")
-		gmc.Get("classList").Call("add", "moves-count")
-		gmc.Set("textContent", "game moves")
+	if si.PGN != nil && si.PGN.Moves != nil {
+		for i := range si.PGN.Moves {
+			// Skip every odd half move.
+			if i%2 == 1 {
+				continue
+			}
+			no := (i / 2) + 1
 
-		{ // inner span
-			span := tools.CreateElement("span")
-			span.Get("classList").Call("add", "moves-count")
-			span.Set("textContent", strconv.Itoa(int(si.GameMovesCount)))
-			gmc.Call("appendChild", span.Object())
+			moveNo := tools.CreateElement("span")
+			moveNo.Get("classList").Call("add", "move-no")
+			moveNo.Set("textContent", strconv.Itoa(no))
+
+			moveWhite := tools.CreateElement("span")
+			moveWhite.Get("classList").Call("add", "move-white")
+			moveWhite.Set("textContent", si.PGN.Moves[i])
+
+			moveBlack := tools.CreateElement("span")
+			moveBlack.Get("classList").Call("add", "move-black")
+			if i+1 < len(si.PGN.Moves) {
+				moveBlack.Set("textContent", si.PGN.Moves[i+1])
+			}
+
+			p := tools.CreateElement("p")
+			p.Get("classList").Call("add", "move-"+strconv.Itoa(no))
+			p.Call("appendChild", moveNo.Object())
+			p.Call("appendChild", moveWhite.Object())
+			p.Call("appendChild", moveBlack.Object())
+
+			si.Call("appendChild", p.Object())
+
 		}
-		si.Call("appendChild", gmc.Object())
 	}
 
 	return nil
@@ -935,6 +955,12 @@ func (this *MoveStatusLink) Update(tools *shf.Tools) error {
 	return tools.Update(this.Copy)
 }
 
+type ModelCover struct {
+	shf.Element
+	GameStatus *ModelGameStatus
+	MoveStatus *ModelMoveStatus
+}
+
 type ModelMoveStatus struct {
 	shf.Element
 	Shown bool
@@ -1033,12 +1059,6 @@ func (this *ModelMoveStatus) Update(tools *shf.Tools) error {
 	}
 
 	return tools.Update(this.Link)
-}
-
-type ModelCover struct {
-	shf.Element
-	GameStatus *ModelGameStatus
-	MoveStatus *ModelMoveStatus
 }
 
 func (this *ModelCover) Init(tools *shf.Tools) error {
@@ -2006,6 +2026,7 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 	}
 
 	{ // update status & notification
+		m.Cover.GameStatus.Moves.PGN = pgn.EncodeSAN(ch.game)
 		m.Cover.GameStatus.Header.Icons.White = false
 		m.Cover.GameStatus.Header.Icons.Black = false
 		if st := ch.game.Status(); st != game.InProgress { // game ended
@@ -2303,7 +2324,7 @@ func (m *Model) refreshExportOutputData() {
 	}
 	//TODO - Add event tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
 	//TODO - Add termination tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
-	m.Html.Export.Output.PGN = pgn.EncodeSAN(m.Game.game)
+	m.Html.Export.Output.PGN = m.Html.Cover.GameStatus.Moves.PGN
 }
 
 func (m *Model) Init(tools *shf.Tools) error {
