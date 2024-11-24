@@ -74,11 +74,11 @@ func main() {
 			return
 		}
 
-		model.Game = game
+		model.ChessGame = game
 	}
 
 	// If game ended, notify the player.
-	if st := model.Game.game.Status(); st != game.InProgress {
+	if st := model.ChessGame.game.Status(); st != game.InProgress {
 		model.showEndGameNotification(app.Tools())
 	}
 

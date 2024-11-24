@@ -14,24 +14,31 @@ type Initializer interface {
 type Updater interface {
 	Update(*Tools) error
 }
-
-type Tools struct {
-	app     *App
-	created map[Element]bool
+type Destroyer interface {
+	Destroy(*Tools)
 }
 
-func (t *Tools) Update(updaters ...Updater) error {
+type Tools struct {
+	app *App
+}
+
+func (t *Tools) Initialize(updaters ...Updater) error {
 	for _, updater := range updaters {
 		if updater == nil {
 			continue
 		}
 		if initializer, ok := updater.(Initializer); ok {
-			if !t.app.initialized[initializer] {
-				if err := initializer.Init(t); err != nil {
-					return err
-				}
-				t.app.initialized[initializer] = true
+			if err := initializer.Init(t); err != nil {
+				return err
 			}
+		}
+	}
+	return nil
+}
+func (t *Tools) Update(updaters ...Updater) error {
+	for _, updater := range updaters {
+		if updater == nil {
+			continue
 		}
 		if err := updater.Update(t); err != nil {
 			return err
@@ -39,6 +46,18 @@ func (t *Tools) Update(updaters ...Updater) error {
 	}
 	return nil
 }
+func (t *Tools) Destroy(elements ...Element) {
+	for _, element := range elements {
+		if element == nil {
+			continue
+		}
+		if destroyer, ok := element.(Destroyer); ok {
+			destroyer.Destroy(t)
+		}
+		t.app.DestroyElement(element)
+	}
+}
+
 func (t *Tools) Input(target Element, function func(e Event) error) error {
 	return t.app.Input(target, function)
 }
@@ -58,23 +77,16 @@ func (t *Tools) HashChange(function func(HashChangeEvent) error) error {
 	return t.app.HashChange(function)
 }
 func (t *Tools) CreateElement(etype string) Element {
-	elm := t.app.CreateElement(etype)
-	if t.created[elm] {
-		js.Global().Call("alert", "Tools.ElementCreate: an element can not be created twice the same. Why is this happening?")
-		return nil
-	}
-	t.created[elm] = true
-	return elm
+	return t.app.CreateElement(etype)
 }
 func (t *Tools) CreateTextNode(text string) js.Object {
 	return js.Global().Get("document").Call("createTextNode", text)
 }
+func (t *Tools) Destroylement(elm Element) {
+	t.app.DestroyElement(elm)
+}
 func (t *Tools) Created(elm Element) bool {
-	if elm == nil {
-		return false
-	}
-
-	return t.created[elm]
+	return t.app.ElementCreated(elm)
 }
 func (t *Tools) Timer(duration time.Duration, callback func()) int {
 	return t.app.Timer(duration, callback)
@@ -85,10 +97,13 @@ func Create(model Updater) (*App, error) {
 		model,
 		nil,
 		nil,
-		map[Initializer]bool{},
+		map[Element]struct{}{},
 	}
-	app.tools = &Tools{app, map[Element]bool{}}
+	app.tools = &Tools{app}
 
+	if err := app.Initialize(); err != nil {
+		return nil, err
+	}
 	if err := app.Update(); err != nil {
 		return nil, err
 	}
@@ -96,13 +111,19 @@ func Create(model Updater) (*App, error) {
 }
 
 type App struct {
-	model       Updater
-	tools       *Tools
-	events      map[string]map[Element]js.Func
-	initialized map[Initializer]bool
+	model   Updater
+	tools   *Tools
+	events  map[string]map[Element]js.Func
+	created map[Element]struct{}
 }
 
 func (app *App) Tools() *Tools { return app.tools }
+func (app *App) Initialize() error {
+	if err := app.tools.Initialize(app.model); err != nil {
+		return err
+	}
+	return nil
+}
 func (app *App) Update() error {
 	if err := app.tools.Update(app.model); err != nil {
 		return err
@@ -110,8 +131,24 @@ func (app *App) Update() error {
 	return nil
 }
 func (app *App) CreateElement(etype string) Element {
-	//TODO store all created elements, mabybe can be usefull for app removal
-	return CreateElement(etype)
+	elm := &element{CreateElementObject(etype)}
+	if _, ok := app.created[elm]; ok {
+		js.Global().Call("alert", "*App.CreateElement: an element can not be created twice the same. Why is this happening?")
+		return nil
+	}
+	app.created[elm] = struct{}{}
+	return elm
+}
+func (app *App) ElementCreated(elm Element) bool {
+	_, ok := app.created[elm]
+	return ok
+}
+func (app *App) DestroyElement(elm Element) {
+	if !app.ElementCreated(elm) {
+		return
+	}
+	delete(app.created, elm)
+	DestroyElementObject(elm.Object())
 }
 func (app *App) HashChange(function func(HashChangeEvent) error) error {
 	return app.elventListener("hashchange", Window, func(e Event) error {
@@ -185,8 +222,11 @@ func (app *App) elventListener(eventName string, target Element, function func(e
 	return nil
 }
 
-func CreateElement(etype string) Element {
-	return &element{js.Global().Get("document").Call("createElement", etype)}
+func CreateElementObject(etype string) js.Object {
+	return js.Global().Get("document").Call("createElement", etype)
+}
+func DestroyElementObject(o js.Object) {
+	o.Call("remove")
 }
 func (app *App) Timer(duration time.Duration, callback func()) int {
 	ms := int(duration / time.Millisecond) // in milliseconds

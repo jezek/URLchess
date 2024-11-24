@@ -128,7 +128,7 @@ type EdgingHorizontal struct {
 func (this *EdgingHorizontal) Init(tools *shf.Tools) error {
 	if this.BoardEdging == nil {
 		this.BoardEdging = &BoardEdging{}
-		if err := tools.Update(this.BoardEdging); err != nil {
+		if err := tools.Initialize(this.BoardEdging); err != nil {
 			return err
 		}
 	}
@@ -157,7 +157,7 @@ type EdgingVertical struct {
 func (this *EdgingVertical) Init(tools *shf.Tools) error {
 	if this.BoardEdging == nil {
 		this.BoardEdging = &BoardEdging{}
-		if err := tools.Update(this.BoardEdging); err != nil {
+		if err := tools.Initialize(this.BoardEdging); err != nil {
 			return err
 		}
 	}
@@ -187,7 +187,7 @@ type EdgingCorner struct {
 func (this *EdgingCorner) Init(tools *shf.Tools) error {
 	if this.BoardEdging == nil {
 		this.BoardEdging = &BoardEdging{}
-		if err := tools.Update(this.BoardEdging); err != nil {
+		if err := tools.Initialize(this.BoardEdging); err != nil {
 			return err
 		}
 	}
@@ -237,7 +237,7 @@ func (this *EdgingCornerRotating) Disable() {
 func (this *EdgingCornerRotating) Init(tools *shf.Tools) error {
 	if this.EdgingCorner == nil {
 		this.EdgingCorner = &EdgingCorner{}
-		if err := tools.Update(this.EdgingCorner); err != nil {
+		if err := tools.Initialize(this.EdgingCorner); err != nil {
 			return err
 		}
 	}
@@ -283,7 +283,7 @@ type GridSquare struct {
 
 func (s *GridSquare) Init(tools *shf.Tools) error {
 	if s.piece == nil {
-		s.piece = pieceElement(piece.New(piece.NoColor, piece.None))
+		s.piece = pieceElement(tools, piece.New(piece.NoColor, piece.None))
 	}
 	if s.marker == nil {
 		s.marker = tools.CreateElement("span")
@@ -369,7 +369,7 @@ func (g *BoardGrid) Init(tools *shf.Tools) error {
 			g.Squares[i] = &GridSquare{
 				Id: square.Square(i),
 			}
-			if err := tools.Update(g.Squares[i]); err != nil {
+			if err := tools.Initialize(g.Squares[i]); err != nil {
 				return err
 			}
 		}
@@ -380,7 +380,6 @@ func (g *BoardGrid) Init(tools *shf.Tools) error {
 		g.Get("classList").Call("add", "grid")
 		for i := int(63); i >= 0; i-- {
 			if g.Squares[i].Element != nil {
-				//TODO - Append/replace to position.
 				g.Call("appendChild", g.Squares[i].Element.Object())
 			}
 		}
@@ -403,23 +402,29 @@ func (g *BoardGrid) Update(tools *shf.Tools) error {
 
 type PromotionPiece struct {
 	shf.Element
-	Piece piece.Piece
+	Piece        piece.Piece
+	PieceElement shf.Element
 }
 
-func (p *PromotionPiece) RedrawElement() {
+func (p *PromotionPiece) RedrawElement(tools *shf.Tools) {
 	if p.Element == nil {
 		return
 	}
 
+	tools.Destroy(p.PieceElement)
+	//TODO jezek - Look for other places where to destroy element (innerHTML, ...).
 	p.Element.Set("innerHTML", "")
-	p.Element.Call("appendChild", pieceElement(p.Piece).Object())
+
+	p.PieceElement = pieceElement(tools, p.Piece)
+	p.Element.Call("appendChild", p.PieceElement.Object())
 }
 func (p *PromotionPiece) Init(tools *shf.Tools) error {
 	if p.Element == nil {
 		p.Element = tools.CreateElement("span")
 		p.Element.Set("id", "promote-to-"+pieceTypesToName[p.Piece.Type])
 
-		p.RedrawElement()
+		//TODO jezek - Test if this can be deleted.
+		//p.RedrawElement(tools)
 	}
 	return nil
 }
@@ -427,7 +432,7 @@ func (p *PromotionPiece) Update(tools *shf.Tools) error {
 	if p == nil {
 		return errors.New("PromotionPiece is nil")
 	}
-	p.RedrawElement()
+	p.RedrawElement(tools)
 	return nil
 }
 
@@ -445,7 +450,7 @@ func (p *BoardPromotionOverlay) Init(tools *shf.Tools) error {
 		p.Pieces = []*PromotionPiece{}
 		for _, pieceType := range promotablePiecesType {
 			pp := &PromotionPiece{Piece: piece.New(p.Color, pieceType)}
-			if err := tools.Update(pp); err != nil {
+			if err := tools.Initialize(pp); err != nil {
 				return err
 			}
 			p.Pieces = append(p.Pieces, pp)
@@ -498,7 +503,7 @@ type ModelBoard struct {
 func (b *ModelBoard) Init(tools *shf.Tools) error {
 	if b.Edgings.TopLeft == nil {
 		b.Edgings.TopLeft = &EdgingCorner{}
-		if err := tools.Update(b.Edgings.TopLeft); err != nil {
+		if err := tools.Initialize(b.Edgings.TopLeft); err != nil {
 			return err
 		}
 
@@ -506,7 +511,7 @@ func (b *ModelBoard) Init(tools *shf.Tools) error {
 	}
 	if b.Edgings.Top == nil {
 		b.Edgings.Top = &EdgingHorizontal{}
-		if err := tools.Update(b.Edgings.Top); err != nil {
+		if err := tools.Initialize(b.Edgings.Top); err != nil {
 			return err
 		}
 
@@ -515,7 +520,7 @@ func (b *ModelBoard) Init(tools *shf.Tools) error {
 	}
 	if b.Edgings.TopRight == nil {
 		b.Edgings.TopRight = &EdgingCornerRotating{}
-		if err := tools.Update(b.Edgings.TopRight); err != nil {
+		if err := tools.Initialize(b.Edgings.TopRight); err != nil {
 			return err
 		}
 		b.Edgings.TopRight.SetPosition("top-right")
@@ -523,7 +528,7 @@ func (b *ModelBoard) Init(tools *shf.Tools) error {
 
 	if b.Edgings.Left == nil {
 		b.Edgings.Left = &EdgingVertical{}
-		if err := tools.Update(b.Edgings.Left); err != nil {
+		if err := tools.Initialize(b.Edgings.Left); err != nil {
 			return err
 		}
 		b.Edgings.Left.SetPosition("left")
@@ -531,14 +536,14 @@ func (b *ModelBoard) Init(tools *shf.Tools) error {
 
 	if b.Grid == nil {
 		b.Grid = &BoardGrid{}
-		if err := tools.Update(b.Grid); err != nil {
+		if err := tools.Initialize(b.Grid); err != nil {
 			return err
 		}
 	}
 
 	if b.Edgings.Right == nil {
 		b.Edgings.Right = &EdgingVertical{}
-		if err := tools.Update(b.Edgings.Right); err != nil {
+		if err := tools.Initialize(b.Edgings.Right); err != nil {
 			return err
 		}
 		b.Edgings.Right.SetPosition("right")
@@ -546,21 +551,21 @@ func (b *ModelBoard) Init(tools *shf.Tools) error {
 
 	if b.Edgings.BottomLeft == nil {
 		b.Edgings.BottomLeft = &EdgingCornerRotating{}
-		if err := tools.Update(b.Edgings.BottomLeft); err != nil {
+		if err := tools.Initialize(b.Edgings.BottomLeft); err != nil {
 			return err
 		}
 		b.Edgings.BottomLeft.SetPosition("bottom-left")
 	}
 	if b.Edgings.Bottom == nil {
 		b.Edgings.Bottom = &EdgingHorizontal{}
-		if err := tools.Update(b.Edgings.Bottom); err != nil {
+		if err := tools.Initialize(b.Edgings.Bottom); err != nil {
 			return err
 		}
 		b.Edgings.Bottom.SetPosition("bottom")
 	}
 	if b.Edgings.BottomRight == nil {
 		b.Edgings.BottomRight = &EdgingCorner{}
-		if err := tools.Update(b.Edgings.BottomRight); err != nil {
+		if err := tools.Initialize(b.Edgings.BottomRight); err != nil {
 			return err
 		}
 		b.Edgings.BottomRight.SetPosition("bottom-right")
@@ -568,7 +573,7 @@ func (b *ModelBoard) Init(tools *shf.Tools) error {
 
 	if b.PromotionOverlay == nil {
 		b.PromotionOverlay = &BoardPromotionOverlay{}
-		if err := tools.Update(b.PromotionOverlay); err != nil {
+		if err := tools.Initialize(b.PromotionOverlay); err != nil {
 			return err
 		}
 	}
@@ -624,7 +629,7 @@ func (c *ThrownOutsContainer) Init(tools *shf.Tools) error {
 		for _, pieceType := range thrownOutPiecesOrderType {
 			div := tools.CreateElement("div")
 			div.Get("classList").Call("add", "piececount")
-			div.Call("appendChild", pieceElement(piece.New(c.Color, pieceType)).Object())
+			div.Call("appendChild", pieceElement(tools, piece.New(c.Color, pieceType)).Object())
 
 			span := tools.CreateElement("span")
 			span.Get("classList").Call("add", "count")
@@ -677,7 +682,7 @@ func (t *ModelThrownouts) Init(tools *shf.Tools) error {
 		t.White = &ThrownOutsContainer{
 			Color: piece.White,
 		}
-		if err := tools.Update(t.White); err != nil {
+		if err := tools.Initialize(t.White); err != nil {
 			return err
 		}
 	}
@@ -685,7 +690,7 @@ func (t *ModelThrownouts) Init(tools *shf.Tools) error {
 		t.Black = &ThrownOutsContainer{
 			Color: piece.Black,
 		}
-		if err := tools.Update(t.Black); err != nil {
+		if err := tools.Initialize(t.Black); err != nil {
 			return err
 		}
 	}
@@ -723,10 +728,10 @@ func (sm *StatusIcons) Update(tools *shf.Tools) error {
 
 	sm.Set("innerHTML", "")
 	if sm.White {
-		sm.Call("appendChild", pieceElement(piece.New(piece.White, piece.King)).Object())
+		sm.Call("appendChild", pieceElement(tools, piece.New(piece.White, piece.King)).Object())
 	}
 	if sm.Black {
-		sm.Call("appendChild", pieceElement(piece.New(piece.Black, piece.King)).Object())
+		sm.Call("appendChild", pieceElement(tools, piece.New(piece.Black, piece.King)).Object())
 	}
 
 	return nil
@@ -764,13 +769,13 @@ type StatusHeader struct {
 func (gs *StatusHeader) Init(tools *shf.Tools) error {
 	if gs.Icons == nil {
 		gs.Icons = &StatusIcons{}
-		if err := tools.Update(gs.Icons); err != nil {
+		if err := tools.Initialize(gs.Icons); err != nil {
 			return err
 		}
 	}
 	if gs.Message == nil {
 		gs.Message = &StatusText{}
-		if err := tools.Update(gs.Message); err != nil {
+		if err := tools.Initialize(gs.Message); err != nil {
 			return err
 		}
 	}
@@ -791,12 +796,54 @@ func (gs *StatusHeader) Update(tools *shf.Tools) error {
 	return tools.Update(gs.Message, gs.Icons)
 }
 
-type StatusMoves struct {
+type StatusMove struct {
 	shf.Element
-	PGN *pgn.PGN
+	Color piece.Color
+	SAN   string
 }
 
-func (si *StatusMoves) Init(tools *shf.Tools) error {
+func (sm *StatusMove) Init(tools *shf.Tools) error {
+	if sm.Element == nil {
+		sm.Element = tools.CreateElement("span")
+	}
+	return nil
+}
+func (sm *StatusMove) Update(tools *shf.Tools) error {
+	if sm == nil {
+		return errors.New("StatusMove is nil")
+	}
+	sm.Get("classList").Set("value", "move-"+strings.ToLower(sm.Color.String()))
+	sm.Set("textContent", sm.SAN)
+	return nil
+}
+
+type StatusInitialPosition struct {
+	shf.Element
+	BeforeMove int
+}
+
+func (sip *StatusInitialPosition) Init(tools *shf.Tools) error {
+	if sip.Element == nil {
+		sip.Element = tools.CreateElement("span")
+
+		sip.Set("textContent", "#")
+
+	}
+	return nil
+}
+func (sip *StatusInitialPosition) Update(tools *shf.Tools) error {
+	return nil
+}
+
+type StatusBody struct {
+	shf.Element
+	Moves           []*StatusMove
+	InitialPosition StatusInitialPosition
+
+	refGame *ChessGameModel
+}
+
+func (si *StatusBody) Init(tools *shf.Tools) error {
 	if si.Element == nil {
 		si.Element = tools.CreateElement("div")
 		si.Set("id", "game-status-moves")
@@ -804,14 +851,20 @@ func (si *StatusMoves) Init(tools *shf.Tools) error {
 	return nil
 }
 
-func (si *StatusMoves) Update(tools *shf.Tools) error {
-	if si == nil {
-		return errors.New("StatusMoves is nil")
+func (sb *StatusBody) Update(tools *shf.Tools) error {
+	if sb == nil {
+		return errors.New("StatusBody is nil")
 	}
 
-	si.Set("innerHTML", "")
-	if si.PGN != nil && si.PGN.Moves != nil {
-		for i := range si.PGN.Moves {
+	for _, mv := range sb.Moves {
+		tools.ClickRemove(mv)
+		tools.Destroy(mv)
+	}
+	sb.Set("innerHTML", "")
+
+	if sb.refGame != nil {
+		pgn := pgn.EncodeSAN(sb.refGame.game)
+		for i := range pgn.Moves {
 			// Skip every odd half move.
 			if i%2 == 1 {
 				continue
@@ -822,23 +875,38 @@ func (si *StatusMoves) Update(tools *shf.Tools) error {
 			moveNo.Get("classList").Call("add", "move-no")
 			moveNo.Set("textContent", strconv.Itoa(no))
 
-			moveWhite := tools.CreateElement("span")
-			moveWhite.Get("classList").Call("add", "move-white")
-			moveWhite.Set("textContent", si.PGN.Moves[i])
-
-			moveBlack := tools.CreateElement("span")
-			moveBlack.Get("classList").Call("add", "move-black")
-			if i+1 < len(si.PGN.Moves) {
-				moveBlack.Set("textContent", si.PGN.Moves[i+1])
+			moveWhite := &StatusMove{
+				Color: piece.White,
+				SAN:   pgn.Moves[i],
+			}
+			sb.Moves = append(sb.Moves, moveWhite)
+			if err := tools.Initialize(moveWhite); err != nil {
+				return err
+			}
+			if err := tools.Update(moveWhite); err != nil {
+				return err
 			}
 
 			p := tools.CreateElement("p")
 			p.Get("classList").Call("add", "move-"+strconv.Itoa(no))
 			p.Call("appendChild", moveNo.Object())
 			p.Call("appendChild", moveWhite.Object())
-			p.Call("appendChild", moveBlack.Object())
+			if i+1 < len(pgn.Moves) {
+				moveBlack := &StatusMove{
+					Color: piece.Black,
+					SAN:   pgn.Moves[i+1],
+				}
+				sb.Moves = append(sb.Moves, moveBlack)
+				if err := tools.Initialize(moveBlack); err != nil {
+					return err
+				}
+				if err := tools.Update(moveBlack); err != nil {
+					return err
+				}
+				p.Call("appendChild", moveBlack.Object())
+			}
 
-			si.Call("appendChild", p.Object())
+			sb.Call("appendChild", p.Object())
 
 		}
 	}
@@ -849,19 +917,19 @@ func (si *StatusMoves) Update(tools *shf.Tools) error {
 type ModelGameStatus struct {
 	shf.Element
 	Header *StatusHeader
-	Moves  *StatusMoves
+	Body   *StatusBody
 }
 
 func (gs *ModelGameStatus) Init(tools *shf.Tools) error {
 	if gs.Header == nil {
 		gs.Header = &StatusHeader{}
-		if err := tools.Update(gs.Header); err != nil {
+		if err := tools.Initialize(gs.Header); err != nil {
 			return err
 		}
 	}
-	if gs.Moves == nil {
-		gs.Moves = &StatusMoves{}
-		if err := tools.Update(gs.Moves); err != nil {
+	if gs.Body == nil {
+		gs.Body = &StatusBody{}
+		if err := tools.Initialize(gs.Body); err != nil {
 			return err
 		}
 	}
@@ -870,7 +938,7 @@ func (gs *ModelGameStatus) Init(tools *shf.Tools) error {
 		gs.Element = tools.CreateElement("div")
 		gs.Set("id", "game-status")
 		gs.Call("appendChild", gs.Header.Element.Object())
-		gs.Call("appendChild", gs.Moves.Element.Object())
+		gs.Call("appendChild", gs.Body.Element.Object())
 	}
 	return nil
 }
@@ -879,7 +947,7 @@ func (gs *ModelGameStatus) Update(tools *shf.Tools) error {
 		return errors.New("ModelGameStatus is nil")
 	}
 
-	return tools.Update(gs.Header, gs.Moves)
+	return tools.Update(gs.Header, gs.Body)
 }
 
 type CopyButton struct {
@@ -929,7 +997,7 @@ func (this *MoveStatusLink) Init(tools *shf.Tools) error {
 
 	if this.Copy == nil {
 		this.Copy = &CopyButton{}
-		if err := tools.Update(this.Copy); err != nil {
+		if err := tools.Initialize(this.Copy); err != nil {
 			return err
 		}
 	}
@@ -976,7 +1044,7 @@ type ModelMoveStatus struct {
 func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
 	if this.Link == nil {
 		this.Link = &MoveStatusLink{}
-		if err := tools.Update(this.Link); err != nil {
+		if err := tools.Initialize(this.Link); err != nil {
 			return err
 		}
 	}
@@ -1064,13 +1132,13 @@ func (this *ModelMoveStatus) Update(tools *shf.Tools) error {
 func (this *ModelCover) Init(tools *shf.Tools) error {
 	if this.GameStatus == nil {
 		this.GameStatus = &ModelGameStatus{}
-		if err := tools.Update(this.GameStatus); err != nil {
+		if err := tools.Initialize(this.GameStatus); err != nil {
 			return err
 		}
 	}
 	if this.MoveStatus == nil {
 		this.MoveStatus = &ModelMoveStatus{}
-		if err := tools.Update(this.MoveStatus); err != nil {
+		if err := tools.Initialize(this.MoveStatus); err != nil {
 			return err
 		}
 	}
@@ -1210,25 +1278,25 @@ func (this *ModelExportInput) Init(tools *shf.Tools) error {
 
 	if this.White == nil {
 		this.White = &ModelExportTagInput{Name: "White", Label: "White name"}
-		if err := tools.Update(this.White); err != nil {
+		if err := tools.Initialize(this.White); err != nil {
 			return err
 		}
 	}
 	if this.Black == nil {
 		this.Black = &ModelExportTagInput{Name: "Black", Label: "Black name"}
-		if err := tools.Update(this.Black); err != nil {
+		if err := tools.Initialize(this.Black); err != nil {
 			return err
 		}
 	}
 	if this.Round == nil {
 		this.Round = &ModelExportTagInput{Name: "Round", Label: "Round no."}
-		if err := tools.Update(this.Round); err != nil {
+		if err := tools.Initialize(this.Round); err != nil {
 			return err
 		}
 	}
 	if this.Date == nil {
 		this.Date = &ModelExportTagInput{Name: "Date", Label: "Start date"}
-		if err := tools.Update(this.Date); err != nil {
+		if err := tools.Initialize(this.Date); err != nil {
 			return err
 		}
 	}
@@ -1240,7 +1308,7 @@ func (this *ModelExportInput) Init(tools *shf.Tools) error {
 				{"1/2-1/2", game.Draw.String()},
 				{"0-1", game.BlackWon.String()},
 			}}
-		if err := tools.Update(this.Result); err != nil {
+		if err := tools.Initialize(this.Result); err != nil {
 			return err
 		}
 	}
@@ -1302,14 +1370,14 @@ func (this *ModelExportOutput) Init(tools *shf.Tools) error {
 
 	if this.Copy == nil {
 		this.Copy = &CopyButton{Shown: true}
-		if err := tools.Update(this.Copy); err != nil {
+		if err := tools.Initialize(this.Copy); err != nil {
 			return err
 		}
 	}
 
 	if this.Close == nil {
 		this.Close = &CloseButton{}
-		if err := tools.Update(this.Close); err != nil {
+		if err := tools.Initialize(this.Close); err != nil {
 			return err
 		}
 	}
@@ -1379,7 +1447,7 @@ func (this *ModelExport) applyTag(key, value string) error {
 func (this *ModelExport) Init(tools *shf.Tools) error {
 	if this.Output == nil {
 		this.Output = &ModelExportOutput{}
-		if err := tools.Update(this.Output); err != nil {
+		if err := tools.Initialize(this.Output); err != nil {
 			return err
 		}
 
@@ -1394,7 +1462,7 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 	}
 	if this.Input == nil {
 		this.Input = &ModelExportInput{}
-		if err := tools.Update(this.Input); err != nil {
+		if err := tools.Initialize(this.Input); err != nil {
 			return err
 		}
 
@@ -1509,51 +1577,53 @@ func (n *ModelNotification) Message(text, hint string, elements ...shf.Element) 
 
 	n.Set("innerHTML", "")
 
-	notification := shf.CreateElement("div")
+	//TODO jezek - Create properly using tools, save and destroy when changing.
+	notification := shf.CreateElementObject("div")
 	notification.Get("classList").Call("add", "notification")
 	{ // message
-		msg := shf.CreateElement("p")
+		msg := shf.CreateElementObject("p")
 		msg.Get("classList").Call("add", "message")
 		msg.Set("textContent", text)
-		notification.Call("appendChild", msg.Object())
+		notification.Call("appendChild", msg)
 	}
 
 	for _, e := range elements {
 		notification.Call("appendChild", e.Object())
 	}
 	if hint != "" { // hint
-		hintElm := shf.CreateElement("p")
+		hintElm := shf.CreateElementObject("p")
 		hintElm.Get("classList").Call("add", "hint")
 		hintElm.Set("textContent", hint)
-		notification.Call("appendChild", hintElm.Object())
+		notification.Call("appendChild", hintElm)
 	}
-	n.Call("appendChild", notification.Object())
+	n.Call("appendChild", notification)
 	n.Shown = true
 }
 func (n *ModelNotification) TimedMessage(tools *shf.Tools, duration time.Duration, text, hint string, elements ...shf.Element) {
 	n.cancelTimer()
 
-	notification := shf.CreateElement("div")
+	//TODO jezek - Create properly using tools, save and destroy when changing.
+	notification := shf.CreateElementObject("div")
 	notification.Get("classList").Call("add", "notification")
 	{ // message
-		msg := shf.CreateElement("p")
+		msg := shf.CreateElementObject("p")
 		msg.Get("classList").Call("add", "message")
 		msg.Set("textContent", text)
-		notification.Call("appendChild", msg.Object())
+		notification.Call("appendChild", msg)
 	}
 
 	for _, e := range elements {
 		notification.Call("appendChild", e.Object())
 	}
 	if hint != "" { // hint
-		hintElm := shf.CreateElement("p")
+		hintElm := shf.CreateElementObject("p")
 		hintElm.Get("classList").Call("add", "hint")
 		hintElm.Set("textContent", hint)
-		notification.Call("appendChild", hintElm.Object())
+		notification.Call("appendChild", hintElm)
 	}
 
 	n.Set("innerHTML", "")
-	n.Call("appendChild", notification.Object())
+	n.Call("appendChild", notification)
 
 	n.Shown = true
 	n.timeoutId = tools.Timer(duration, func() {
@@ -1607,43 +1677,43 @@ type HtmlModel struct {
 func (h *HtmlModel) Init(tools *shf.Tools) error {
 	if h.Header == nil {
 		h.Header = &ModelHeader{}
-		if err := tools.Update(h.Header); err != nil {
+		if err := tools.Initialize(h.Header); err != nil {
 			return err
 		}
 	}
 	if h.Board == nil {
 		h.Board = &ModelBoard{}
-		if err := tools.Update(h.Board); err != nil {
+		if err := tools.Initialize(h.Board); err != nil {
 			return err
 		}
 	}
 	if h.ThrownOuts == nil {
 		h.ThrownOuts = &ModelThrownouts{}
-		if err := tools.Update(h.ThrownOuts); err != nil {
+		if err := tools.Initialize(h.ThrownOuts); err != nil {
 			return err
 		}
 	}
 	if h.Cover == nil {
 		h.Cover = &ModelCover{}
-		if err := tools.Update(h.Cover); err != nil {
+		if err := tools.Initialize(h.Cover); err != nil {
 			return err
 		}
 	}
 	if h.Export == nil {
 		h.Export = &ModelExport{}
-		if err := tools.Update(h.Export); err != nil {
+		if err := tools.Initialize(h.Export); err != nil {
 			return err
 		}
 	}
 	if h.Notification == nil {
 		h.Notification = &ModelNotification{}
-		if err := tools.Update(h.Notification); err != nil {
+		if err := tools.Initialize(h.Notification); err != nil {
 			return err
 		}
 	}
 	if h.Footer == nil {
 		h.Footer = &ModelFooter{}
-		if err := tools.Update(h.Footer); err != nil {
+		if err := tools.Initialize(h.Footer); err != nil {
 			return err
 		}
 	}
@@ -1719,7 +1789,7 @@ func (h *HtmlModel) CopyExportOutputToClipboard() error {
 
 type ThrownOuts map[piece.Piece]uint8
 type GameThrownOuts []ThrownOuts
-type ChessGame struct {
+type ChessGameModel struct {
 	gameHash   string
 	game       *game.Game
 	gameGc     GameThrownOuts
@@ -1760,7 +1830,7 @@ func pMakeMove(p *position.Position, m move.Move) (*position.Position, piece.Pie
 
 // Creates new chess game from moves string.
 // The moves string is basicaly move coordinates from & to (0...63) encoded in base64 (with some improvements for promotions, etc...). See encoding.go
-func NewGame(hash string) (*ChessGame, error) {
+func NewGame(hash string) (*ChessGameModel, error) {
 	// trim movesString from leading #
 	movesString := strings.TrimPrefix(hash, "#")
 
@@ -1808,7 +1878,7 @@ func NewGame(hash string) (*ChessGame, error) {
 		gtos = append(GameThrownOuts{ThrownOuts{}}, gtos...)
 	}
 
-	return &ChessGame{
+	return &ChessGameModel{
 		gameHash:   movesString,
 		game:       g,
 		gameGc:     gtos,
@@ -1817,7 +1887,7 @@ func NewGame(hash string) (*ChessGame, error) {
 	}, nil
 }
 
-func (ch *ChessGame) Validate() error {
+func (ch *ChessGameModel) Validate() error {
 	if ch == nil {
 		return errors.New("ChessGame is nil")
 	}
@@ -1825,7 +1895,7 @@ func (ch *ChessGame) Validate() error {
 		return errors.New("current move number is out of bounds")
 	}
 	if len(ch.game.Positions) != len(ch.gameGc) {
-		return errors.New("count of game moves and throuwn outs does not match")
+		return errors.New("count of game moves and thrown outs does not match")
 	}
 	if _, err := getNextMoveState(ch.game.Positions[ch.currMoveNo], ch.nextMove); err != nil {
 		return err
@@ -1833,7 +1903,7 @@ func (ch *ChessGame) Validate() error {
 	return nil
 }
 
-func (ch *ChessGame) MakeNextMove() error {
+func (ch *ChessGameModel) MakeNextMove() error {
 	if err := ch.Validate(); err != nil {
 		return err
 	}
@@ -1879,7 +1949,7 @@ func (ch *ChessGame) MakeNextMove() error {
 
 	return nil
 }
-func (ch *ChessGame) BackToPreviousMove() error {
+func (ch *ChessGameModel) BackToPreviousMove() error {
 	if err := ch.Validate(); err != nil {
 		return err
 	}
@@ -1904,7 +1974,7 @@ func (ch *ChessGame) BackToPreviousMove() error {
 	return nil
 }
 
-func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported bool) error {
+func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported bool) error {
 	if err := ch.Validate(); err != nil {
 		return err
 	}
@@ -2026,7 +2096,6 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 	}
 
 	{ // update status & notification
-		m.Cover.GameStatus.Moves.PGN = pgn.EncodeSAN(ch.game)
 		m.Cover.GameStatus.Header.Icons.White = false
 		m.Cover.GameStatus.Header.Icons.Black = false
 		if st := ch.game.Status(); st != game.InProgress { // game ended
@@ -2237,8 +2306,8 @@ func (ch *ChessGame) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported b
 }
 
 type Model struct {
-	Game *ChessGame
-	Html *HtmlModel
+	ChessGame *ChessGameModel
+	Html      *HtmlModel
 
 	rotationSupported bool
 	execSupported     bool
@@ -2252,7 +2321,7 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 		if err != nil {
 			return err
 		}
-		m.Game = game
+		m.ChessGame = game
 		m.Html.Notification.Shown = false
 		js.Global().Get("location").Set("hash", "")
 		m.RotateBoardForPlayer()
@@ -2282,7 +2351,7 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 		closeButton = nil
 	}
 	m.Html.Notification.Message(
-		m.Game.game.Status().String(),
+		m.ChessGame.game.Status().String(),
 		"tip: also click anywhere outside to close this notification",
 		newGameButton, exportButton, closeButton,
 	)
@@ -2290,7 +2359,7 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 }
 
 func (m *Model) refreshExportOutputData() {
-	gs := m.Game.game.Status()
+	gs := m.ChessGame.game.Status()
 	if gs == game.InProgress {
 		m.Html.Export.Input.Result.Selected = "*"
 		m.Html.Export.Input.Result.Disabled = false
@@ -2324,17 +2393,18 @@ func (m *Model) refreshExportOutputData() {
 	}
 	//TODO - Add event tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
 	//TODO - Add termination tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
-	m.Html.Export.Output.PGN = m.Html.Cover.GameStatus.Moves.PGN
+	m.Html.Export.Output.PGN = pgn.EncodeSAN(m.ChessGame.game)
+	//m.Html.Export.Output.PGN = m.Html.Cover.GameStatus.Moves.PGN
 }
 
 func (m *Model) Init(tools *shf.Tools) error {
-	if m.Game == nil {
-		m.Game, _ = NewGame("")
+	if m.ChessGame == nil {
+		m.ChessGame, _ = NewGame("")
 	}
 
 	if err := tools.HashChange(func(e shf.HashChangeEvent) error {
 		// get game hash
-		gameHash := "#" + m.Game.gameHash
+		gameHash := "#" + m.ChessGame.gameHash
 		// get location hash
 		locationHash := js.Global().Get("location").Get("hash").String()
 		if gameHash == locationHash {
@@ -2350,12 +2420,12 @@ func (m *Model) Init(tools *shf.Tools) error {
 			// location hash is bad, revert document location hash to game hash
 			//TODO - Proper error showing through notification.
 			js.Global().Call("alert", err.Error())
-			js.Global().Get("location").Set("hash", m.Game.gameHash)
+			js.Global().Get("location").Set("hash", m.ChessGame.gameHash)
 			return nil
 		}
 
 		// set game to location hash game
-		m.Game = newGame
+		m.ChessGame = newGame
 		m.Html.Cover.MoveStatus.Shown = false
 
 		return nil
@@ -2365,7 +2435,9 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 	if m.Html == nil {
 		m.Html = &HtmlModel{}
-		if err := tools.Update(m.Html); err != nil {
+
+		// Initialize the html model.
+		if err := tools.Initialize(m.Html); err != nil {
 			return err
 		}
 
@@ -2376,7 +2448,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 		} else {
 			if err := tools.Click(m.Html.Cover.GameStatus.Header.Element, func(_ shf.Event) error {
 				// If game ended, notify the player.
-				if st := m.Game.game.Status(); st != game.InProgress {
+				if st := m.ChessGame.game.Status(); st != game.InProgress {
 					if err := m.showEndGameNotification(tools); err != nil {
 						return err
 					}
@@ -2443,7 +2515,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			if err != nil {
 				return err
 			}
-			m.Game = game
+			m.ChessGame = game
 			m.Html.Notification.Shown = false
 			js.Global().Get("location").Set("hash", "")
 			m.RotateBoardForPlayer()
@@ -2519,8 +2591,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 	{ // add promotion events to promotion overlay
 		if err := tools.Click(m.Html.Board.PromotionOverlay.Element, func(_ shf.Event) error {
-			m.Game.nextMove.Promote = piece.None
-			m.Game.nextMove.Destination = square.NoSquare
+			m.ChessGame.nextMove.Promote = piece.None
+			m.ChessGame.nextMove.Destination = square.NoSquare
 			m.Html.Board.PromotionOverlay.Shown = false
 			return nil
 		}); err != nil {
@@ -2530,7 +2602,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 		for _, p := range m.Html.Board.PromotionOverlay.Pieces {
 			promotionPiece := p
 			if err := tools.Click(p.Element, func(_ shf.Event) error {
-				m.Game.nextMove.Promote = promotionPiece.Piece.Type
+				m.ChessGame.nextMove.Promote = promotionPiece.Piece.Type
 				m.Html.Board.PromotionOverlay.Shown = false
 				m.Html.Cover.MoveStatus.Shown = true
 				return nil
@@ -2542,7 +2614,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 	{ // add back event for move-status
 		if err := tools.Click(m.Html.Cover.MoveStatus.Undo, func(_ shf.Event) error {
-			if err := m.Game.BackToPreviousMove(); err != nil {
+			if err := m.ChessGame.BackToPreviousMove(); err != nil {
 				return err
 			}
 
@@ -2561,8 +2633,11 @@ func (m *Model) Update(tools *shf.Tools) error {
 		return errors.New("Model is nil")
 	}
 
+	// Update references between elements, where needed.
+	m.Html.Cover.GameStatus.Body.refGame = m.ChessGame
+
 	{ // update html model from game
-		err := m.Game.UpdateModel(tools, m.Html, m.execSupported)
+		err := m.ChessGame.UpdateModel(tools, m.Html, m.execSupported)
 		if err != nil {
 			return err
 		}
@@ -2575,7 +2650,7 @@ func (app *Model) RotateBoardForPlayer() {
 		return
 	}
 	app.Html.Rotated180deg = false
-	if app.Game.game.ActiveColor() == piece.Black {
+	if app.ChessGame.game.ActiveColor() == piece.Black {
 		app.Html.Rotated180deg = true
 	}
 }
@@ -2672,7 +2747,7 @@ type Model struct {
 func (this *Model) Init(tools *app.Tools) error {
 	if this.Child == nil {
 		this.Child = &Child{}
-		if err := tools.Update(this.Child); err != nil {
+		if err := tools.Initialize(this.Child); err != nil {
 			return err
 		}
 	}

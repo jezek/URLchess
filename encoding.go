@@ -51,7 +51,7 @@ func encodeMove(m move.Move) (string, error) {
 	return res, nil
 }
 
-func EncodeGame(g *ChessGame) (string, error) {
+func EncodeGame(g *ChessGameModel) (string, error) {
 	res := ""
 	for _, position := range g.game.Positions {
 		if position.LastMove != move.Null {
