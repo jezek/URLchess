@@ -843,10 +843,10 @@ type StatusBody struct {
 	refGame *ChessGameModel
 }
 
-func (si *StatusBody) Init(tools *shf.Tools) error {
-	if si.Element == nil {
-		si.Element = tools.CreateElement("div")
-		si.Set("id", "game-status-moves")
+func (sb *StatusBody) Init(tools *shf.Tools) error {
+	if sb.Element == nil {
+		sb.Element = tools.CreateElement("div")
+		sb.Set("id", "game-status-moves")
 	}
 	return nil
 }
@@ -1831,60 +1831,79 @@ func pMakeMove(p *position.Position, m move.Move) (*position.Position, piece.Pie
 // Creates new chess game from moves string.
 // The moves string is basicaly move coordinates from & to (0...63) encoded in base64 (with some improvements for promotions, etc...). See encoding.go
 func NewGame(hash string) (*ChessGameModel, error) {
-	// trim movesString from leading #
+	chgm := &ChessGameModel{
+		gameHash:   "",
+		game:       game.New(),
+		gameGc:     GameThrownOuts{},
+		currMoveNo: 0,
+		nextMove:   move.Null,
+	}
+
+	if err := chgm.UpdateToHash(hash); err != nil {
+		return nil, err
+	}
+
+	return chgm, nil
+}
+
+// Updates chess game to match moves from the moves hash string.
+// The moves hash string are basically pair of move coordinates (from, to <0, 63>) encoded in base64 (with some improvements for promotions, etc...). See encoding.go
+func (ch *ChessGameModel) UpdateToHash(hash string) error {
+	// Trim movesString from leading "#" character.
 	movesString := strings.TrimPrefix(hash, "#")
 
-	moves, err := DecodeMoves(movesString) // encoding.go
+	// Decode moves from hash string.
+	moves, err := DecodeMoves(movesString)
 	if err != nil {
-		return nil, errors.New("decoding moves error: " + err.Error())
+		return errors.New("decoding moves error: " + err.Error())
 	}
 
+	// Create new game and thrown outs structures.
 	g := game.New()
-	//TODO - Move thrown out pieces to game engine.
 	gtos := make(GameThrownOuts, len(moves))
 
-	{ // apply game moves
-		for i, move := range moves {
-			if g.Status() != game.InProgress {
-				return nil, errors.New("Too many moves in url string! " + strconv.Itoa(i+1) + " moves are enough")
-			}
-
-			// position before move
-			pbm := g.Position()
-
-			_, merr := g.MakeMove(move)
-			if merr != nil {
-				return nil, errors.New("Errorneous move number " + strconv.Itoa(i+1) + ": " + merr.Error())
-			}
-
-			// throw outs for this move
-			tos := ThrownOuts{}
-
-			// copy previous move throw outs
-			if i > 0 {
-				for p, c := range gtos[i-1] {
-					tos[p] = c
-				}
-			}
-
-			if _, top := pMakeMove(pbm, move); top.Type != piece.None {
-				tos[top] = tos[top] + 1
-			}
-
-			gtos[i] = tos
+	// Apply decode game moves to new game.
+	for i, move := range moves {
+		if g.Status() != game.InProgress {
+			return errors.New("Too many moves in url string! " + strconv.Itoa(i+1) + " moves are enough")
 		}
 
-		// prepend one empty throw outs
-		gtos = append(GameThrownOuts{ThrownOuts{}}, gtos...)
+		// Store position before the move.
+		pbm := g.Position()
+
+		// Make the move and check validity.
+		_, merr := g.MakeMove(move)
+		if merr != nil {
+			return errors.New("Erroneous move number " + strconv.Itoa(i+1) + ": " + merr.Error())
+		}
+
+		// Create throw outs list for this move and copy thrown outs from previous move.
+		tos := ThrownOuts{}
+		if i > 0 {
+			for p, c := range gtos[i-1] {
+				tos[p] = c
+			}
+		}
+
+		// If there is a thrown out in this move, add it to this move thrown out list.
+		if _, top := pMakeMove(pbm, move); top.Type != piece.None {
+			tos[top] = tos[top] + 1
+		}
+
+		gtos[i] = tos
 	}
 
-	return &ChessGameModel{
-		gameHash:   movesString,
-		game:       g,
-		gameGc:     gtos,
-		currMoveNo: len(gtos) - 1,
-		nextMove:   move.Null,
-	}, nil
+	// Prepend one empty throw outs structure to the thrown outs list.
+	gtos = append(GameThrownOuts{ThrownOuts{}}, gtos...)
+
+	// Update the ChessGameModel structure.
+	ch.gameHash = movesString
+	ch.game = g
+	ch.gameGc = gtos
+	ch.currMoveNo = len(gtos) - 1
+	ch.nextMove = move.Null
+
+	return nil
 }
 
 func (ch *ChessGameModel) Validate() error {
@@ -2317,11 +2336,9 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 	newGameButton := tools.CreateElement("button")
 	newGameButton.Set("textContent", "new game")
 	if err := tools.Click(newGameButton, func(_ shf.Event) error {
-		game, err := NewGame("")
-		if err != nil {
+		if err := m.ChessGame.UpdateToHash(""); err != nil {
 			return err
 		}
-		m.ChessGame = game
 		m.Html.Notification.Shown = false
 		js.Global().Get("location").Set("hash", "")
 		m.RotateBoardForPlayer()
@@ -2403,29 +2420,28 @@ func (m *Model) Init(tools *shf.Tools) error {
 	}
 
 	if err := tools.HashChange(func(e shf.HashChangeEvent) error {
-		// get game hash
+		// Get game hash.
 		gameHash := "#" + m.ChessGame.gameHash
-		// get location hash
+		// Get location hash.
 		locationHash := js.Global().Get("location").Get("hash").String()
 		if gameHash == locationHash {
-			// equal, do nothing
+			// Equal, do nothing.
 			return nil
 		}
-		// not equal game & location hash
+
+		// Not equal game & location hashes.
 		//js.Global().Call("alert", "not equal game & location hash: "+gameHash+" != "+locationHash)
 
-		// create game grom location hash
-		newGame, err := NewGame(locationHash)
-		if err != nil {
-			// location hash is bad, revert document location hash to game hash
+		// Update game to the location hash.
+		if err := m.ChessGame.UpdateToHash(locationHash); err != nil {
+			// Location hash is bad, revert document location hash to game hash.
 			//TODO - Proper error showing through notification.
 			js.Global().Call("alert", err.Error())
 			js.Global().Get("location").Set("hash", m.ChessGame.gameHash)
 			return nil
 		}
 
-		// set game to location hash game
-		m.ChessGame = newGame
+		// Close move status after game is updated.
 		m.Html.Cover.MoveStatus.Shown = false
 
 		return nil
@@ -2440,6 +2456,9 @@ func (m *Model) Init(tools *shf.Tools) error {
 		if err := tools.Initialize(m.Html); err != nil {
 			return err
 		}
+
+		// Add references between elements, where needed.
+		m.Html.Cover.GameStatus.Body.refGame = m.ChessGame
 
 		if !m.rotationSupported {
 			m.Html.Rotated180deg = false
@@ -2511,11 +2530,9 @@ func (m *Model) Init(tools *shf.Tools) error {
 		newGameButton := tools.CreateElement("button")
 		newGameButton.Set("textContent", "new game")
 		if err := tools.Click(newGameButton, func(_ shf.Event) error {
-			game, err := NewGame("")
-			if err != nil {
+			if err := m.ChessGame.UpdateToHash(""); err != nil {
 				return err
 			}
-			m.ChessGame = game
 			m.Html.Notification.Shown = false
 			js.Global().Get("location").Set("hash", "")
 			m.RotateBoardForPlayer()
@@ -2633,10 +2650,7 @@ func (m *Model) Update(tools *shf.Tools) error {
 		return errors.New("Model is nil")
 	}
 
-	// Update references between elements, where needed.
-	m.Html.Cover.GameStatus.Body.refGame = m.ChessGame
-
-	{ // update html model from game
+	{ // Update html model from chess game.
 		err := m.ChessGame.UpdateModel(tools, m.Html, m.execSupported)
 		if err != nil {
 			return err

@@ -67,14 +67,11 @@ func main() {
 	body.Call("appendChild", model.Html.Notification.Element.Object())
 
 	if hash := js.Global().Get("location").Get("hash").String(); len(hash) > 0 {
-		game, err := NewGame(hash)
-		if err != nil {
+		if err := model.ChessGame.UpdateToHash(hash); err != nil {
 			//TODO - Use app to write error.
 			document.Call("write", "<div class=\"error\">"+err.Error()+"</div>")
 			return
 		}
-
-		model.ChessGame = game
 	}
 
 	// If game ended, notify the player.
