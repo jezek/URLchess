@@ -909,6 +909,9 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 			sb.Call("appendChild", p.Object())
 
 		}
+		if l := len(sb.Moves); l > 0 {
+			sb.Moves[l-1].Element.Call("scrollIntoView", "{ behavior: \"smooth\", block: \"nearest\", inline: \"nearest\" }")
+		}
 	}
 
 	return nil
