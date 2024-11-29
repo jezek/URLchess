@@ -863,8 +863,7 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 	sb.Set("innerHTML", "")
 
 	if sb.refGame != nil {
-		pgn := pgn.EncodeSAN(sb.refGame.game)
-		for i := range pgn.Moves {
+		for i := range sb.refGame.pgn.Moves {
 			// Skip every odd half move.
 			if i%2 == 1 {
 				continue
@@ -877,7 +876,7 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 
 			moveWhite := &StatusMove{
 				Color: piece.White,
-				SAN:   pgn.Moves[i],
+				SAN:   sb.refGame.pgn.Moves[i],
 			}
 			sb.Moves = append(sb.Moves, moveWhite)
 			if err := tools.Initialize(moveWhite); err != nil {
@@ -891,10 +890,10 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 			p.Get("classList").Call("add", "move-"+strconv.Itoa(no))
 			p.Call("appendChild", moveNo.Object())
 			p.Call("appendChild", moveWhite.Object())
-			if i+1 < len(pgn.Moves) {
+			if i+1 < len(sb.refGame.pgn.Moves) {
 				moveBlack := &StatusMove{
 					Color: piece.Black,
-					SAN:   pgn.Moves[i+1],
+					SAN:   sb.refGame.pgn.Moves[i+1],
 				}
 				sb.Moves = append(sb.Moves, moveBlack)
 				if err := tools.Initialize(moveBlack); err != nil {
@@ -1798,6 +1797,7 @@ type ChessGameModel struct {
 	gameGc     GameThrownOuts
 	currMoveNo int
 	nextMove   move.Move
+	pgn        *pgn.PGN
 }
 
 func addedThrownOuts(prev, next ThrownOuts) ThrownOuts {
@@ -1834,12 +1834,14 @@ func pMakeMove(p *position.Position, m move.Move) (*position.Position, piece.Pie
 // Creates new chess game from moves string.
 // The moves string is basicaly move coordinates from & to (0...63) encoded in base64 (with some improvements for promotions, etc...). See encoding.go
 func NewGame(hash string) (*ChessGameModel, error) {
+	g := game.New()
 	chgm := &ChessGameModel{
 		gameHash:   "",
-		game:       game.New(),
+		game:       g,
 		gameGc:     GameThrownOuts{},
 		currMoveNo: 0,
 		nextMove:   move.Null,
+		pgn:        pgn.EncodeSAN(g),
 	}
 
 	if err := chgm.UpdateToHash(hash); err != nil {
@@ -1905,6 +1907,7 @@ func (ch *ChessGameModel) UpdateToHash(hash string) error {
 	ch.gameGc = gtos
 	ch.currMoveNo = len(gtos) - 1
 	ch.nextMove = move.Null
+	ch.pgn = pgn.EncodeSAN(g)
 
 	return nil
 }
@@ -2413,8 +2416,7 @@ func (m *Model) refreshExportOutputData() {
 	}
 	//TODO - Add event tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c8.1.1
 	//TODO - Add termination tag? - http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c9.8.1
-	m.Html.Export.Output.PGN = pgn.EncodeSAN(m.ChessGame.game)
-	//m.Html.Export.Output.PGN = m.Html.Cover.GameStatus.Moves.PGN
+	m.Html.Export.Output.PGN = m.ChessGame.pgn
 }
 
 func (m *Model) Init(tools *shf.Tools) error {
