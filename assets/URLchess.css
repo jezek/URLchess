@@ -468,11 +468,14 @@ div.thrown-outs .count {
 #game-status-moves p span.move-no:after {
 	content: ".";
 }
-#game-status-moves p span.move-white,
-#game-status-moves p span.move-black {
+#game-status-moves p span.move {
 	width: calc(50% - (3em / 2));
 	background-color: transparent;
 	padding: 0 1em;
+	cursor: pointer;
+}
+#game-status-moves p:last-child span.move:last-child {
+	cursor: default;
 }
 /*************/
 /* move status */

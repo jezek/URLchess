@@ -812,7 +812,7 @@ func (sm *StatusMove) Update(tools *shf.Tools) error {
 	if sm == nil {
 		return errors.New("StatusMove is nil")
 	}
-	sm.Get("classList").Set("value", "move-"+strings.ToLower(sm.Color.String()))
+	sm.Get("classList").Set("value", "move "+strings.ToLower(sm.Color.String()))
 	sm.Set("textContent", sm.SAN)
 	return nil
 }
@@ -851,6 +851,30 @@ func (sb *StatusBody) Init(tools *shf.Tools) error {
 	return nil
 }
 
+func (sb *StatusBody) createMoveNo(tools *shf.Tools, n int) (*StatusMove, error) {
+	m := &StatusMove{
+		Color: piece.White,
+		SAN:   sb.refGame.pgn.Moves[n],
+	}
+	if err := tools.Initialize(m); err != nil {
+		return nil, err
+	}
+	if err := tools.Update(m); err != nil {
+		return nil, err
+	}
+	if n+1 < len(sb.refGame.pgn.Moves) {
+		if err := tools.Click(m.Element, func(_ shf.Event) error {
+			if err := sb.refGame.BackToMoveNo(n + 1); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	}
+	return m, nil
+}
+
 func (sb *StatusBody) Update(tools *shf.Tools) error {
 	if sb == nil {
 		return errors.New("StatusBody is nil")
@@ -864,44 +888,33 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 
 	if sb.refGame != nil {
 		for i := range sb.refGame.pgn.Moves {
-			// Skip every odd half move.
-			if i%2 == 1 {
+			if i%2 == 1 { // Skip every odd half move.
 				continue
 			}
-			no := (i / 2) + 1
+
+			i := i            // To have the right value in following Click function.
+			no := (i / 2) + 1 // Current move number (not half-move).
 
 			moveNo := tools.CreateElement("span")
 			moveNo.Get("classList").Call("add", "move-no")
 			moveNo.Set("textContent", strconv.Itoa(no))
 
-			moveWhite := &StatusMove{
-				Color: piece.White,
-				SAN:   sb.refGame.pgn.Moves[i],
+			moveWhite, err := sb.createMoveNo(tools, i)
+			if err != nil {
+				return err
 			}
 			sb.Moves = append(sb.Moves, moveWhite)
-			if err := tools.Initialize(moveWhite); err != nil {
-				return err
-			}
-			if err := tools.Update(moveWhite); err != nil {
-				return err
-			}
 
 			p := tools.CreateElement("p")
 			p.Get("classList").Call("add", "move-"+strconv.Itoa(no))
 			p.Call("appendChild", moveNo.Object())
 			p.Call("appendChild", moveWhite.Object())
 			if i+1 < len(sb.refGame.pgn.Moves) {
-				moveBlack := &StatusMove{
-					Color: piece.Black,
-					SAN:   sb.refGame.pgn.Moves[i+1],
+				moveBlack, err := sb.createMoveNo(tools, i+1)
+				if err != nil {
+					return err
 				}
 				sb.Moves = append(sb.Moves, moveBlack)
-				if err := tools.Initialize(moveBlack); err != nil {
-					return err
-				}
-				if err := tools.Update(moveBlack); err != nil {
-					return err
-				}
 				p.Call("appendChild", moveBlack.Object())
 			}
 
@@ -1994,7 +2007,31 @@ func (ch *ChessGameModel) BackToPreviousMove() error {
 
 	previousGameMoves := strings.TrimSuffix(ch.gameHash, lastMove)
 
+	js.Global().Call("alert", "new prev location hash: "+previousGameMoves)
 	js.Global().Get("location").Set("hash", previousGameMoves)
+
+	return nil
+}
+func (ch *ChessGameModel) BackToMoveNo(n int) error {
+	js.Global().Call("alert", "BackToMoveNo(n: "+strconv.Itoa(n)+")")
+	if err := ch.Validate(); err != nil {
+		return err
+	}
+	if n < 0 && n >= len(ch.game.Positions) {
+		// no previous move, just return
+		return errors.New("move no " + strconv.Itoa(n) + " is out of bounds <0, " + strconv.Itoa(len(ch.game.Positions)-1) + ">")
+	}
+
+	newHash := ""
+	for i := 1; i <= n; i++ {
+		em, err := encodeMove(ch.game.Positions[i].LastMove)
+		if err != nil {
+			return err
+		}
+		newHash += em
+	}
+
+	js.Global().Get("location").Set("hash", newHash)
 
 	return nil
 }
