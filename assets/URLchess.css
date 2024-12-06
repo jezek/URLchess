@@ -1,3 +1,7 @@
+:root {
+	--color-move-white: rgba(0, 255, 0, 0.125);
+	--color-move-black: rgba(0, 0, 255, 0.125);
+}
 body, button, input, textarea {
 	margin: 0;
 	background-color: #0e1e1e;
@@ -288,10 +292,10 @@ button:active {
 	background-color: rgba(0, 0, 255, 0.5);
 }
 #board .grid span.marker.next-move-possible-to.next-move-white:hover {
-	background-color: rgba(0, 255, 0, 0.125);
+	background-color: var(--color-move-white);
 }
 #board .grid span.marker.next-move-possible-to.next-move-black:hover {
-	background-color: rgba(0, 0, 255, 0.125);
+	background-color: var(--color-move-black);
 }
 #board .grid span.marker.last-move-black.next-move-possible-to.next-move-white:hover,
 #board .grid span.marker.last-move-white.next-move-possible-to.next-move-black:hover {
@@ -385,7 +389,7 @@ div.thrown-outs .piece {
 div.thrown-outs .count {
 	font-size: 0.7em;
 }
-/* throen out pieces flipping at board rotation */
+/* thrown out pieces flipping at board rotation */
 #board, #thrown-outs-container, #thrown-outs-container .thrown-outs, #thrown-outs-container .piececount { 
 	transition-duration: 0.8s;
 	transition-property: top, left, margin, width, height, transform;
@@ -454,6 +458,7 @@ div.thrown-outs .count {
 	margin: 0.25em 0;
 	padding: 0;
 }
+#game-status-moves p a,
 #game-status-moves p span {
 	display: inline-block;
   box-sizing: border-box;
@@ -468,14 +473,21 @@ div.thrown-outs .count {
 #game-status-moves p span.move-no:after {
 	content: ".";
 }
-#game-status-moves p span.move {
+#game-status-moves p a.move {
 	width: calc(50% - (3em / 2));
 	background-color: transparent;
 	padding: 0 1em;
+	cursor: default;
+	text-decoration: none;
+}
+#game-status-moves p a.clickable {
 	cursor: pointer;
 }
-#game-status-moves p:last-child span.move:last-child {
-	cursor: default;
+#game-status-moves p a.clickable.white:hover {
+	background-color: var(--color-move-white);
+}
+#game-status-moves p a.clickable.black:hover {
+	background-color: var(--color-move-black);
 }
 /*************/
 /* move status */
