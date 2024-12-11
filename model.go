@@ -798,9 +798,10 @@ func (gs *StatusHeader) Update(tools *shf.Tools) error {
 
 type StatusMove struct {
 	shf.Element
-	Href  string
-	Color piece.Color
-	SAN   string
+	Href    string
+	Color   piece.Color
+	SAN     string
+	Initial bool
 }
 
 func (sm *StatusMove) Init(tools *shf.Tools) error {
@@ -822,8 +823,12 @@ func (sm *StatusMove) Update(tools *shf.Tools) error {
 		sm.Element.Set("href", sm.Href)
 		classClickable = " clickable"
 	}
+	classInitial := ""
+	if sm.Initial {
+		classInitial = " initial"
+	}
 
-	sm.Get("classList").Set("value", "move"+classColor+classClickable)
+	sm.Get("classList").Set("value", "move"+classColor+classClickable+classInitial)
 	sm.Set("textContent", sm.SAN)
 	return nil
 }
@@ -844,7 +849,7 @@ func (sb *StatusBody) Init(tools *shf.Tools) error {
 	return nil
 }
 
-func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, n int) (*StatusMove, error) {
+func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, n int, initial bool) (*StatusMove, error) {
 	clickable := n == 0 || n < len(sb.refGame.pgn.Moves)
 
 	href := ""
@@ -859,7 +864,7 @@ func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, n int) (*StatusMove, er
 	c := piece.White
 	if n == 0 {
 		c = piece.NoColor
-	} else if n%2 != 0 {
+	} else if n%2 == 0 {
 		c = piece.Black
 	}
 
@@ -869,9 +874,10 @@ func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, n int) (*StatusMove, er
 	}
 
 	m := &StatusMove{
-		Href:  href,
-		Color: c,
-		SAN:   s,
+		Href:    href,
+		Color:   c,
+		SAN:     s,
+		Initial: initial,
 	}
 	println(m.Href, m.Color, m.SAN)
 	if err := tools.Initialize(m); err != nil {
@@ -907,13 +913,19 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 
 	if sb.refGame != nil {
 		if sb.MoveZero == nil {
-			mz, err := sb.createHalfMoveNo(tools, 0)
+			mz, err := sb.createHalfMoveNo(tools, 0, true)
 			if err != nil {
 				return err
 			}
 			sb.MoveZero = mz
 		}
+		moveNo := tools.CreateElement("span")
+		moveNo.Get("classList").Call("add", "move-no")
+		moveNo.Set("textContent", "0")
+
 		p := tools.CreateElement("p")
+		p.Get("classList").Call("add", "move-0")
+		p.Call("appendChild", moveNo.Object())
 		p.Call("appendChild", sb.MoveZero.Object())
 		sb.Call("appendChild", p.Object())
 
@@ -929,7 +941,7 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 			moveNo.Get("classList").Call("add", "move-no")
 			moveNo.Set("textContent", strconv.Itoa(no))
 
-			moveWhite, err := sb.createHalfMoveNo(tools, hno)
+			moveWhite, err := sb.createHalfMoveNo(tools, hno, false)
 			if err != nil {
 				return err
 			}
@@ -940,7 +952,7 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 			p.Call("appendChild", moveNo.Object())
 			p.Call("appendChild", moveWhite.Object())
 			if i+1 < len(sb.refGame.pgn.Moves) {
-				moveBlack, err := sb.createHalfMoveNo(tools, hno+1)
+				moveBlack, err := sb.createHalfMoveNo(tools, hno+1, false)
 				if err != nil {
 					return err
 				}
@@ -1841,6 +1853,7 @@ type ChessGameModel struct {
 	currMoveNo int
 	nextMove   move.Move
 	pgn        *pgn.PGN
+	initialPgn *pgn.PGN
 }
 
 func addedThrownOuts(prev, next ThrownOuts) ThrownOuts {
@@ -1877,19 +1890,13 @@ func pMakeMove(p *position.Position, m move.Move) (*position.Position, piece.Pie
 // Creates new chess game from moves string.
 // The moves string is basicaly move coordinates from & to (0...63) encoded in base64 (with some improvements for promotions, etc...). See encoding.go
 func NewGame(hash string) (*ChessGameModel, error) {
-	g := game.New()
-	chgm := &ChessGameModel{
-		gameHash:   "",
-		game:       g,
-		gameGc:     GameThrownOuts{},
-		currMoveNo: 0,
-		nextMove:   move.Null,
-		pgn:        pgn.EncodeSAN(g),
-	}
+	chgm := &ChessGameModel{}
 
 	if err := chgm.UpdateToHash(hash); err != nil {
 		return nil, err
 	}
+
+	chgm.initialPgn = chgm.pgn
 
 	return chgm, nil
 }
