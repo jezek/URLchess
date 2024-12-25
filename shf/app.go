@@ -35,6 +35,9 @@ func (t *Tools) Initialize(updaters ...Updater) error {
 	}
 	return nil
 }
+func (t *Tools) AppUpdate() error {
+	return t.app.Update()
+}
 func (t *Tools) Update(updaters ...Updater) error {
 	for _, updater := range updaters {
 		if updater == nil {
@@ -156,6 +159,10 @@ func (app *App) HashChange(function func(HashChangeEvent) error) error {
 		if err := function(hce); err != nil {
 			return err
 		}
+		if err := app.Update(); err != nil {
+			js.Global().Call("alert", "after hashchange event app dom update error: "+err.Error())
+			return err
+		}
 		return nil
 	})
 }
@@ -207,10 +214,6 @@ func (app *App) elventListener(eventName string, target Element, function func(e
 		}
 		if err := function(args[0]); err != nil {
 			js.Global().Call("alert", eventName+" event function returned error: "+err.Error())
-			return err
-		}
-		if err := app.Update(); err != nil {
-			js.Global().Call("alert", "after "+eventName+" event app dom update error: "+err.Error())
 			return err
 		}
 		return nil

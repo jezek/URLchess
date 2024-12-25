@@ -890,6 +890,7 @@ func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 		tools.ClickRemove(mv)
 		tools.Destroy(mv)
 	}
+	sb.Moves = nil
 	sb.Set("innerHTML", "")
 
 	lenInitialMoves, lenCurrentMoves := len(sb.refGame.initialPgn.Moves), len(sb.refGame.pgn.Moves)
@@ -1219,7 +1220,8 @@ func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
 		this.Close.Set("textContent", "close")
 		if err := tools.Click(this.Close, func(_ shf.Event) error {
 			this.Shown = false
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
@@ -1229,7 +1231,8 @@ func (this *ModelMoveStatus) Init(tools *shf.Tools) error {
 		this.tip = tools.CreateElement("div")
 		this.tip.Set("className", "tip")
 		if err := tools.Click(this.tip, func(_ shf.Event) error {
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
@@ -1612,7 +1615,8 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 		if err := tools.Click(this.Output.Close.Element, func(_ shf.Event) error {
 			this.Shown = false
 			this.Output.PGN = nil
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
@@ -1626,28 +1630,57 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 
 		// Bind tags input value change to update output PGN tags.
 		if err := tools.Input(this.Input.White.Input, func(_ shf.Event) error {
-			return this.applyTag(this.Input.White.Name, this.Input.White.Input.Get("value").String())
+			if err := this.applyTag(this.Input.White.Name, this.Input.White.Input.Get("value").String()); err != nil {
+				return err
+			}
+
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
 		if err := tools.Input(this.Input.Black.Input, func(_ shf.Event) error {
-			return this.applyTag(this.Input.Black.Name, this.Input.Black.Input.Get("value").String())
+			if err := this.applyTag(this.Input.Black.Name, this.Input.Black.Input.Get("value").String()); err != nil {
+				return err
+
+			}
+
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
 		if err := tools.Input(this.Input.Round.Input, func(_ shf.Event) error {
-			return this.applyTag(this.Input.Round.Name, this.Input.Round.Input.Get("value").String())
+			if err := this.applyTag(this.Input.Round.Name, this.Input.Round.Input.Get("value").String()); err != nil {
+				return err
+
+			}
+
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
 		if err := tools.Input(this.Input.Date.Input, func(_ shf.Event) error {
-			return this.applyTag(this.Input.Date.Name, this.Input.Date.Input.Get("value").String())
+			if err := this.applyTag(this.Input.Date.Name, this.Input.Date.Input.Get("value").String()); err != nil {
+				return err
+
+			}
+
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
 		if err := tools.Input(this.Input.Result.Select, func(_ shf.Event) error {
 			this.Input.Result.Selected = this.Input.Result.Select.Get("value").String()
-			return this.applyTag(this.Input.Result.Name, this.Input.Result.Selected)
+			if err := this.applyTag(this.Input.Result.Name, this.Input.Result.Selected); err != nil {
+				return err
+
+			}
+
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
@@ -1661,7 +1694,8 @@ func (this *ModelExport) Init(tools *shf.Tools) error {
 				this.Shown = false
 				this.Output.PGN = nil
 			}
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
@@ -1800,7 +1834,8 @@ func (n *ModelNotification) Init(tools *shf.Tools) error {
 				n.cancelTimer()
 				n.Shown = false
 			}
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
@@ -2368,7 +2403,8 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 					if err := tools.DblClick(sq.Element, func(_ shf.Event) error {
 						// toggle zen mode by adding/removing "zen-mode" class to body
 						js.Global().Get("document").Get("body").Get("classList").Call("toggle", "zen-mode")
-						return nil
+						//TODO - Do only needed updates.
+						return tools.AppUpdate()
 					}); err != nil {
 						return err
 					}
@@ -2395,7 +2431,8 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 							// if next move is a legal move, show move status
 							m.Board.PromotionOverlay.Shown = true
 						}
-						return nil
+						//TODO - Do only needed updates.
+						return tools.AppUpdate()
 					}); err != nil {
 						return err
 					}
@@ -2409,7 +2446,8 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 					if err := tools.Click(sq.Element, func(_ shf.Event) error {
 						ch.nextMove = move.Null
 						m.Cover.MoveStatus.Shown = false
-						return nil
+						//TODO - Do only needed updates.
+						return tools.AppUpdate()
 					}); err != nil {
 						return err
 					}
@@ -2430,7 +2468,8 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 
 							// hide move status
 							m.Cover.MoveStatus.Shown = false
-							return nil
+							//TODO - Do only needed updates.
+							return tools.AppUpdate()
 						}); err != nil {
 							return err
 						}
@@ -2445,7 +2484,8 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 					if err := tools.Click(sq.Element, func(_ shf.Event) error {
 						ch.nextMove = move.Null
 						m.Cover.MoveStatus.Shown = false
-						return nil
+						//TODO - Do only needed updates.
+						return tools.AppUpdate()
 					}); err != nil {
 						return err
 					}
@@ -2463,7 +2503,8 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 					if sq.Piece.Type == piece.None {
 						if err := tools.Click(sq.Element, func(_ shf.Event) error {
 							m.Cover.MoveStatus.Shown = !m.Cover.MoveStatus.Shown
-							return nil
+							//TODO - Do only needed updates.
+							return tools.AppUpdate()
 						}); err != nil {
 							return err
 						}
@@ -2485,7 +2526,8 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 								"",
 							)
 							m.Cover.MoveStatus.Shown = false
-							return nil
+							//TODO - Do only needed updates.
+							return tools.AppUpdate()
 						}); err != nil {
 							return err
 						}
@@ -2493,7 +2535,8 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 						// copy is not supported, just show move status
 						if err := tools.Click(m.Board.Grid.Squares[int(position.LastMove.To())].Element, func(_ shf.Event) error {
 							m.Cover.MoveStatus.Shown = true
-							return nil
+							//TODO - Do only needed updates.
+							return tools.AppUpdate()
 						}); err != nil {
 							return err
 						}
@@ -2505,7 +2548,8 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 							return err
 						}
 						m.Cover.GameStatus.Body.rebuildStatusMoves(tools)
-						return nil
+						//TODO - Do only needed updates.
+						return tools.AppUpdate()
 					}); err != nil {
 						return err
 					}
@@ -2539,7 +2583,8 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 		js.Global().Get("location").Set("hash", "")
 		m.RotateBoardForPlayer()
 		m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
-		return nil
+		//TODO - Do only needed updates.
+		return tools.AppUpdate()
 	}); err != nil {
 		// if there is an error creating event for button, simply do not show it
 		newGameButton = nil
@@ -2550,7 +2595,8 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 		m.refreshExportOutputData()
 		m.Html.Notification.Shown = false
 		m.Html.Export.Shown = true
-		return nil
+		//TODO - Do only needed updates.
+		return tools.AppUpdate()
 	}); err != nil {
 		// if there is an error creating event for button, simply do not show it
 		exportButton = nil
@@ -2559,7 +2605,8 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 	closeButton.Set("textContent", "close")
 	if err := tools.Click(closeButton, func(_ shf.Event) error {
 		m.Html.Notification.Shown = false
-		return nil
+		//TODO - Do only needed updates.
+		return tools.AppUpdate()
 	}); err != nil {
 		// if there is an error creating event for button, simply do not show it
 		closeButton = nil
@@ -2675,15 +2722,26 @@ func (m *Model) Init(tools *shf.Tools) error {
 				}
 
 				m.RotateBoardForPlayer()
-				return nil
+				//TODO - Do only needed updates.
+				return tools.AppUpdate()
 			}); err != nil {
 				return err
 			}
-			if err := tools.Click(m.Html.Board.Edgings.BottomLeft.Element, m.Html.RotateBoard()); err != nil {
+			if err := tools.Click(m.Html.Board.Edgings.BottomLeft.Element, func(_ shf.Event) error {
+				m.Html.RotateBoard()
+
+				//TODO - Do only needed updates.
+				return tools.AppUpdate()
+			}); err != nil {
 				return err
 			}
 			m.Html.Board.Edgings.BottomLeft.Enable()
-			if err := tools.Click(m.Html.Board.Edgings.TopRight.Element, m.Html.RotateBoard()); err != nil {
+			if err := tools.Click(m.Html.Board.Edgings.TopRight.Element, func(_ shf.Event) error {
+				m.Html.RotateBoard()
+
+				//TODO - Do only needed updates.
+				return tools.AppUpdate()
+			}); err != nil {
 				return err
 			}
 			m.Html.Board.Edgings.TopRight.Enable()
@@ -2703,7 +2761,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 					"tip: click on last move piece to copy",
 				)
 				m.Html.Cover.MoveStatus.Shown = false
-				return nil
+				//TODO - Do only needed updates.
+				return tools.AppUpdate()
 			}); err != nil {
 				return err
 			}
@@ -2719,7 +2778,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 					"",
 				)
 				//m.Html.Export.Shown = false
-				return nil
+				//TODO - Do only needed updates.
+				return tools.AppUpdate()
 			}); err != nil {
 				return err
 			}
@@ -2738,7 +2798,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 			js.Global().Get("location").Set("hash", "")
 			m.RotateBoardForPlayer()
 			m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			// if there is an error creating event for button, simply do not show it
 			newGameButton = nil
@@ -2761,7 +2822,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 					"game URL was copied to clipboard",
 					"tip: click on last move piece to copy",
 				)
-				return nil
+				//TODO - Do only needed updates.
+				return tools.AppUpdate()
 			}); err != nil {
 				// if there is an error creating event for button, simply do not show it
 				copyLinkButton = nil
@@ -2773,7 +2835,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 		if err := tools.Click(zenModeButton, func(_ shf.Event) error {
 			m.Html.Notification.Shown = false
 			js.Global().Get("document").Get("body").Get("classList").Call("toggle", "zen-mode")
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			// if there is an error creating event for button, simply do not show it
 			zenModeButton = nil
@@ -2787,7 +2850,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 			m.refreshExportOutputData()
 			m.Html.Notification.Shown = false
 			m.Html.Export.Shown = true
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			// if there is an error creating event for button, simply do not show it
 			exportButton = nil
@@ -2802,7 +2866,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 				zenModeButton,
 				exportButton,
 			)
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
@@ -2813,7 +2878,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 			m.ChessGame.nextMove.Promote = piece.None
 			m.ChessGame.nextMove.Destination = square.NoSquare
 			m.Html.Board.PromotionOverlay.Shown = false
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
@@ -2824,7 +2890,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 				m.ChessGame.nextMove.Promote = promotionPiece.Piece.Type
 				m.Html.Board.PromotionOverlay.Shown = false
 				m.Html.Cover.MoveStatus.Shown = true
-				return nil
+				//TODO - Do only needed updates.
+				return tools.AppUpdate()
 			}); err != nil {
 				return err
 			}
@@ -2839,7 +2906,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 			m.Html.Cover.MoveStatus.Shown = false
 			m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
-			return nil
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
 		}); err != nil {
 			return err
 		}
