@@ -798,10 +798,10 @@ func (gs *StatusHeader) Update(tools *shf.Tools) error {
 
 type StatusMove struct {
 	shf.Element
-	Href    string
-	Color   piece.Color
-	SAN     string
-	Initial bool
+	Href                     string
+	Color                    piece.Color
+	Text                     string
+	Initial, Current, Future bool
 }
 
 func (sm *StatusMove) Init(tools *shf.Tools) error {
@@ -811,6 +811,7 @@ func (sm *StatusMove) Init(tools *shf.Tools) error {
 	return nil
 }
 func (sm *StatusMove) Update(tools *shf.Tools) error {
+	//println("StatusMove.Update: text:", sm.Text)
 	if sm == nil {
 		return errors.New("StatusMove is nil")
 	}
@@ -819,7 +820,7 @@ func (sm *StatusMove) Update(tools *shf.Tools) error {
 		classColor = " " + strings.ToLower(sm.Color.String())
 	}
 	classClickable := ""
-	if sm.Href != "" {
+	if sm.Href != "" && !sm.Current {
 		sm.Element.Set("href", sm.Href)
 		classClickable = " clickable"
 	}
@@ -827,9 +828,17 @@ func (sm *StatusMove) Update(tools *shf.Tools) error {
 	if sm.Initial {
 		classInitial = " initial"
 	}
+	classCurrent := ""
+	if sm.Current {
+		classCurrent = " current"
+	}
+	classFuture := ""
+	if sm.Future {
+		classFuture = " future"
+	}
 
-	sm.Get("classList").Set("value", "move"+classColor+classClickable+classInitial)
-	sm.Set("textContent", sm.SAN)
+	sm.Get("classList").Set("value", "move"+classColor+classClickable+classInitial+classCurrent+classFuture)
+	sm.Set("textContent", sm.Text)
 	return nil
 }
 
@@ -842,6 +851,7 @@ type StatusBody struct {
 }
 
 func (sb *StatusBody) Init(tools *shf.Tools) error {
+	println("StatusBody.Init")
 	if sb.Element == nil {
 		sb.Element = tools.CreateElement("div")
 		sb.Set("id", "game-status-moves")
@@ -849,48 +859,19 @@ func (sb *StatusBody) Init(tools *shf.Tools) error {
 	return nil
 }
 
-func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, n int, initial bool) (*StatusMove, error) {
-	clickable := n == 0 || n < len(sb.refGame.pgn.Moves)
-
-	href := ""
-	if clickable {
-		hash, err := sb.refGame.HashForHalfMove(n)
-		if err != nil {
-			return nil, err
-		}
-		href = "#" + hash
-	}
-
-	c := piece.White
-	if n == 0 {
-		c = piece.NoColor
-	} else if n%2 == 0 {
-		c = piece.Black
-	}
-
-	s := "Initial position"
-	if n > 0 {
-		s = sb.refGame.pgn.Moves[n-1]
-	}
-
-	m := &StatusMove{
-		Href:    href,
-		Color:   c,
-		SAN:     s,
-		Initial: initial,
-	}
-	println(m.Href, m.Color, m.SAN)
+func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, sm StatusMove) (*StatusMove, error) {
+	m := &sm
 	if err := tools.Initialize(m); err != nil {
 		return nil, err
 	}
-	if err := tools.Update(m); err != nil {
-		return nil, err
-	}
+	//if err := tools.Update(m); err != nil {
+	//	return nil, err
+	//}
 
-	if clickable {
+	if m.Href != "" && !m.Current {
 		if err := tools.Click(m.Element, func(e shf.Event) error {
+			println("Clicked:", m.Text)
 			e.Call("stopPropagation")
-			js.Global().Call("alert", "Click: href: "+m.Href+")")
 			js.Global().Get("location").Set("hash", m.Href)
 			return nil
 		}); err != nil {
@@ -900,9 +881,9 @@ func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, n int, initial bool) (*
 	return m, nil
 }
 
-func (sb *StatusBody) Update(tools *shf.Tools) error {
-	if sb == nil {
-		return errors.New("StatusBody is nil")
+func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
+	if sb.refGame == nil {
+		return errors.New("StatusBody.rebuildStatusMoves: refGame is nil")
 	}
 
 	for _, mv := range sb.Moves {
@@ -911,9 +892,12 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 	}
 	sb.Set("innerHTML", "")
 
-	if sb.refGame != nil {
+	lenInitialMoves, lenCurrentMoves := len(sb.refGame.initialPgn.Moves), len(sb.refGame.pgn.Moves)
+	println("lenInitialMoves:", lenInitialMoves, "lenCurrentMoves:", lenCurrentMoves)
+
+	{ // Move zero
 		if sb.MoveZero == nil {
-			mz, err := sb.createHalfMoveNo(tools, 0, true)
+			mz, err := sb.createHalfMoveNo(tools, StatusMove{nil, "#", piece.NoColor, "New game position", lenInitialMoves == 0, lenCurrentMoves == 0, false})
 			if err != nil {
 				return err
 			}
@@ -928,46 +912,163 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 		p.Call("appendChild", moveNo.Object())
 		p.Call("appendChild", sb.MoveZero.Object())
 		sb.Call("appendChild", p.Object())
+	}
 
-		for i := range sb.refGame.pgn.Moves {
-			if i%2 == 1 { // Skip every odd half move.
-				continue
+	wasSplit := false
+	//if lenCurrentMoves > 0 && lenInitialMoves > 0 && sb.refGame.pgn.Moves[0] != sb.refGame.initialPgn.Moves[0] {
+	//	//TODO jezek - Add Splitted initial position moves block.
+	//	split := tools.CreateElement("p")
+	//	split.Set("textContent", "split zero")
+	//	sb.Call("appendChild", split.Object())
+	//	wasSplit = true
+	//}
+
+	maxMovesLen := lenCurrentMoves
+	if lenInitialMoves > maxMovesLen {
+		maxMovesLen = lenInitialMoves
+	}
+
+	for i := 0; i < maxMovesLen; i += 1 {
+		if wasSplit && i >= lenCurrentMoves {
+			break
+		}
+		if i%2 == 1 { // Skip every odd half move.
+			continue
+		}
+
+		if !wasSplit {
+			if i < lenCurrentMoves && i+1 < lenInitialMoves && sb.refGame.pgn.Moves[i] != sb.refGame.initialPgn.Moves[i] {
+				//TODO jezek - Add Splitted initial position moves block.
+				split := tools.CreateElement("p")
+				split.Set("textContent", "split")
+				sb.Call("appendChild", split.Object())
+
+				wasSplit = true
 			}
+		}
 
-			no := (i / 2) + 1 // Current move number (not half-move).
-			hno := i + 1      // Half-move number.
+		no := (i / 2) + 1 // Current move number (not half-move).
+		hno := i + 1      // Half-move number.
+		println("i:", i, "no:", no, "hno:", hno)
+		future := !wasSplit && i >= lenCurrentMoves
 
-			moveNo := tools.CreateElement("span")
-			moveNo.Get("classList").Call("add", "move-no")
-			moveNo.Set("textContent", strconv.Itoa(no))
+		moveNo := tools.CreateElement("span")
+		moveNo.Get("classList").Call("add", "move-no")
+		if future {
+			moveNo.Get("classList").Call("add", "future")
+		}
+		moveNo.Set("textContent", strconv.Itoa(no))
 
-			moveWhite, err := sb.createHalfMoveNo(tools, hno, false)
+		text, hash := "", ""
+		var initial, current bool
+		var err error
+		if future {
+			text = sb.refGame.initialPgn.Moves[i]
+			hash, err = sb.refGame.HashForInitialHalfMove(hno)
 			if err != nil {
 				return err
 			}
-			sb.Moves = append(sb.Moves, moveWhite)
+			initial = i+1 == lenInitialMoves
+			current = false
+		} else {
+			text = sb.refGame.pgn.Moves[i]
+			hash, err = sb.refGame.HashForHalfMove(hno)
+			if err != nil {
+				return err
+			}
+			initial = !wasSplit && i+1 == lenInitialMoves && sb.refGame.pgn.Moves[i] == sb.refGame.initialPgn.Moves[i]
+			current = i+1 == lenCurrentMoves
+		}
+		moveWhite, err := sb.createHalfMoveNo(tools, StatusMove{nil, "#" + hash, piece.White, text, initial, current, future})
+		if err != nil {
+			return err
+		}
+		sb.Moves = append(sb.Moves, moveWhite)
 
-			p := tools.CreateElement("p")
-			p.Get("classList").Call("add", "move-"+strconv.Itoa(no))
-			p.Call("appendChild", moveNo.Object())
-			p.Call("appendChild", moveWhite.Object())
-			if i+1 < len(sb.refGame.pgn.Moves) {
-				moveBlack, err := sb.createHalfMoveNo(tools, hno+1, false)
+		p := tools.CreateElement("p")
+		p.Get("classList").Call("add", "move-"+strconv.Itoa(no))
+		p.Call("appendChild", moveNo.Object())
+		p.Call("appendChild", moveWhite.Object())
+
+		j := i + 1
+		if j < maxMovesLen {
+
+			if !wasSplit {
+				if j < lenCurrentMoves && j < lenInitialMoves && sb.refGame.pgn.Moves[j] != sb.refGame.initialPgn.Moves[j] {
+					//TODO jezek - Add Splitted initial position moves block.
+					sb.Call("appendChild", p.Object())
+
+					split := tools.CreateElement("p")
+					split.Set("textContent", "split in half move")
+					sb.Call("appendChild", split.Object())
+
+					p = tools.CreateElement("p")
+					p.Get("classList").Call("add", "move-"+strconv.Itoa(no))
+					p.Call("appendChild", moveNo.Object())
+					//TODO jezek - Add blank white.
+
+					wasSplit = true
+				}
+			}
+
+			future := !wasSplit && j >= lenCurrentMoves
+			text, hash := "", ""
+			var initial, current bool
+			var err error
+			if future {
+				text = sb.refGame.initialPgn.Moves[j]
+				hash, err = sb.refGame.HashForInitialHalfMove(hno + 1)
 				if err != nil {
 					return err
 				}
-				sb.Moves = append(sb.Moves, moveBlack)
-				p.Call("appendChild", moveBlack.Object())
+				initial = j+1 == lenInitialMoves
+				current = false
+			} else {
+				text = sb.refGame.pgn.Moves[j]
+				hash, err = sb.refGame.HashForHalfMove(hno + 1)
+				if err != nil {
+					return err
+				}
+				initial = !wasSplit && j+1 == lenInitialMoves && sb.refGame.pgn.Moves[j] == sb.refGame.initialPgn.Moves[j]
+				current = j+1 == lenCurrentMoves
 			}
-
-			sb.Call("appendChild", p.Object())
-
+			moveBlack, err := sb.createHalfMoveNo(tools, StatusMove{nil, "#" + hash, piece.Black, text, initial, current, future})
+			if err != nil {
+				return err
+			}
+			sb.Moves = append(sb.Moves, moveBlack)
+			p.Call("appendChild", moveBlack.Object())
 		}
-		if l := len(sb.Moves); l > 0 {
-			sb.Moves[l-1].Element.Call("scrollIntoView", "{ behavior: \"smooth\", block: \"nearest\", inline: \"nearest\" }")
-		}
+
+		sb.Call("appendChild", p.Object())
+
 	}
 
+	if lenCurrentMoves == 0 {
+		println("scroll to: move zero")
+		sb.MoveZero.Element.Call("scrollIntoView", "{ behavior: \"smooth\", block: \"nearest\", inline: \"nearest\" }")
+	} else {
+		println("scroll to:", lenCurrentMoves, ",", sb.Moves[lenCurrentMoves-1].Text)
+		println("scroll to:", len(sb.Moves), ",", sb.Moves[len(sb.Moves)-1].Text)
+		sb.Moves[lenCurrentMoves-1].Element.Call("scrollIntoView", "{ behavior: \"smooth\", block: \"nearest\", inline: \"nearest\" }")
+	}
+
+	return nil
+}
+func (sb *StatusBody) Update(tools *shf.Tools) error {
+	println("StatusBody.Update")
+	if sb == nil {
+		return errors.New("StatusBody is nil")
+	}
+
+	if err := sb.MoveZero.Update(tools); err != nil {
+		return err
+	}
+	for _, sm := range sb.Moves {
+		if err := sm.Update(tools); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1853,7 +1954,9 @@ type ChessGameModel struct {
 	currMoveNo int
 	nextMove   move.Move
 	pgn        *pgn.PGN
-	initialPgn *pgn.PGN
+
+	initialGame *game.Game
+	initialPgn  *pgn.PGN
 }
 
 func addedThrownOuts(prev, next ThrownOuts) ThrownOuts {
@@ -1890,12 +1993,14 @@ func pMakeMove(p *position.Position, m move.Move) (*position.Position, piece.Pie
 // Creates new chess game from moves string.
 // The moves string is basicaly move coordinates from & to (0...63) encoded in base64 (with some improvements for promotions, etc...). See encoding.go
 func NewGame(hash string) (*ChessGameModel, error) {
+	println("NewGame(hash: \"" + hash + "\")")
 	chgm := &ChessGameModel{}
 
 	if err := chgm.UpdateToHash(hash); err != nil {
 		return nil, err
 	}
 
+	chgm.initialGame = chgm.game
 	chgm.initialPgn = chgm.pgn
 
 	return chgm, nil
@@ -1904,6 +2009,7 @@ func NewGame(hash string) (*ChessGameModel, error) {
 // Updates chess game to match moves from the moves hash string.
 // The moves hash string are basically pair of move coordinates (from, to <0, 63>) encoded in base64 (with some improvements for promotions, etc...). See encoding.go
 func (ch *ChessGameModel) UpdateToHash(hash string) error {
+	println("UpdateToHash(" + hash + ")")
 	// Trim movesString from leading "#" character.
 	movesString := strings.TrimPrefix(hash, "#")
 
@@ -2019,6 +2125,8 @@ func (ch *ChessGameModel) MakeNextMove() error {
 	// reset next move
 	ch.nextMove = move.Null
 
+	ch.pgn = pgn.EncodeSAN(ch.game)
+
 	// update location hash
 	js.Global().Get("location").Set("hash", ch.gameHash)
 
@@ -2044,22 +2152,19 @@ func (ch *ChessGameModel) BackToPreviousMove() error {
 
 	previousGameMoves := strings.TrimSuffix(ch.gameHash, lastMove)
 
-	js.Global().Call("alert", "new prev location hash: "+previousGameMoves)
 	js.Global().Get("location").Set("hash", previousGameMoves)
 
 	return nil
 }
-func (ch *ChessGameModel) HashForHalfMove(n int) (string, error) {
-	if err := ch.Validate(); err != nil {
-		return "", err
-	}
-	if n < 0 && n >= len(ch.game.Positions) {
-		return "", errors.New("move no " + strconv.Itoa(n) + " is out of bounds <0, " + strconv.Itoa(len(ch.game.Positions)-1) + ">")
+
+func gameHashForHalfMove(g *game.Game, n int) (string, error) {
+	if n < 0 && n >= len(g.Positions) {
+		return "", errors.New("move no " + strconv.Itoa(n) + " is out of bounds <0, " + strconv.Itoa(len(g.Positions)-1) + ">")
 	}
 
 	hash := ""
 	for i := 1; i <= n; i++ {
-		em, err := encodeMove(ch.game.Positions[i].LastMove)
+		em, err := encodeMove(g.Positions[i].LastMove)
 		if err != nil {
 			return "", err
 		}
@@ -2067,6 +2172,18 @@ func (ch *ChessGameModel) HashForHalfMove(n int) (string, error) {
 	}
 
 	return hash, nil
+}
+func (ch *ChessGameModel) HashForInitialHalfMove(n int) (string, error) {
+	if err := ch.Validate(); err != nil {
+		return "", err
+	}
+	return gameHashForHalfMove(ch.initialGame, n)
+}
+func (ch *ChessGameModel) HashForHalfMove(n int) (string, error) {
+	if err := ch.Validate(); err != nil {
+		return "", err
+	}
+	return gameHashForHalfMove(ch.game, n)
 }
 
 func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSupported bool) error {
@@ -2095,6 +2212,8 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 			}
 			position = ch.game.Positions[ch.currMoveNo]
 			nextMoveState = NMWaitFrom
+			m.Cover.GameStatus.Body.rebuildStatusMoves(tools)
+
 		}
 	}
 	// from now on, nextMoveState != NMLegalMove
@@ -2385,6 +2504,7 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 						if err := ch.BackToPreviousMove(); err != nil {
 							return err
 						}
+						m.Cover.GameStatus.Body.rebuildStatusMoves(tools)
 						return nil
 					}); err != nil {
 						return err
@@ -2418,6 +2538,7 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 		m.Html.Notification.Shown = false
 		js.Global().Get("location").Set("hash", "")
 		m.RotateBoardForPlayer()
+		m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
 		return nil
 	}); err != nil {
 		// if there is an error creating event for button, simply do not show it
@@ -2491,14 +2612,17 @@ func (m *Model) refreshExportOutputData() {
 
 func (m *Model) Init(tools *shf.Tools) error {
 	if m.ChessGame == nil {
-		m.ChessGame, _ = NewGame("")
+		m.ChessGame, _ = NewGame(js.Global().Get("location").Get("hash").String())
 	}
 
 	if err := tools.HashChange(func(e shf.HashChangeEvent) error {
+		println("Mode.Init: HashChange")
 		// Get game hash.
 		gameHash := "#" + m.ChessGame.gameHash
 		// Get location hash.
 		locationHash := js.Global().Get("location").Get("hash").String()
+		println("Mode.Init: HashChange: gameHash    :", gameHash)
+		println("Mode.Init: HashChange: locationHash:", gameHash)
 		if gameHash == locationHash {
 			// Equal, do nothing.
 			return nil
@@ -2516,6 +2640,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			return nil
 		}
 
+		m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
 		// Close move status after game is updated.
 		m.Html.Cover.MoveStatus.Shown = false
 
@@ -2534,6 +2659,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 		// Add references between elements, where needed.
 		m.Html.Cover.GameStatus.Body.refGame = m.ChessGame
+		m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
 
 		if !m.rotationSupported {
 			m.Html.Rotated180deg = false
@@ -2611,6 +2737,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			m.Html.Notification.Shown = false
 			js.Global().Get("location").Set("hash", "")
 			m.RotateBoardForPlayer()
+			m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
 			return nil
 		}); err != nil {
 			// if there is an error creating event for button, simply do not show it
@@ -2711,6 +2838,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			}
 
 			m.Html.Cover.MoveStatus.Shown = false
+			m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
 			return nil
 		}); err != nil {
 			return err

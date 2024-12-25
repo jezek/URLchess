@@ -28,6 +28,8 @@
 
 	--color-thrown-outs-piece-last: rgba(255, 100, 100, 0.6);
 	--color-moves-move-no: rgba(255, 255, 255, 0.1);
+	--color-moves-marked-background: rgba(123, 139, 139, 0.6);
+	--color-moves-future: #9fafaf;
 
 	--color-error: red;
 }
@@ -508,15 +510,17 @@ div.thrown-outs .count {
 	padding: 0 1em;
 	cursor: default;
 	text-decoration: none;
+	position: relative;
 }
 #game-status-moves p a.clickable {
 	cursor: pointer;
 }
-#game-status-moves p a.clickable:hover {
-	background-color: var(--color-board-square-dark);
-	position: relative;
+#game-status-moves p a.clickable:hover,
+#game-status-moves p a.current {
+	background-color: var(--color-moves-marked-background);
 }
-#game-status-moves p a.clickable.white:hover:after {
+#game-status-moves p a.clickable.white:hover:after,
+#game-status-moves p a.current.white:after {
 	content: '';
 	position: absolute;
 	top: 0;
@@ -525,7 +529,8 @@ div.thrown-outs .count {
 	height: 100%;
 	background-color: var(--color-marker-move-white);
 }
-#game-status-moves p a.clickable.black:hover:after {
+#game-status-moves p a.clickable.black:hover:after,
+#game-status-moves p a.current.black:after {
 	content: '';
 	position: absolute;
 	top: 0;
@@ -538,6 +543,10 @@ div.thrown-outs .count {
 	background-image: linear-gradient(45deg, #444 25%, transparent 25%, transparent 75%, #444 75%, #444), linear-gradient(45deg, #444 25%, transparent 25%, transparent 75%, #444 75%, #444);
 	background-size: 1em 1em;
 	background-position: 0 0, 0.5em 0.5em;
+}
+#game-status-moves p a.future {
+	font-style: italic;
+	color: var(--color-moves-future);
 }
 /*************/
 /* move status */
