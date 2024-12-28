@@ -490,7 +490,6 @@ div.thrown-outs .count {
 }
 #game-status-moves p.move-0 a.move {
 	width: calc(100% - 3em);
-	background-color: transparent;
 	padding: 0 1em;
 	text-decoration: none;
 }

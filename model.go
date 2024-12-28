@@ -844,8 +844,9 @@ func (sm *StatusMove) Update(tools *shf.Tools) error {
 
 type StatusBody struct {
 	shf.Element
-	MoveZero *StatusMove
-	Moves    []*StatusMove
+	MoveZero            *StatusMove
+	Moves               []*StatusMove
+	ScrollToCurrentMove bool
 
 	refGame *ChessGameModel
 }
@@ -856,34 +857,41 @@ func (sb *StatusBody) Init(tools *shf.Tools) error {
 		sb.Element = tools.CreateElement("div")
 		sb.Set("id", "game-status-moves")
 	}
+
+	if sb.MoveZero == nil {
+		mz, err := sb.createHalfMoveNo(tools, StatusMove{nil, "#", piece.NoColor, "New game position", false, false, false})
+		if err != nil {
+			return err
+		}
+		sb.MoveZero = mz
+	}
 	return nil
 }
 
 func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, sm StatusMove) (*StatusMove, error) {
-	m := &sm
-	if err := tools.Initialize(m); err != nil {
+	if err := tools.Initialize(&sm); err != nil {
 		return nil, err
 	}
-	//if err := tools.Update(m); err != nil {
-	//	return nil, err
-	//}
 
-	if m.Href != "" && !m.Current {
-		if err := tools.Click(m.Element, func(e shf.Event) error {
-			println("Clicked:", m.Text)
+	if sm.Href != "" && !sm.Current {
+		if err := tools.Click(sm.Element, func(e shf.Event) error {
+			println("Clicked:", sm.Text)
 			e.Call("stopPropagation")
-			js.Global().Get("location").Set("hash", m.Href)
+			js.Global().Get("location").Set("hash", sm.Href)
 			return nil
 		}); err != nil {
 			return nil, err
 		}
 	}
-	return m, nil
+	return &sm, nil
 }
 
 func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 	if sb.refGame == nil {
 		return errors.New("StatusBody.rebuildStatusMoves: refGame is nil")
+	}
+	if sb.MoveZero == nil {
+		return errors.New("StatusBody.rebuildStatusMoves: Movezero is nil")
 	}
 
 	for _, mv := range sb.Moves {
@@ -892,18 +900,15 @@ func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 	}
 	sb.Moves = nil
 	sb.Set("innerHTML", "")
+	sb.ScrollToCurrentMove = true
 
 	lenInitialMoves, lenCurrentMoves := len(sb.refGame.initialPgn.Moves), len(sb.refGame.pgn.Moves)
 	println("lenInitialMoves:", lenInitialMoves, "lenCurrentMoves:", lenCurrentMoves)
 
 	{ // Move zero
-		if sb.MoveZero == nil {
-			mz, err := sb.createHalfMoveNo(tools, StatusMove{nil, "#", piece.NoColor, "New game position", lenInitialMoves == 0, lenCurrentMoves == 0, false})
-			if err != nil {
-				return err
-			}
-			sb.MoveZero = mz
-		}
+		sb.MoveZero.Initial = lenInitialMoves == 0
+		sb.MoveZero.Current = lenCurrentMoves == 0
+
 		moveNo := tools.CreateElement("span")
 		moveNo.Get("classList").Call("add", "move-no")
 		moveNo.Set("textContent", "0")
@@ -916,13 +921,6 @@ func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 	}
 
 	wasSplit := false
-	//if lenCurrentMoves > 0 && lenInitialMoves > 0 && sb.refGame.pgn.Moves[0] != sb.refGame.initialPgn.Moves[0] {
-	//	//TODO jezek - Add Splitted initial position moves block.
-	//	split := tools.CreateElement("p")
-	//	split.Set("textContent", "split zero")
-	//	sb.Call("appendChild", split.Object())
-	//	wasSplit = true
-	//}
 
 	maxMovesLen := lenCurrentMoves
 	if lenInitialMoves > maxMovesLen {
@@ -931,6 +929,7 @@ func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 
 	for i := 0; i < maxMovesLen; i += 1 {
 		if wasSplit && i >= lenCurrentMoves {
+			println("there was a split and i:", i, " >= lenCurrentMoves:", lenCurrentMoves)
 			break
 		}
 		if i%2 == 1 { // Skip every odd half move.
@@ -939,6 +938,7 @@ func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 
 		if !wasSplit {
 			if i < lenCurrentMoves && i+1 < lenInitialMoves && sb.refGame.pgn.Moves[i] != sb.refGame.initialPgn.Moves[i] {
+				println("split at i:", i)
 				//TODO jezek - Add Splitted initial position moves block.
 				split := tools.CreateElement("p")
 				split.Set("textContent", "split")
@@ -952,6 +952,7 @@ func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 		hno := i + 1      // Half-move number.
 		println("i:", i, "no:", no, "hno:", hno)
 		future := !wasSplit && i >= lenCurrentMoves
+		println("future:", future)
 
 		moveNo := tools.CreateElement("span")
 		moveNo.Get("classList").Call("add", "move-no")
@@ -992,27 +993,53 @@ func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 		p.Call("appendChild", moveWhite.Object())
 
 		j := i + 1
-		if j < maxMovesLen {
+		println("j:", j)
+		if wasSplit && j >= lenCurrentMoves {
+			println("there was a split and j:", j, " >= lenCurrentMoves:", lenCurrentMoves)
+		} else if j < maxMovesLen {
 
 			if !wasSplit {
 				if j < lenCurrentMoves && j < lenInitialMoves && sb.refGame.pgn.Moves[j] != sb.refGame.initialPgn.Moves[j] {
-					//TODO jezek - Add Splitted initial position moves block.
+
+					// Add empty black move and append row.
+					moveBlack, err := sb.createHalfMoveNo(tools, StatusMove{nil, "", piece.Black, "", false, false, false})
+					if err != nil {
+						return err
+					}
+					moveBlack.Update(tools)
+					p.Call("appendChild", moveBlack.Object())
 					sb.Call("appendChild", p.Object())
 
+					// Add split.
+					//TODO jezek - Add Splitted initial position moves block.
 					split := tools.CreateElement("p")
 					split.Set("textContent", "split in half move")
 					sb.Call("appendChild", split.Object())
 
+					// Create new row with the same move number and blank white move.
+					moveNo := tools.CreateElement("span")
+					moveNo.Get("classList").Call("add", "move-no")
+					if future {
+						moveNo.Get("classList").Call("add", "future")
+					}
+					moveNo.Set("textContent", strconv.Itoa(no))
+
+					moveWhite, err := sb.createHalfMoveNo(tools, StatusMove{nil, "", piece.White, "", false, false, false})
+					if err != nil {
+						return err
+					}
+					moveWhite.Update(tools)
 					p = tools.CreateElement("p")
 					p.Get("classList").Call("add", "move-"+strconv.Itoa(no))
 					p.Call("appendChild", moveNo.Object())
-					//TODO jezek - Add blank white.
+					p.Call("appendChild", moveWhite.Object())
 
 					wasSplit = true
 				}
 			}
 
 			future := !wasSplit && j >= lenCurrentMoves
+			println("future:", future)
 			text, hash := "", ""
 			var initial, current bool
 			var err error
@@ -1045,15 +1072,6 @@ func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 
 	}
 
-	if lenCurrentMoves == 0 {
-		println("scroll to: move zero")
-		sb.MoveZero.Element.Call("scrollIntoView", "{ behavior: \"smooth\", block: \"nearest\", inline: \"nearest\" }")
-	} else {
-		println("scroll to:", lenCurrentMoves, ",", sb.Moves[lenCurrentMoves-1].Text)
-		println("scroll to:", len(sb.Moves), ",", sb.Moves[len(sb.Moves)-1].Text)
-		sb.Moves[lenCurrentMoves-1].Element.Call("scrollIntoView", "{ behavior: \"smooth\", block: \"nearest\", inline: \"nearest\" }")
-	}
-
 	return nil
 }
 func (sb *StatusBody) Update(tools *shf.Tools) error {
@@ -1069,6 +1087,19 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 		if err := sm.Update(tools); err != nil {
 			return err
 		}
+	}
+
+	if sb.ScrollToCurrentMove {
+		lenCurrentMoves := len(sb.refGame.pgn.Moves)
+		if lenCurrentMoves == 0 {
+			println("scroll to: move zero")
+			sb.MoveZero.Element.Call("scrollIntoView", "{ behavior: \"smooth\", block: \"center\", inline: \"center\" }")
+		} else {
+			println("scroll to:", lenCurrentMoves, ",", sb.Moves[lenCurrentMoves-1].Text)
+			sb.Moves[lenCurrentMoves-1].Element.Call("scrollIntoView", "{ behavior: \"smooth\", block: \"center\", inline: \"center\" }")
+		}
+
+		sb.ScrollToCurrentMove = false
 	}
 	return nil
 }
@@ -2691,7 +2722,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 		// Close move status after game is updated.
 		m.Html.Cover.MoveStatus.Shown = false
 
-		return nil
+		return tools.AppUpdate()
 	}); err != nil {
 		return err
 	}
@@ -2706,7 +2737,6 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 		// Add references between elements, where needed.
 		m.Html.Cover.GameStatus.Body.refGame = m.ChessGame
-		m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
 
 		if !m.rotationSupported {
 			m.Html.Rotated180deg = false

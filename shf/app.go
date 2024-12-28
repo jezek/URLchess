@@ -159,10 +159,6 @@ func (app *App) HashChange(function func(HashChangeEvent) error) error {
 		if err := function(hce); err != nil {
 			return err
 		}
-		if err := app.Update(); err != nil {
-			js.Global().Call("alert", "after hashchange event app dom update error: "+err.Error())
-			return err
-		}
 		return nil
 	})
 }

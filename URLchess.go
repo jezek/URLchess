@@ -66,31 +66,27 @@ func main() {
 	body.Call("appendChild", model.Html.Export.Element.Object())
 	body.Call("appendChild", model.Html.Notification.Element.Object())
 
-	//if hash := js.Global().Get("location").Get("hash").String(); len(hash) > 0 {
-	//	println("main update to hash")
-	//	if err := model.ChessGame.UpdateToHash(hash); err != nil {
-	//		//TODO - Use app to write error.
-	//		document.Call("write", "<div class=\"error\">"+err.Error()+"</div>")
-	//		return
-	//	}
-	//}
+	//TODO jezek - Make it so this is not needed and the board is rotated upon initialization.
+	model.RotateBoardForPlayer()
 
 	// If game ended, notify the player.
 	if st := model.ChessGame.game.Status(); st != game.InProgress {
 		model.showEndGameNotification(app.Tools())
+		//TODO jezek - Update only elements needed for showing notification. Or better, make it so the notification is shown upon init ant this is not needed.
 	}
 
-	model.RotateBoardForPlayer()
+	model.Html.Cover.GameStatus.Body.rebuildStatusMoves(app.Tools())
 
-	//if err := app.Update(); err != nil {
-	//	if model.Html.Board.Element != nil {
-	//		model.Html.Board.Element.Set("innerHTML", err.Error())
-	//		model.Html.Board.Element.Get("classList").Call("add", "error")
-	//	} else {
-	//		document.Call("write", "<div id=\"board\" class=\"error\">"+err.Error()+"</div>")
-	//	}
-	//	return
-	//}
+	//TODO jezek - Update only status move body.
+	if err := app.Update(); err != nil {
+		if model.Html.Board.Element != nil {
+			model.Html.Board.Element.Set("innerHTML", err.Error())
+			model.Html.Board.Element.Get("classList").Call("add", "error")
+		} else {
+			document.Call("write", "<div id=\"board\" class=\"error\">"+err.Error()+"</div>")
+		}
+		return
+	}
 
 	if js.WRAPS == "syscall/js" {
 		select {}
