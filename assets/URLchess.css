@@ -482,6 +482,9 @@ div.thrown-outs .count {
 	margin: 0;
 	padding: 0;
 }
+#game-status-moves p.split {
+	font-size: calc(1em * 2 / 3);
+}
 #game-status-moves p a,
 #game-status-moves p span {
 	display: inline-block;
@@ -510,6 +513,19 @@ div.thrown-outs .count {
 	cursor: default;
 	text-decoration: none;
 	position: relative;
+}
+#game-status-moves p.split span.move-no {
+	width: calc(50% + ((3em * 3 / 2) / 2));
+	padding: 0 0.5em;
+}
+#game-status-moves p.split span.move-no:before {
+	content: "... ";
+	display:inline-block;
+	float: left;
+}
+#game-status-moves p.split a.move {
+	width: calc(50% - ((3em * 3 / 2)/ 2));
+	padding: 0 0.5em;
 }
 #game-status-moves p a.clickable {
 	cursor: pointer;
@@ -544,8 +560,10 @@ div.thrown-outs .count {
 	background-position: 0 0, 0.5em 0.5em;
 }
 #game-status-moves p a.future {
-	font-style: italic;
 	color: var(--color-moves-future);
+}
+#game-status-moves p a.splited {
+	font-style: italic;
 }
 /*************/
 /* move status */
