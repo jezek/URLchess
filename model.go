@@ -854,7 +854,8 @@ type StatusBody struct {
 	SplitLastMove       *StatusMove
 	ScrollToCurrentMove bool
 
-	refGame *ChessGameModel
+	refGame  *ChessGameModel
+	refModel *HtmlModel
 }
 
 func (sb *StatusBody) Init(tools *shf.Tools) error {
@@ -888,6 +889,22 @@ func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, sm StatusMove) (*Status
 		}); err != nil {
 			return nil, err
 		}
+	} else if sm.Current {
+		if err := tools.Click(sm.Element, func(_ shf.Event) error {
+			if err := sb.refModel.CopyGameURLToClipboard(); err != nil {
+				return err
+			}
+			sb.refModel.Notification.TimedMessage(
+				tools,
+				5*time.Second,
+				"Game URL was copied to clipboard",
+				"",
+			)
+			//TODO - Do only needed updates.
+			return tools.AppUpdate()
+		}); err != nil {
+			return nil, err
+		}
 	}
 	return &sm, nil
 }
@@ -895,6 +912,9 @@ func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, sm StatusMove) (*Status
 func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 	if sb.refGame == nil {
 		return errors.New("StatusBody.rebuildStatusMoves: refGame is nil")
+	}
+	if sb.refModel == nil {
+		return errors.New("StatusBody.rebuildStatusMoves: refModel is nil")
 	}
 	if sb.MoveZero == nil {
 		return errors.New("StatusBody.rebuildStatusMoves: Movezero is nil")
@@ -2659,6 +2679,8 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 		if err := m.ChessGame.UpdateToHash(""); err != nil {
 			return err
 		}
+		m.ChessGame.initialGame = m.ChessGame.game
+		m.ChessGame.initialPgn = m.ChessGame.pgn
 		m.Html.Notification.Shown = false
 		js.Global().Get("location").Set("hash", "")
 		m.RotateBoardForPlayer()
@@ -2786,6 +2808,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 
 		// Add references between elements, where needed.
 		m.Html.Cover.GameStatus.Body.refGame = m.ChessGame
+		m.Html.Cover.GameStatus.Body.refModel = m.Html
 
 		if !m.rotationSupported {
 			m.Html.Rotated180deg = false
@@ -2873,6 +2896,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 			if err := m.ChessGame.UpdateToHash(""); err != nil {
 				return err
 			}
+			m.ChessGame.initialGame = m.ChessGame.game
+			m.ChessGame.initialPgn = m.ChessGame.pgn
 			m.Html.Notification.Shown = false
 			js.Global().Get("location").Set("hash", "")
 			m.RotateBoardForPlayer()

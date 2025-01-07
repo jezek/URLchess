@@ -533,6 +533,7 @@ div.thrown-outs .count {
 #game-status-moves p a.clickable:hover,
 #game-status-moves p a.current {
 	background-color: var(--color-moves-marked-background);
+	cursor: pointer;
 }
 #game-status-moves p a.clickable.white:hover:after,
 #game-status-moves p a.current.white:after {
