@@ -47,7 +47,15 @@ a {
 input, textarea {
 	padding-top: 0.3em;
 }
+@font-face {
+	font-family: 'ChessPieces-DejaVuSans';
+	src: url('DejaVuSans_OnlyChessPieces.woff2') format('woff2'),
+	url('DejaVuSans_OnlyChessPieces.woff') format('woff');
+	/* Include only chess pieces. */
+	unicode-range: U+2654-265F;
+}
 .piece {
+  font-family: 'ChessPieces-DejaVuSans', sans-serif;
 	color: var(--color-piece);
 }
 button {
