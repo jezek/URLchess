@@ -491,7 +491,7 @@ div.thrown-outs .count {
 	padding: 0;
 }
 #game-status-moves p.split {
-	font-size: calc(1em * 2 / 3);
+	color: var(--color-moves-future);
 }
 #game-status-moves p a,
 #game-status-moves p span {
@@ -523,7 +523,7 @@ div.thrown-outs .count {
 	position: relative;
 }
 #game-status-moves p.split span.move-no {
-	width: calc(50% + ((3em * 3 / 2) / 2));
+	width: calc(50% + (3em / 2));
 	padding: 0 0.5em;
 }
 #game-status-moves p.split span.move-no:before {
@@ -532,8 +532,9 @@ div.thrown-outs .count {
 	float: left;
 }
 #game-status-moves p.split a.move {
-	width: calc(50% - ((3em * 3 / 2)/ 2));
+	width: calc(50% - (3em / 2));
 	padding: 0 0.5em;
+	color: var(--color-moves-future);
 }
 #game-status-moves p a.clickable {
 	cursor: pointer;

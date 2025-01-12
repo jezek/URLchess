@@ -1159,7 +1159,6 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 	}
 
 	if sb.ScrollToCurrentMove {
-		println("\n", "scrollTo")
 		parentElement := sb.Element
 		targetElement := sb.MoveZero.Element
 		lenCurrentMoves := len(sb.refGame.pgn.Moves)
@@ -1167,24 +1166,14 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 			targetElement = sb.Moves[lenCurrentMoves-1].Element
 		}
 
+		targetOffsetHeight := targetElement.Get("offsetHeight").Int()
 		targetTop := targetElement.Get("offsetTop").Int() - sb.MoveZero.Element.Get("offsetTop").Int()
-		targetBottom := targetTop + targetElement.Get("offsetHeight").Int()
-		visibleTop := parentElement.Get("scrollTop").Int()
-		visibleBottom := visibleTop + parentElement.Get("offsetHeight").Int()
-		isOutOfView := targetBottom > visibleBottom || targetTop < visibleTop
-		println("jezek - targetTop:", targetTop)
-		println("jezek - targetBottom:", targetBottom)
-		println("jezek - visibleTop:", visibleTop)
-		println("jezek - visibleBottom:", visibleBottom)
-		println("jezek - isOutOfView:", isOutOfView)
+		parentClientHeight := parentElement.Get("clientHeight").Int()
+		parentVisibleTop := parentElement.Get("scrollTop").Int()
 
-		if isOutOfView {
-			offsetTop := targetElement.Get("offsetTop").Int() - parentElement.Get("offsetTop").Int()
-			scrollTo := offsetTop - parentElement.Get("clientHeight").Int()/2 + targetElement.Get("clientHeight").Int()/2
-			println("jezek - offsetTop:", offsetTop)
-			println("jezek - scrollTo:", scrollTo)
+		if targetTop < parentVisibleTop || targetTop+targetOffsetHeight > parentVisibleTop+parentClientHeight {
+			scrollTo := targetTop - parentClientHeight/2 + targetOffsetHeight/2
 
-			//parentElement.Call("scrollTo", 0, scrollTo)
 			parentElement.Call("scrollTo", map[string]interface{}{
 				"top":      scrollTo,
 				"behavior": "smooth",
