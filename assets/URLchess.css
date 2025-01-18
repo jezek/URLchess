@@ -49,8 +49,8 @@ input, textarea {
 }
 @font-face {
 	font-family: 'ChessPieces-DejaVuSans';
-	src: url('DejaVuSans_OnlyChessPieces.woff2') format('woff2'),
-	url('DejaVuSans_OnlyChessPieces.woff') format('woff');
+	/* src: url('DejaVuSans_ChessPiecesOnly.woff2') format('woff2'), url('DejaVuSans_ChessPiecesOnly.woff') format('woff'); */
+	src: url('FreeSerif_ChessPiecesOnly.woff2') format('woff2'), url('FreeSerif_ChessPiecesOnly.woff') format('woff');
 	/* Include only chess pieces. */
 	unicode-range: U+2654-265F;
 }
