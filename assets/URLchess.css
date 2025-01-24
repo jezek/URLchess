@@ -48,14 +48,13 @@ input, textarea {
 	padding-top: 0.3em;
 }
 @font-face {
-	font-family: 'ChessPieces-DejaVuSans';
-	/* src: url('DejaVuSans_ChessPiecesOnly.woff2') format('woff2'), url('DejaVuSans_ChessPiecesOnly.woff') format('woff'); */
-	src: url('FreeSerif_ChessPiecesOnly.woff2') format('woff2'), url('FreeSerif_ChessPiecesOnly.woff') format('woff');
+	font-family: 'FreeSerif-ChessPieces';
+	src: url('FreeSerif-ChessPieces.woff2') format('woff2'), url('FreeSerif-ChessPieces.woff') format('woff');
 	/* Include only chess pieces. */
 	unicode-range: U+2654-265F;
 }
 .piece {
-  font-family: 'ChessPieces-DejaVuSans', sans-serif;
+  font-family: 'FreeSerif-ChessPieces';
 	color: var(--color-piece);
 }
 button {
