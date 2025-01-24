@@ -1242,6 +1242,11 @@ div.thrown-outs .count {
 }
 
 /* zen mode */
+body.zen-mode {
+	width: 100vw;
+	height: 100vh;
+	overflow: hidden;
+}
 body.zen-mode #header {
 	opacity: 0.9;
 	z-index: 2;
