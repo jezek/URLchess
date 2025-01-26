@@ -131,6 +131,7 @@ button:active {
 	height: 100%;
 	overflow: hidden;
 	box-sizing: border-box;
+	padding-right: calc(100% * 0.5 / 28);
 }
 #move-status {
 	font-size: 0.5em;
@@ -454,7 +455,6 @@ div.thrown-outs .count {
 	justify-content: space-between;
 	cursor: pointer;
 	margin-left: 1px;
-	margin-right: calc(100% * 0.3 / 28);
 }
 #game-status-header p {
 	margin: 0;
@@ -477,10 +477,23 @@ div.thrown-outs .count {
 	align-items: center;
 	text-align: center;
 }
+#game-status-control {
+  box-sizing: border-box;
+	width: 100%;
+	font-size: calc(1em / 2);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	text-align: center;
+	height: calc(100% * 3 / 28);
+}
+#game-status-control p.button {
+	margin: 0;
+}
 #game-status-moves {
   box-sizing: border-box;
 	width: 100%;
-	height: calc(100% * 23 / 28);
+	height: calc(100% * 20 / 28);
 	font-size: calc(1em / 2);
 	overflow: scroll;
 	margin: 0.3em 0;

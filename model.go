@@ -796,6 +796,84 @@ func (gs *StatusHeader) Update(tools *shf.Tools) error {
 	return tools.Update(gs.Message, gs.Icons)
 }
 
+type ControlButton struct {
+	shf.Element
+	Text string
+}
+
+func (cb *ControlButton) Init(tools *shf.Tools) error {
+
+	if cb.Element == nil {
+		cb.Element = tools.CreateElement("p")
+		cb.Get("classList").Call("add", "button")
+	}
+	return nil
+}
+func (cb *ControlButton) Update(tools *shf.Tools) error {
+	if cb == nil {
+		return errors.New("ControlButton is nil")
+	}
+	cb.Set("textContent", cb.Text)
+
+	return nil
+}
+
+type StatusControl struct {
+	shf.Element
+	Start, Previous, Initial, Next, End *ControlButton
+}
+
+func (sc *StatusControl) Init(tools *shf.Tools) error {
+	if sc.Start == nil {
+		sc.Start = &ControlButton{Text: "Start"}
+		if err := tools.Initialize(sc.Start); err != nil {
+			return err
+		}
+	}
+	if sc.Previous == nil {
+		sc.Previous = &ControlButton{Text: "Previous"}
+		if err := tools.Initialize(sc.Previous); err != nil {
+			return err
+		}
+	}
+	if sc.Initial == nil {
+		sc.Initial = &ControlButton{Text: "Initial"}
+		if err := tools.Initialize(sc.Initial); err != nil {
+			return err
+		}
+	}
+	if sc.Next == nil {
+		sc.Next = &ControlButton{Text: "Next"}
+		if err := tools.Initialize(sc.Next); err != nil {
+			return err
+		}
+	}
+	if sc.End == nil {
+		sc.End = &ControlButton{Text: "End"}
+		if err := tools.Initialize(sc.End); err != nil {
+			return err
+		}
+	}
+
+	if sc.Element == nil {
+		sc.Element = tools.CreateElement("div")
+		sc.Set("id", "game-status-control")
+		sc.Call("appendChild", sc.Start.Element.Object())
+		sc.Call("appendChild", sc.Previous.Element.Object())
+		sc.Call("appendChild", sc.Initial.Element.Object())
+		sc.Call("appendChild", sc.Next.Element.Object())
+		sc.Call("appendChild", sc.End.Element.Object())
+	}
+	return nil
+}
+func (sc *StatusControl) Update(tools *shf.Tools) error {
+	if sc == nil {
+		return errors.New("StatusControl is nil")
+	}
+
+	return tools.Update(sc.Start, sc.Previous, sc.Initial, sc.Next, sc.End)
+}
+
 type StatusMove struct {
 	shf.Element
 	Href             string
@@ -860,17 +938,17 @@ type StatusMoves struct {
 
 func (sb *StatusMoves) Init(tools *shf.Tools) error {
 	//println("StatusMoves.Init")
-	if sb.Element == nil {
-		sb.Element = tools.CreateElement("div")
-		sb.Set("id", "game-status-moves")
-	}
-
 	if sb.MoveZero == nil {
 		mz, err := sb.createHalfMoveNo(tools, StatusMove{nil, "#", piece.NoColor, "New game position", false, false, false, false})
 		if err != nil {
 			return err
 		}
 		sb.MoveZero = mz
+	}
+
+	if sb.Element == nil {
+		sb.Element = tools.CreateElement("div")
+		sb.Set("id", "game-status-moves")
 	}
 	return nil
 }
@@ -1187,14 +1265,21 @@ func (sb *StatusMoves) Update(tools *shf.Tools) error {
 
 type ModelGameStatus struct {
 	shf.Element
-	Header *StatusHeader
-	Moves  *StatusMoves
+	Header  *StatusHeader
+	Control *StatusControl
+	Moves   *StatusMoves
 }
 
 func (gs *ModelGameStatus) Init(tools *shf.Tools) error {
 	if gs.Header == nil {
 		gs.Header = &StatusHeader{}
 		if err := tools.Initialize(gs.Header); err != nil {
+			return err
+		}
+	}
+	if gs.Control == nil {
+		gs.Control = &StatusControl{}
+		if err := tools.Initialize(gs.Control); err != nil {
 			return err
 		}
 	}
@@ -1209,6 +1294,7 @@ func (gs *ModelGameStatus) Init(tools *shf.Tools) error {
 		gs.Element = tools.CreateElement("div")
 		gs.Set("id", "game-status")
 		gs.Call("appendChild", gs.Header.Element.Object())
+		gs.Call("appendChild", gs.Control.Element.Object())
 		gs.Call("appendChild", gs.Moves.Element.Object())
 	}
 	return nil
@@ -1218,7 +1304,7 @@ func (gs *ModelGameStatus) Update(tools *shf.Tools) error {
 		return errors.New("ModelGameStatus is nil")
 	}
 
-	return tools.Update(gs.Header, gs.Moves)
+	return tools.Update(gs.Header, gs.Control, gs.Moves)
 }
 
 type CopyButton struct {
