@@ -451,8 +451,10 @@ div.thrown-outs .count {
 	height: calc(100% * 4 / 28);
 	font-size: calc(1em * 4 / 3);
 	display: flex;
-	justify-content: space-evenly;
+	justify-content: space-between;
 	cursor: pointer;
+	margin-left: 1px;
+	margin-right: calc(100% * 0.3 / 28);
 }
 #game-status-header p {
 	margin: 0;
@@ -481,7 +483,7 @@ div.thrown-outs .count {
 	height: calc(100% * 23 / 28);
 	font-size: calc(1em / 2);
 	overflow: scroll;
-	margin: 0.3em;
+	margin: 0.3em 0;
 }
 #game-status-moves p {
   box-sizing: border-box;
@@ -1211,7 +1213,7 @@ div.thrown-outs .count {
 		font-size: calc((70vmin * 3 / 28) * 5 / 6);
 	}
 }
-@media (orientation: landscape) and (min-aspect-ratio: 43/40) and (min-height: 12cm) {
+@media (orientation: landscape) and (min-aspect-ratio: 48/40) and (min-height: 12cm) {
 	#header {
 		left: 0;
 	}
