@@ -847,7 +847,7 @@ func (sm *StatusMove) Update(tools *shf.Tools) error {
 	return nil
 }
 
-type StatusBody struct {
+type StatusMoves struct {
 	shf.Element
 	MoveZero            *StatusMove
 	Moves               []*StatusMove
@@ -858,8 +858,8 @@ type StatusBody struct {
 	refModel *HtmlModel
 }
 
-func (sb *StatusBody) Init(tools *shf.Tools) error {
-	//println("StatusBody.Init")
+func (sb *StatusMoves) Init(tools *shf.Tools) error {
+	//println("StatusMoves.Init")
 	if sb.Element == nil {
 		sb.Element = tools.CreateElement("div")
 		sb.Set("id", "game-status-moves")
@@ -875,7 +875,7 @@ func (sb *StatusBody) Init(tools *shf.Tools) error {
 	return nil
 }
 
-func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, sm StatusMove) (*StatusMove, error) {
+func (sb *StatusMoves) createHalfMoveNo(tools *shf.Tools, sm StatusMove) (*StatusMove, error) {
 	if err := tools.Initialize(&sm); err != nil {
 		return nil, err
 	}
@@ -909,15 +909,15 @@ func (sb *StatusBody) createHalfMoveNo(tools *shf.Tools, sm StatusMove) (*Status
 	return &sm, nil
 }
 
-func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
+func (sb *StatusMoves) rebuildStatusMoves(tools *shf.Tools) error {
 	if sb.refGame == nil {
-		return errors.New("StatusBody.rebuildStatusMoves: refGame is nil")
+		return errors.New("StatusMoves.rebuildStatusMoves: refGame is nil")
 	}
 	if sb.refModel == nil {
-		return errors.New("StatusBody.rebuildStatusMoves: refModel is nil")
+		return errors.New("StatusMoves.rebuildStatusMoves: refModel is nil")
 	}
 	if sb.MoveZero == nil {
-		return errors.New("StatusBody.rebuildStatusMoves: Movezero is nil")
+		return errors.New("StatusMoves.rebuildStatusMoves: Movezero is nil")
 	}
 
 	for _, mv := range sb.Moves {
@@ -1138,10 +1138,10 @@ func (sb *StatusBody) rebuildStatusMoves(tools *shf.Tools) error {
 
 	return nil
 }
-func (sb *StatusBody) Update(tools *shf.Tools) error {
-	//println("StatusBody.Update")
+func (sb *StatusMoves) Update(tools *shf.Tools) error {
+	//println("StatusMoves.Update")
 	if sb == nil {
-		return errors.New("StatusBody is nil")
+		return errors.New("StatusMoves is nil")
 	}
 
 	if err := sb.MoveZero.Update(tools); err != nil {
@@ -1188,7 +1188,7 @@ func (sb *StatusBody) Update(tools *shf.Tools) error {
 type ModelGameStatus struct {
 	shf.Element
 	Header *StatusHeader
-	Body   *StatusBody
+	Moves  *StatusMoves
 }
 
 func (gs *ModelGameStatus) Init(tools *shf.Tools) error {
@@ -1198,9 +1198,9 @@ func (gs *ModelGameStatus) Init(tools *shf.Tools) error {
 			return err
 		}
 	}
-	if gs.Body == nil {
-		gs.Body = &StatusBody{}
-		if err := tools.Initialize(gs.Body); err != nil {
+	if gs.Moves == nil {
+		gs.Moves = &StatusMoves{}
+		if err := tools.Initialize(gs.Moves); err != nil {
 			return err
 		}
 	}
@@ -1209,7 +1209,7 @@ func (gs *ModelGameStatus) Init(tools *shf.Tools) error {
 		gs.Element = tools.CreateElement("div")
 		gs.Set("id", "game-status")
 		gs.Call("appendChild", gs.Header.Element.Object())
-		gs.Call("appendChild", gs.Body.Element.Object())
+		gs.Call("appendChild", gs.Moves.Element.Object())
 	}
 	return nil
 }
@@ -1218,7 +1218,7 @@ func (gs *ModelGameStatus) Update(tools *shf.Tools) error {
 		return errors.New("ModelGameStatus is nil")
 	}
 
-	return tools.Update(gs.Header, gs.Body)
+	return tools.Update(gs.Header, gs.Moves)
 }
 
 type CopyButton struct {
@@ -2359,7 +2359,7 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 			}
 			position = ch.game.Positions[ch.currMoveNo]
 			nextMoveState = NMWaitFrom
-			m.Cover.GameStatus.Body.rebuildStatusMoves(tools)
+			m.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
 
 		}
 	}
@@ -2659,7 +2659,7 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 						if err := ch.BackToPreviousMove(); err != nil {
 							return err
 						}
-						m.Cover.GameStatus.Body.rebuildStatusMoves(tools)
+						m.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
 						//TODO - Do only needed updates.
 						return tools.AppUpdate()
 					}); err != nil {
@@ -2696,7 +2696,7 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 		m.Html.Notification.Shown = false
 		js.Global().Get("location").Set("hash", "")
 		m.RotateBoardForPlayer()
-		m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
+		m.Html.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
 		//TODO - Do only needed updates.
 		return tools.AppUpdate()
 	}); err != nil {
@@ -2801,7 +2801,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			return nil
 		}
 
-		m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
+		m.Html.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
 		// Close move status after game is updated.
 		m.Html.Cover.MoveStatus.Shown = false
 
@@ -2819,8 +2819,8 @@ func (m *Model) Init(tools *shf.Tools) error {
 		}
 
 		// Add references between elements, where needed.
-		m.Html.Cover.GameStatus.Body.refGame = m.ChessGame
-		m.Html.Cover.GameStatus.Body.refModel = m.Html
+		m.Html.Cover.GameStatus.Moves.refGame = m.ChessGame
+		m.Html.Cover.GameStatus.Moves.refModel = m.Html
 
 		if !m.rotationSupported {
 			m.Html.Rotated180deg = false
@@ -2913,7 +2913,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			m.Html.Notification.Shown = false
 			js.Global().Get("location").Set("hash", "")
 			m.RotateBoardForPlayer()
-			m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
+			m.Html.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
 			//TODO - Do only needed updates.
 			return tools.AppUpdate()
 		}); err != nil {
@@ -3021,7 +3021,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			}
 
 			m.Html.Cover.MoveStatus.Shown = false
-			m.Html.Cover.GameStatus.Body.rebuildStatusMoves(tools)
+			m.Html.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
 			//TODO - Do only needed updates.
 			return tools.AppUpdate()
 		}); err != nil {
