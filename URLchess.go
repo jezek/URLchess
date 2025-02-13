@@ -75,7 +75,7 @@ func main() {
 		//TODO jezek - Update only elements needed for showing notification. Or better, make it so the notification is shown upon init ant this is not needed.
 	}
 
-	model.Html.Cover.GameStatus.Moves.rebuildStatusMoves(app.Tools())
+	model.Html.Cover.GameStatus.rebuild(app.Tools())
 
 	//TODO jezek - Update only status move body.
 	if err := app.Update(); err != nil {

@@ -31,6 +31,7 @@
 	--color-moves-marked-background: rgba(123, 139, 139, 0.6);
 	--color-moves-future: #9fafaf;
 
+	--color-button-disabled: rgba(255, 255, 255, 0.2);
 	--color-error: red;
 }
 body, button, input, textarea {
@@ -65,9 +66,14 @@ button {
 	margin: 0.5em auto;
 	cursor: pointer;
 }
-button:active {
+button:not(:disabled):active {
 	background-color: var(--color-body);
 	color: var(--color-body-background);
+}
+button:disabled {
+	cursor: default;
+	color: var(--color-button-disabled);
+	border-color: var(--color-button-disabled);
 }
 
 .hidden {
@@ -486,10 +492,93 @@ div.thrown-outs .count {
 	justify-content: space-between;
 	text-align: center;
 	height: calc(100% * 3 / 28);
+	padding: 0.2em 0.1em 0;
 }
-#game-status-control p.button {
+#game-status-control button {
+  position: relative;
+	border-width: 1px;
 	margin: 0;
+	padding: 0.5em 2em 0.5em 2em;
+	font-size: calc(1em * 2 / 3);
+  display: flex;
 }
+/*
+#game-status-control button.start::before {
+  content: '⏮️';
+}
+
+#game-status-control button.previous::before {
+  content: '⏪';
+}
+
+#game-status-control button.next::before {
+  content: '⏩';
+}
+
+#game-status-control button.initial::before {
+  content: '↩️';
+}*/
+
+/* Arrow to the left */
+button.previous::before,
+button.start::before,
+button.start::after {
+  content: "";
+  display: inline-block;
+  border-style: solid;
+  border-width: 0.5em 0.5em 0.5em 0;
+  border-color: transparent currentColor transparent transparent;
+  position: relative;
+  left: -0.125em;
+}
+button.start::before {
+  margin-right: -0.25em;
+}
+button.start::after {
+  margin-left: 0.25em;
+}
+
+/* Arrow to the left */
+button.next::before,
+button.end::before,
+button.end::after {
+  content: "";
+  display: inline-block;
+  border-style: solid;
+  border-width: 0.5em 0 0.5em 0.5em;
+  border-color: transparent transparent transparent currentColor;
+  position: relative;
+  right: -0.125em;
+}
+button.end::before {
+  margin-right: -0.25em;
+}
+button.end::after {
+  margin-left: 0.25em;
+}
+
+/* Half circle/ellipse */
+button.initial::before {
+  content: "";
+  display: inline-block;
+  border: 2px solid currentColor;
+  border-color: currentColor currentColor currentColor transparent;
+  border-radius: 0 50% 50% 0;
+  width: 0.971em;
+  height: 0.971em;
+  box-sizing: border-box;
+  position: relative;
+}
+/* Arrow on the bottom end of half circle/ellipse */
+button.initial::after {
+  content: "";
+  position: absolute;
+  bottom: 0.29em;
+  border-style: solid;
+  border-width: 0.30em 0.30em 0.30em 0;
+  border-color: transparent currentColor transparent transparent;
+}
+
 #game-status-moves {
   box-sizing: border-box;
 	width: 100%;

@@ -798,14 +798,24 @@ func (gs *StatusHeader) Update(tools *shf.Tools) error {
 
 type ControlButton struct {
 	shf.Element
-	Text string
+	Text     string
+	Hash     string
+	Disabled bool
 }
 
 func (cb *ControlButton) Init(tools *shf.Tools) error {
 
 	if cb.Element == nil {
-		cb.Element = tools.CreateElement("p")
-		cb.Get("classList").Call("add", "button")
+		cb.Element = tools.CreateElement("button")
+
+		if err := tools.Click(cb.Element, func(e shf.Event) error {
+			if !cb.Disabled {
+				js.Global().Get("location").Set("hash", cb.Hash)
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -814,45 +824,51 @@ func (cb *ControlButton) Update(tools *shf.Tools) error {
 		return errors.New("ControlButton is nil")
 	}
 	cb.Set("textContent", cb.Text)
+	if cb.Disabled {
+		cb.Call("setAttribute", "disabled", "disabled")
+	} else {
+		cb.Call("removeAttribute", "disabled")
+	}
 
 	return nil
 }
 
 type StatusControl struct {
 	shf.Element
-	Start, Previous, Initial, Next, End *ControlButton
+	Start, Previous, Next, Initial *ControlButton
+
+	refGame *ChessGameModel
 }
 
 func (sc *StatusControl) Init(tools *shf.Tools) error {
 	if sc.Start == nil {
-		sc.Start = &ControlButton{Text: "Start"}
+		sc.Start = &ControlButton{Text: ""}
 		if err := tools.Initialize(sc.Start); err != nil {
 			return err
 		}
+		sc.Start.Get("classList").Call("add", "start")
 	}
 	if sc.Previous == nil {
-		sc.Previous = &ControlButton{Text: "Previous"}
+		sc.Previous = &ControlButton{Text: ""}
 		if err := tools.Initialize(sc.Previous); err != nil {
 			return err
 		}
+		sc.Previous.Get("classList").Call("add", "previous")
 	}
-	if sc.Initial == nil {
-		sc.Initial = &ControlButton{Text: "Initial"}
-		if err := tools.Initialize(sc.Initial); err != nil {
-			return err
-		}
-	}
+
 	if sc.Next == nil {
-		sc.Next = &ControlButton{Text: "Next"}
+		sc.Next = &ControlButton{Text: ""}
 		if err := tools.Initialize(sc.Next); err != nil {
 			return err
 		}
+		sc.Next.Get("classList").Call("add", "next")
 	}
-	if sc.End == nil {
-		sc.End = &ControlButton{Text: "End"}
-		if err := tools.Initialize(sc.End); err != nil {
+	if sc.Initial == nil {
+		sc.Initial = &ControlButton{Text: ""}
+		if err := tools.Initialize(sc.Initial); err != nil {
 			return err
 		}
+		sc.Initial.Get("classList").Call("add", "end")
 	}
 
 	if sc.Element == nil {
@@ -860,18 +876,77 @@ func (sc *StatusControl) Init(tools *shf.Tools) error {
 		sc.Set("id", "game-status-control")
 		sc.Call("appendChild", sc.Start.Element.Object())
 		sc.Call("appendChild", sc.Previous.Element.Object())
-		sc.Call("appendChild", sc.Initial.Element.Object())
 		sc.Call("appendChild", sc.Next.Element.Object())
-		sc.Call("appendChild", sc.End.Element.Object())
+		sc.Call("appendChild", sc.Initial.Element.Object())
 	}
 	return nil
 }
+
 func (sc *StatusControl) Update(tools *shf.Tools) error {
 	if sc == nil {
 		return errors.New("StatusControl is nil")
 	}
 
-	return tools.Update(sc.Start, sc.Previous, sc.Initial, sc.Next, sc.End)
+	return tools.Update(sc.Start, sc.Previous, sc.Next, sc.Initial)
+}
+
+func (sc *StatusControl) rebuild(tools *shf.Tools) error {
+	if sc.refGame == nil {
+		return errors.New("StatusControl.Previous click callback: refGame is nil")
+	}
+	err := error(nil)
+
+	lenInitialMoves, lenCurrentMoves := len(sc.refGame.initialPgn.Moves), len(sc.refGame.pgn.Moves)
+	split := false
+	for i := range sc.refGame.pgn.Moves {
+		if i >= lenInitialMoves || sc.refGame.pgn.Moves[i] != sc.refGame.initialPgn.Moves[i] {
+			split = true
+			break
+		}
+	}
+
+	if lenCurrentMoves == 0 {
+		sc.Start.Disabled = true
+		sc.Previous.Disabled = true
+	} else {
+		sc.Start.Disabled = false
+		sc.Previous.Disabled = false
+
+		sc.Previous.Hash, err = sc.refGame.HashForHalfMove(lenCurrentMoves - 1)
+		if err != nil {
+			return err
+		}
+	}
+
+	sc.Next.Disabled = true
+	if !split && lenInitialMoves > lenCurrentMoves {
+		sc.Next.Hash, err = sc.refGame.HashForInitialHalfMove(lenCurrentMoves + 1)
+		if err != nil {
+			return err
+		}
+		sc.Next.Disabled = false
+	}
+
+	sc.Initial.Disabled = true
+	if split || lenCurrentMoves != lenInitialMoves {
+		sc.Initial.Hash, err = sc.refGame.HashForInitialHalfMove(lenInitialMoves)
+		if err != nil {
+			return err
+		}
+		sc.Initial.Disabled = false
+		if split {
+			sc.Initial.Get("classList").Call("add", "initial")
+			sc.Initial.Get("classList").Call("remove", "end")
+		} else {
+			sc.Initial.Get("classList").Call("add", "end")
+			sc.Initial.Get("classList").Call("remove", "initial")
+		}
+	} else {
+		sc.Initial.Get("classList").Call("add", "end")
+		sc.Initial.Get("classList").Call("remove", "initial")
+	}
+
+	return nil
 }
 
 type StatusMove struct {
@@ -987,15 +1062,15 @@ func (sb *StatusMoves) createHalfMoveNo(tools *shf.Tools, sm StatusMove) (*Statu
 	return &sm, nil
 }
 
-func (sb *StatusMoves) rebuildStatusMoves(tools *shf.Tools) error {
+func (sb *StatusMoves) rebuild(tools *shf.Tools) error {
 	if sb.refGame == nil {
-		return errors.New("StatusMoves.rebuildStatusMoves: refGame is nil")
+		return errors.New("StatusMoves.rebuild: refGame is nil")
 	}
 	if sb.refModel == nil {
-		return errors.New("StatusMoves.rebuildStatusMoves: refModel is nil")
+		return errors.New("StatusMoves.rebuild: refModel is nil")
 	}
 	if sb.MoveZero == nil {
-		return errors.New("StatusMoves.rebuildStatusMoves: Movezero is nil")
+		return errors.New("StatusMoves.rebuild: Movezero is nil")
 	}
 
 	for _, mv := range sb.Moves {
@@ -1305,6 +1380,17 @@ func (gs *ModelGameStatus) Update(tools *shf.Tools) error {
 	}
 
 	return tools.Update(gs.Header, gs.Control, gs.Moves)
+}
+
+func (gs *ModelGameStatus) rebuild(tools *shf.Tools) error {
+	if err := gs.Control.rebuild(tools); err != nil {
+		return err
+	}
+	if err := gs.Moves.rebuild(tools); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type CopyButton struct {
@@ -2445,7 +2531,7 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 			}
 			position = ch.game.Positions[ch.currMoveNo]
 			nextMoveState = NMWaitFrom
-			m.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
+			m.Cover.GameStatus.rebuild(tools)
 
 		}
 	}
@@ -2745,7 +2831,7 @@ func (ch *ChessGameModel) UpdateModel(tools *shf.Tools, m *HtmlModel, execSuppor
 						if err := ch.BackToPreviousMove(); err != nil {
 							return err
 						}
-						m.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
+						m.Cover.GameStatus.rebuild(tools)
 						//TODO - Do only needed updates.
 						return tools.AppUpdate()
 					}); err != nil {
@@ -2782,7 +2868,7 @@ func (m *Model) showEndGameNotification(tools *shf.Tools) error {
 		m.Html.Notification.Shown = false
 		js.Global().Get("location").Set("hash", "")
 		m.RotateBoardForPlayer()
-		m.Html.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
+		m.Html.Cover.GameStatus.rebuild(tools)
 		//TODO - Do only needed updates.
 		return tools.AppUpdate()
 	}); err != nil {
@@ -2887,7 +2973,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			return nil
 		}
 
-		m.Html.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
+		m.Html.Cover.GameStatus.rebuild(tools)
 		// Close move status after game is updated.
 		m.Html.Cover.MoveStatus.Shown = false
 
@@ -2905,6 +2991,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 		}
 
 		// Add references between elements, where needed.
+		m.Html.Cover.GameStatus.Control.refGame = m.ChessGame
 		m.Html.Cover.GameStatus.Moves.refGame = m.ChessGame
 		m.Html.Cover.GameStatus.Moves.refModel = m.Html
 
@@ -2999,7 +3086,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			m.Html.Notification.Shown = false
 			js.Global().Get("location").Set("hash", "")
 			m.RotateBoardForPlayer()
-			m.Html.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
+			m.Html.Cover.GameStatus.rebuild(tools)
 			//TODO - Do only needed updates.
 			return tools.AppUpdate()
 		}); err != nil {
@@ -3107,7 +3194,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			}
 
 			m.Html.Cover.MoveStatus.Shown = false
-			m.Html.Cover.GameStatus.Moves.rebuildStatusMoves(tools)
+			m.Html.Cover.GameStatus.rebuild(tools)
 			//TODO - Do only needed updates.
 			return tools.AppUpdate()
 		}); err != nil {
