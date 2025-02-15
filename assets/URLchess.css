@@ -31,6 +31,7 @@
 	--color-moves-marked-background: rgba(123, 139, 139, 0.6);
 	--color-moves-future: #9fafaf;
 
+	--color-button-border: rgba(255, 255, 255, 0.8);
 	--color-button-disabled: rgba(255, 255, 255, 0.2);
 	--color-error: red;
 }
@@ -60,7 +61,7 @@ input, textarea {
 }
 button {
 	display: block;
-	border: 2px solid var(--color-body);
+	border: 2px solid var(--color-button-border);
 	border-radius: 0.5em;
 	padding: 0.3em 0.8em 0.3em 0.8em;
 	margin: 0.5em auto;
@@ -496,7 +497,6 @@ div.thrown-outs .count {
 }
 #game-status-control button {
   position: relative;
-	border-width: 1px;
 	margin: 0;
 	padding: 0.5em 2em 0.5em 2em;
 	font-size: calc(1em * 2 / 3);
@@ -1333,13 +1333,27 @@ button.initial::after {
 }
 @media (orientation: landscape) and (min-aspect-ratio: 59/40) and (min-height: 12cm) {
 	#header {
-		left: calc((100vw - ((70vmin * 59) / 28)) / 2);
+		/*left: calc((100vw - ((70vmin * 59) / 28)) / 2);*/
 	}
 	#board, #thrown-outs-container {
-		margin-left: calc((100vw - ((70vmin * 59) / 28)) / 2);
+		/*margin-left: calc((100vw - ((70vmin * 59) / 28)) / 2);*/
 	}
 	#cover {
-		left: calc(((100vw - ((70vmin *59) / 28)) / 2) + ((70vmin * 31) / 28));
+		left: calc(((100vw - ((70vmin * 59) / 28)) / 2) + ((70vmin * 31) / 28));
+		width: 70vmin;
+		height: 70vmin;
+	}
+}
+@media (orientation: landscape) and (min-aspect-ratio: 62/40) and (min-height: 12cm) {
+	#header {
+		left: calc((100vw - ((70vmin * 62) / 28)) / 2);
+	}
+	#board, #thrown-outs-container {
+		margin-left: calc((100vw - ((70vmin * 62) / 28)) / 2);
+	}
+	#cover {
+		margin-left: calc((70vmin * 2) / 28);
+		left: calc(((100vw - ((70vmin * 62) / 28)) / 2) + ((70vmin * 31) / 28));
 		width: 70vmin;
 		height: 70vmin;
 	}
