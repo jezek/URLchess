@@ -1046,7 +1046,7 @@ button.initial::after {
 		padding-top: 0.7em
 	}
 }
-@media (orientation: landscape) and (min-aspect-ratio: 43/28) {
+@media (orientation: landscape) and (min-aspect-ratio: 51/28) {
 	#header {
 		display: flex;
 		width: calc(100vmin * 2 / 28); 
@@ -1071,27 +1071,27 @@ button.initial::after {
 		margin: 0;
 	}
 }
-@media (orientation: landscape) and (min-aspect-ratio: 59/28) {
+@media (orientation: landscape) and (min-aspect-ratio: 60/28) {
 	#header {
 		/*
 		display: initial;
-		width: calc((100vw - ((100vmin / 28) * 59)) / 2);
-		font-size: calc((100vw - ((100vmin / 28) * 59)) / 2);
+		width: calc((100vw - ((100vmin / 28) * 60)) / 2);
+		font-size: calc((100vw - ((100vmin / 28) * 60)) / 2);
 	 */
-		margin-left: calc((100vw - ((100vmin / 28) * 59)) / 2);
+		margin-left: calc((100vw - ((100vmin / 28) * 60)) / 2);
 	}
 	#board, #thrown-outs-container {
-		margin-left: calc((100vw - ((100vmin / 28) * 59)) / 2);
+		margin-left: calc((100vw - ((100vmin / 28) * 60)) / 2);
 	}
 	#cover {
-		right: calc((100vw - ((100vmin / 28) * 59)) / 2);
+		right: calc((100vw - ((100vmin / 28) * 60)) / 2);
 		width: 100vmin;
 		height: 100vmin;
 	}
 }
 @media (orientation: landscape) and (min-aspect-ratio: 64/28) {
 	#header {
-		width: calc((100vw - ((100vmin / 28) * 59)) / 2);
+		width: calc((100vw - ((100vmin / 28) * 60)) / 2);
 		height: initial;
 		font-size: calc((100vmin * 2) / 28);
 		margin: 0;
@@ -1195,7 +1195,7 @@ button.initial::after {
 	}
 }
 /* 12.9cm = 488px (487.559055118) */
-@media (orientation: landscape) and (min-width: 12.9cm) and (min-height: 8.4cm) {
+@media (orientation: landscape) and (min-width: 15.3cm) and (min-height: 8.4cm) {
 	#header {
 		display: flex;
 		top: calc((100vh - 8.4cm) / 2);
@@ -1231,12 +1231,12 @@ button.initial::after {
 	}
 }
 /* 17.7cm = 669px (668.976377953) */
-@media (orientation: landscape) and (min-width: 17.7cm) and (min-height: 8.4cm) {
+@media (orientation: landscape) and (min-width: 18cm) and (min-height: 8.4cm) {
 	#header, #board, #thrown-outs-container {
-		margin-left: calc((100vw - ((8.4cm / 28) * 59)) / 2);
+		margin-left: calc((100vw - ((8.4cm / 28) * 60)) / 2);
 	}
 	#cover {
-		left: calc(((100vw - ((8.4cm / 28) * 59)) / 2) + 9.3cm);
+		left: calc(((100vw - ((8.4cm / 28) * 60)) / 2) + 9.6cm);
 		width: 8.4cm;
 		height: 8.4cm;
 	}
@@ -1247,8 +1247,8 @@ button.initial::after {
 		display: initial;
 		margin: 0;
 		padding: 0;
-		font-size: calc((100vw - ((8.4cm / 28) * 59)) / 3);
-		width: calc((100vw - ((8.4cm / 28) * 59)) / 2);
+		font-size: calc((100vw - ((8.4cm / 28) * 60)) / 3);
+		width: calc((100vw - ((8.4cm / 28) * 60)) / 2);
 		top: calc((100vh - 8.4cm) / 2);
 		writing-mode: vertical-rl;
 		text-orientation: upright;
@@ -1331,29 +1331,15 @@ button.initial::after {
 		margin: 0;
 	}
 }
-@media (orientation: landscape) and (min-aspect-ratio: 59/40) and (min-height: 12cm) {
+@media (orientation: landscape) and (min-aspect-ratio: 60/40) and (min-height: 12cm) {
 	#header {
-		/*left: calc((100vw - ((70vmin * 59) / 28)) / 2);*/
+		left: calc((100vw - ((70vmin * 60) / 28)) / 2);
 	}
 	#board, #thrown-outs-container {
-		/*margin-left: calc((100vw - ((70vmin * 59) / 28)) / 2);*/
+		margin-left: calc((100vw - ((70vmin * 60) / 28)) / 2);
 	}
 	#cover {
-		left: calc(((100vw - ((70vmin * 59) / 28)) / 2) + ((70vmin * 31) / 28));
-		width: 70vmin;
-		height: 70vmin;
-	}
-}
-@media (orientation: landscape) and (min-aspect-ratio: 62/40) and (min-height: 12cm) {
-	#header {
-		left: calc((100vw - ((70vmin * 62) / 28)) / 2);
-	}
-	#board, #thrown-outs-container {
-		margin-left: calc((100vw - ((70vmin * 62) / 28)) / 2);
-	}
-	#cover {
-		margin-left: calc((70vmin * 2) / 28);
-		left: calc(((100vw - ((70vmin * 62) / 28)) / 2) + ((70vmin * 31) / 28));
+		left: calc(((100vw - ((70vmin * 60) / 28)) / 2) + ((70vmin * 32) / 28));
 		width: 70vmin;
 		height: 70vmin;
 	}
