@@ -34,6 +34,17 @@
 	--color-button-border: rgba(255, 255, 255, 0.8);
 	--color-button-disabled: rgba(255, 255, 255, 0.2);
 	--color-error: red;
+
+	--scrollbar-color-thumb: #3e4e4e;
+	--scrollbar-color-track: #1e2e2e;
+	--scrollbar-width: auto;
+}
+/* Modern browsers with `scrollbar-*` support */
+@supports (scrollbar-width: auto) {
+    :root {
+        scrollbar-color: var(--scrollbar-color-thumb) var(--scrollbar-color-track);
+        scrollbar-width: var(--scrollbar-width);
+    }
 }
 body, button, input, textarea {
 	margin: 0;
@@ -99,6 +110,7 @@ button:disabled {
 	font-weight: bold;
 	cursor: pointer;
 	z-index: 1;
+	line-height: 1.35em;
 }
 #board {
 	position:relative;
@@ -175,6 +187,7 @@ button:disabled {
 	position: relative;
 	font-size:0.3em;
 	text-align: right;
+	margin-top: 1em;
 }
 
 /*********/
@@ -279,6 +292,7 @@ button:disabled {
 	height: 100%;
 	background-color: transparent;
 	box-sizing: border-box;
+	line-height: 1.35em;
 }
 #board div.grid span.marker {
 }
@@ -476,6 +490,7 @@ div.thrown-outs .count {
 	width: calc(1em * 6 / 5);
 	height: calc(1em * 6 / 5);
 	text-align: center;
+	line-height: 1.35em;
 }
 #game-status-text {
 	padding-left: 0.2em;
@@ -584,7 +599,8 @@ button.initial::after {
 	width: 100%;
 	height: calc(100% * 20 / 28);
 	font-size: calc(1em / 2);
-	overflow: scroll;
+	overflow-y: scroll;
+	overflow-x: hidden;
 	margin: 0.3em 0;
 }
 #game-status-moves p {
@@ -1275,7 +1291,7 @@ button.initial::after {
 	#header {
 		display: initial;
 		font-size: calc((100vh - 70vmin) / 3);
-		padding-top: 0.5em;
+		padding-top: 0.4em;
 		top: 0;
 		left: calc((100vw - 70vmin) / 2);
 		writing-mode: initial;
