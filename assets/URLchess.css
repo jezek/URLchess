@@ -689,6 +689,9 @@ button.initial::after {
 #game-status-moves p a.splited {
 	font-style: italic;
 }
+#game-status-moves p:last-child {
+	margin-bottom: 0.27em;
+}
 /*************/
 /* move status */
 /*************/
