@@ -2213,11 +2213,11 @@ func (h *HtmlModel) Update(tools *shf.Tools) error {
 	return tools.Update(h.Header, h.Board, h.ThrownOuts, h.Cover, h.Export, h.Notification, h.Footer)
 }
 
-func (h *HtmlModel) RotateBoard() func(e shf.Event) error {
-	return func(_ shf.Event) error {
-		h.Rotated180deg = !h.Rotated180deg
-		return nil
+func (m *Model) RotateBoard() {
+	if !m.rotationSupported {
+		return
 	}
+	m.Html.Rotated180deg = !m.Html.Rotated180deg
 }
 func (h *HtmlModel) CopyGameURLToClipboard() error {
 	positionX := js.Global().Get("pageXOffset")
@@ -3015,7 +3015,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 				return err
 			}
 			if err := tools.Click(m.Html.Board.Edgings.BottomLeft.Element, func(_ shf.Event) error {
-				m.Html.RotateBoard()
+				m.RotateBoard()
 
 				//TODO - Do only needed updates.
 				return tools.AppUpdate()
@@ -3024,7 +3024,7 @@ func (m *Model) Init(tools *shf.Tools) error {
 			}
 			m.Html.Board.Edgings.BottomLeft.Enable()
 			if err := tools.Click(m.Html.Board.Edgings.TopRight.Element, func(_ shf.Event) error {
-				m.Html.RotateBoard()
+				m.RotateBoard()
 
 				//TODO - Do only needed updates.
 				return tools.AppUpdate()
