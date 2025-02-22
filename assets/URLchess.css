@@ -59,6 +59,7 @@ a {
 }
 input, textarea {
 	padding-top: 0.3em;
+	box-sizing: border-box;
 }
 @font-face {
 	font-family: 'FreeSerif-ChessPieces';
@@ -463,12 +464,6 @@ div.thrown-outs .count {
 /***************/
 /* game status */
 /***************/
-#game-status div:first-child {
-	margin-top: calc(100% * 0.7 / 28);
-}
-#game-status div:last-child {
-	margin-bottom: calc(100% * 0.7 / 28);
-}
 #game-status-header {
 	height: calc(100% * 4 / 28);
 	font-size: calc(1em * 4 / 3);
@@ -508,7 +503,7 @@ div.thrown-outs .count {
 	justify-content: space-between;
 	text-align: center;
 	height: calc(100% * 3 / 28);
-	padding: 0.2em 0.1em 0;
+	padding-top: 0.2em;
 }
 #game-status-control button {
   position: relative;
@@ -597,7 +592,7 @@ button.initial::after {
 #game-status-moves {
   box-sizing: border-box;
 	width: 100%;
-	height: calc(100% * 20 / 28);
+	height: calc(100% * 21 / 28);
 	font-size: calc(1em / 2);
 	overflow-y: scroll;
 	overflow-x: hidden;
@@ -868,6 +863,11 @@ button.initial::after {
 /*********************/
 /* responsive design */
 /*********************/
+@media (orientation: portrait) {
+	#cover {
+		margin-top: calc(100vmin / 28);
+	}
+}
 /* 8.4cm = 318px (317.480314961)*/
 @media (orientation: portrait) and (min-width: 8.4cm) {
 
@@ -894,6 +894,7 @@ button.initial::after {
 	}
 	#cover {
 		height: 8.4cm;
+		margin-top: calc(8.4cm / 28);
 	}
 	#thrown-outs-container {
 		height: calc((8.4cm * 2) / 28);
@@ -1309,7 +1310,7 @@ button.initial::after {
 	}
 	#cover {
 		position: relative;
-		top: 0;
+		top: calc((-70vmin * 2) / 28);
 		left: 0;
 		height: 70vmin;
 	}
