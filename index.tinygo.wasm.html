@@ -43,6 +43,28 @@ window.addEventListener("load", function() {
 
 			// Start the Go WebAssembly runtime and run URLchess wasm app.
 			const go = new Go();
+
+			// Try to rewrite finalizeRef function according to https://github.com/tinygo-org/tinygo/issues/1140#issuecomment-2529705551
+			go.importObject.gojs["syscall/js.finalizeRef"] = function(v_ref) {
+				// Note: TinyGo does not support finalizers so this is only called
+				// for one specific case, by js.go:jsString. and can/might leak memory.
+
+				// magicValue taken from `unboxValue` function.
+				const magicValue = 0xffffffffn;
+				const id = v_ref & magicValue;
+				if (this._goRefCounts?.[id] !== undefined) {
+					this._goRefCounts[id]--;
+					if (this._goRefCounts[id] === 0) {
+						const v = this._values[id];
+						this._values[id] = null;
+						this._ids.delete(v);
+						this._idPool.push(id);
+					}
+				} else {
+					console.log("syscall/js.finalizeRef: unknown id", id);
+				}
+			};
+
 			WebAssembly.instantiateStreaming(fetch("assets/URLchess.tinygo.wasm?v0.10"), go.importObject).then((result) => {
 				go.run(result.instance);
 			}).catch((err) => {

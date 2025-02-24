@@ -14,16 +14,15 @@ const Version = "0.10"
 //go:generate sh -c "sed -i 's/?v[0-9.]\\+/?v'\"$(grep '^const Version = ' URLchess.go | grep -oP '\\d+\\.\\d+(\\.\\d+)?')\"'/' *.html"
 
 // Build URLchess using gopherjs and generate assets/URLchess.js and assets/URLchess.js.map files.
-//go:generate sh -c "GOPHERJS_GOROOT=\"$(go1.18.10 env GOROOT)\" GOOS=js GOARCH=ecmascript gopherjs build -m -o assets/URLchess.js"
+//go:generate sh -c "GOPHERJS_GOROOT=\"$(go1.19.13 env GOROOT)\" GOOS=js GOARCH=ecmascript gopherjs build -m -o assets/URLchess.js"
 
 // Build URLchess and generate assets/URLchess.wasm file and copy go wasm runtime to assets.
 //go:generate sh -c "GOOS=js GOARCH=wasm go build -o assets/URLchess.wasm"
 //go:generate sh -c "cp \"$(go env GOROOT)\"/misc/wasm/wasm_exec.js ./assets"
 
-// TinyGo generation takes too long and the results are not working. That's why it's commented out for now.
-//// Build URLchess and generate assets/URLchess.tinygo.wasm file using tinygo and copy tinygo wasm runtime to assets.
-////go:generate sh -c "GOROOT=\"$(go1.22.9 env GOROOT)\" PATH=\"$(go1.22.9 env GOROOT)\"/bin:$PATH tinygo build -o assets/URLchess.tinygo.wasm -target wasm ."
-////go:generate sh -c "cp \"$(tinygo env TINYGOROOT)\"/targets/wasm_exec.js assets/wasm_exec.tinygo.js"
+// Build URLchess and generate assets/URLchess.tinygo.wasm file using tinygo and copy tinygo wasm runtime to assets.
+//go:generate sh -c "tinygo build -o assets/URLchess.tinygo.wasm -target wasm ."
+//go:generate sh -c "cp \"$(tinygo env TINYGOROOT)\"/targets/wasm_exec.js assets/wasm_exec.tinygo.js"
 
 func main() {
 	if js.WRAPS == "" {
